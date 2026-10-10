@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
 
   try {
-    const result = processWooCommerceWebhookHttp({
+    const result = await processWooCommerceWebhookHttp({
       rawBody,
       headers: {
         "x-wc-webhook-signature": request.headers.get("x-wc-webhook-signature") ?? undefined,

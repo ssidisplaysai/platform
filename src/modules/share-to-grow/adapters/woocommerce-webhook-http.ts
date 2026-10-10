@@ -1,6 +1,7 @@
 import { AppendOnlyLedger } from "../ledger";
 import type { WooCommerceEventType } from "./woocommerce-events";
 import { processRawWooCommerceOrder } from "./woocommerce-raw-processor";
+import { processWooCommerceCancellation, processWooCommerceRefund } from "./woocommerce-adjustments";
 
 export interface WooCommerceWebhookHttpInput {
   readonly rawBody: string;
@@ -14,6 +15,25 @@ export interface WooCommerceWebhookHttpInput {
 export interface WooCommerceWebhookHttpResult {
   readonly sourceEventId: string;
   readonly replay: boolean;
+  readonly economicDisposition:
+    | "processed"
+    | "replay"
+    | "ignored_ineligible"
+    | "ignored_no_economics"
+    | "reversed"
+    | "partially_reversed"
+    | "reversed_with_brand_loss"
+    | "already_reversed"
+    | "manual_review_required";
+  readonly refund?: unknown;
+  readonly reason?: string;
+  readonly reversals?: readonly {
+    readonly ledgerEntryId: string;
+    readonly sourceEntryId: string;
+    readonly beneficiaryId: string;
+    readonly amountMinor: string;
+    readonly currency: string;
+  }[];
   readonly selectedPartnerId?: string;
   readonly lines: readonly {
     readonly lineKey: string;
@@ -49,9 +69,19 @@ function normalizeWooEventType(topic: string | undefined): WooCommerceEventType 
   }
 }
 
-export function processWooCommerceWebhookHttp(
+/** Routing hint only; the signature is verified by the domain operation the event is routed to. */
+function isCancelledOrderUpdate(rawBody: string): boolean {
+  try {
+    const payload: unknown = JSON.parse(rawBody);
+    return typeof payload === "object" && payload !== null && (payload as { status?: unknown }).status === "cancelled";
+  } catch {
+    return false;
+  }
+}
+
+export async function processWooCommerceWebhookHttp(
   input: WooCommerceWebhookHttpInput,
-): WooCommerceWebhookHttpResult {
+): Promise<WooCommerceWebhookHttpResult> {
   const signature = header(input.headers, "x-wc-webhook-signature");
   const sourceEventId =
     header(input.headers, "x-wc-webhook-delivery-id") ??
@@ -62,11 +92,27 @@ export function processWooCommerceWebhookHttp(
   if (!sourceEventId) throw new Error("MISSING_WOOCOMMERCE_WEBHOOK_DELIVERY_ID");
 
   const eventType = normalizeWooEventType(topic);
-  if (eventType !== "order.created" && eventType !== "order.updated") {
-    throw new Error("WOOCOMMERCE_EVENT_HANDLER_NOT_IMPLEMENTED");
+  const webhookEnvelope = { sourceEventId, eventType, rawBody: input.rawBody, signature, receivedAt: input.receivedAt };
+
+  // A normal order.updated whose status is cancelled is the authoritative cancellation signal.
+  const cancelledUpdate = eventType === "order.updated" && isCancelledOrderUpdate(input.rawBody);
+  if (eventType === "order.cancelled" || eventType === "refund.created" || cancelledUpdate) {
+    const adjustment = await (eventType !== "refund.created"
+      ? processWooCommerceCancellation({ webhook: webhookEnvelope, webhookSecret: input.secret })
+      : processWooCommerceRefund({ webhook: webhookEnvelope, webhookSecret: input.secret }));
+    return Object.freeze({
+      sourceEventId,
+      replay: adjustment.replay,
+      economicDisposition: adjustment.economicDisposition,
+      ...(adjustment.reason ? { reason: adjustment.reason } : {}),
+      ...(adjustment.refund ? { refund: adjustment.refund } : {}),
+      reversals: adjustment.reversals,
+      lines: Object.freeze([]),
+      pendingEntitlements: Object.freeze([]),
+    });
   }
 
-  const result = processRawWooCommerceOrder({
+  const result = await processRawWooCommerceOrder({
     webhook: {
       sourceEventId,
       eventType,
@@ -83,7 +129,9 @@ export function processWooCommerceWebhookHttp(
   return Object.freeze({
     sourceEventId,
     replay: result.replay,
-    selectedPartnerId: result.attribution.selectedPartnerId,
+    economicDisposition: result.economicDisposition,
+    ...(result.reason ? { reason: result.reason } : {}),
+    selectedPartnerId: result.attribution?.selectedPartnerId,
     lines: Object.freeze(result.processedLines.map((line) => Object.freeze({
       lineKey: line.lineKey,
       ruleVersionId: line.ruleVersionId,

@@ -1,0 +1,125 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PostgresNetworkDescribe",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RdsPostgresDescribe",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBSubnetGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RdsCreateStagingPostgres",
+      "Effect": "Allow",
+      "Action": "rds:CreateDBInstance",
+      "Resource": "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging",
+          "rds:DatabaseClass": "db.t4g.micro",
+          "rds:DatabaseEngine": "postgres"
+        }
+      }
+    },
+    {
+      "Sid": "RdsUseStagingPostgresSubnetGroup",
+      "Effect": "Allow",
+      "Action": "rds:CreateDBInstance",
+      "Resource": "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres"
+    },
+    {
+      "Sid": "RdsUseDefaultPostgres16Groups",
+      "Effect": "Allow",
+      "Action": "rds:CreateDBInstance",
+      "Resource": [
+        "arn:aws:rds:us-west-2:452630323448:pg:default.postgres16",
+        "arn:aws:rds:us-west-2:452630323448:og:default:postgres-16"
+      ]
+    },
+    {
+      "Sid": "RdsCreateStagingPostgresSubnetGroup",
+      "Effect": "Allow",
+      "Action": "rds:CreateDBSubnetGroup",
+      "Resource": "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "RdsTagStagingPostgresOnCreate",
+      "Effect": "Allow",
+      "Action": "rds:AddTagsToResource",
+      "Resource": [
+        "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "RdsListStagingPostgresTags",
+      "Effect": "Allow",
+      "Action": "rds:ListTagsForResource",
+      "Resource": [
+        "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres"
+      ]
+    },
+    {
+      "Sid": "CreateStagingPostgresSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:CreateSecret",
+      "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "TagStagingPostgresSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:TagResource",
+      "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "DescribeStagingPostgresSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:DescribeSecret",
+      "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*"
+    },
+    {
+      "Sid": "CreateRdsServiceLinkedRole",
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": "rds.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

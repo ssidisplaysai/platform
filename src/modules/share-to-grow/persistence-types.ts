@@ -66,6 +66,48 @@ export interface ProcessedCommerceLineRecord {
   readonly ruleVersionId: string;
   readonly ledgerEntryIds: readonly string[];
   readonly processedAt: string;
+  /** Sale amount (gross - discount) in minor units; absent on records written before refund support. */
+  readonly saleMerchandiseMinor?: string;
+  /** Locked economic rule used for this sale; absent on records written before reversal support. */
+  readonly ruleSnapshot?: PersistedEconomicRuleVersion;
+}
+
+/**
+ * Append-only record of a cancellation or refund applied to a Woo order.
+ * Original processed-line and earning records are never mutated.
+ */
+export interface CommerceAdjustmentRecord {
+  readonly adjustmentId: string;
+  readonly kind: "cancellation" | "refund";
+  readonly orderId: string;
+  readonly sourceEventId: string;
+  readonly refundId?: string;
+  readonly lineRefunds: ReadonlyArray<{ readonly lineKey: string; readonly refundMinor: string }>;
+  readonly disposition:
+    | "reversed"
+    | "partially_reversed"
+    | "reversed_with_brand_loss"
+    | "no_economic_effect"
+    | "manual_review_required";
+  readonly reason?: string;
+  readonly customerRefundMinor?: string;
+  readonly economicReversalMinor?: string;
+  readonly brandLossMinor?: string;
+  readonly remainingNetDmpMinor?: string;
+  readonly currency?: string;
+  readonly lineAdjustments?: ReadonlyArray<{
+    readonly lineKey: string;
+    readonly ruleVersionId: string;
+    readonly originalDmpMinor: string;
+    readonly refundMinor: string;
+    readonly cumulativeRefundMinor: string;
+    readonly reversalMinor: string;
+    readonly cumulativeReversalMinor: string;
+    readonly remainingDmpMinor: string;
+    readonly cumulativeBrandLossMinor: string;
+  }>;
+  readonly reversalLedgerEntryIds: readonly string[];
+  readonly recordedAt: string;
 }
 
 export interface PersistedPayoutEntitlement {
@@ -89,6 +131,7 @@ export interface ShareToGrowRepositoryState {
   readonly sourceEventReceipts: SourceEventReceiptRecord[];
   readonly processedCommerceLines: ProcessedCommerceLineRecord[];
   readonly payoutEntitlements: PersistedPayoutEntitlement[];
+  readonly commerceAdjustments: CommerceAdjustmentRecord[];
 }
 
 export function serializeRuleVersion(

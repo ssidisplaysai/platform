@@ -51,39 +51,40 @@ function input(sourceEventId: string, ledger: AppendOnlyLedger) {
 }
 
 describe("durable WooCommerce processor", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("persists line provenance, exact ledger entries and Pending entitlements", () => {
-    processWooCommerceOrder(input("durable-order-1", new AppendOnlyLedger()));
+  test("persists line provenance, exact ledger entries and Pending entitlements", async () => {
+    await processWooCommerceOrder(input("durable-order-1", new AppendOnlyLedger()));
 
-    expect(listProcessedCommerceLines()).toHaveLength(1);
-    expect(listPersistedLedgerEntries().map((e) => e.amountMinor)).toEqual(["1850", "1295", "555"]);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements().every((e) => e.state === "pending")).toBe(true);
+    expect(await listProcessedCommerceLines()).toHaveLength(1);
+    expect((await listPersistedLedgerEntries()).map((e) => e.amountMinor)).toEqual(["1850", "1295", "555"]);
+    const entitlements = await listPersistedPayoutEntitlements();
+    expect(entitlements).toHaveLength(3);
+    expect(entitlements.every((e) => e.state === "pending")).toBe(true);
 
-    const record = listProcessedCommerceLines()[0];
+    const record = (await listProcessedCommerceLines())[0];
     expect(record.attribution.selectedPartnerId).toBe("jessica");
     expect(record.ruleVersionId).toBe("stoner-gym-creator-jessica-v1");
   });
 
-  test("durable records survive repository reload", () => {
-    processWooCommerceOrder(input("durable-order-2", new AppendOnlyLedger()));
-    reloadShareToGrowRepositoryFromPersistence();
+  test("durable records survive repository reload", async () => {
+    await processWooCommerceOrder(input("durable-order-2", new AppendOnlyLedger()));
+    await reloadShareToGrowRepositoryFromPersistence();
 
-    expect(listProcessedCommerceLines()).toHaveLength(1);
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
+    expect(await listProcessedCommerceLines()).toHaveLength(1);
+    expect(await listPersistedLedgerEntries()).toHaveLength(3);
+    expect(await listPersistedPayoutEntitlements()).toHaveLength(3);
   });
 
-  test("source replay does not duplicate durable economics", () => {
+  test("source replay does not duplicate durable economics", async () => {
     const ledger = new AppendOnlyLedger();
-    const first = processWooCommerceOrder(input("durable-replay-1", ledger));
-    const replay = processWooCommerceOrder(input("durable-replay-1", ledger));
+    const first = await processWooCommerceOrder(input("durable-replay-1", ledger));
+    const replay = await processWooCommerceOrder(input("durable-replay-1", ledger));
 
     expect(first.replay).toBe(false);
     expect(replay.replay).toBe(true);
-    expect(listProcessedCommerceLines()).toHaveLength(1);
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
+    expect(await listProcessedCommerceLines()).toHaveLength(1);
+    expect(await listPersistedLedgerEntries()).toHaveLength(3);
+    expect(await listPersistedPayoutEntitlements()).toHaveLength(3);
   });
 });

@@ -1,0 +1,201 @@
+name: Genesis Staging IAM Verify and Plan
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Staging branch to check out
+        required: false
+        type: string
+        default: infra/genesis-staging-runtime-v1
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: genesis-staging-iam-verify
+  cancel-in-progress: false
+
+jobs:
+  verify-and-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Restrict checkout to the approved staging ref
+        env:
+          STAGING_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$STAGING_REF" != "infra/genesis-staging-runtime-v1" ]]; then
+            echo "Refusing unapproved staging ref: $STAGING_REF" >&2
+            exit 1
+          fi
+
+      - name: Check out the requested staging ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Report staging checkout provenance
+        run: |
+          set -euo pipefail
+          staging_sha="$(git rev-parse HEAD)"
+          staging_branch="$(git branch --show-current)"
+          if [[ -z "$staging_branch" ]]; then
+            staging_branch="detached"
+          fi
+          echo "STAGING_EXECUTION_GIT_SHA=$staging_sha"
+          echo "STAGING_EXECUTION_GIT_BRANCH=$staging_branch"
+          echo "STAGING_EXPECTED_REF=infra/genesis-staging-runtime-v1"
+          git log -1 --format='%H %s'
+
+      - name: Configure GitHub OIDC credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
+          aws-region: us-west-2
+
+      - name: Verify account, inline policies, and exact attached-policy set
+        run: |
+          set -euo pipefail
+          expected_account="452630323448"
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          echo "AWS_ACCOUNT=$account_id"
+          if [[ "$account_id" != "$expected_account" ]]; then
+            echo "Expected AWS account $expected_account; refusing to continue." >&2
+            exit 1
+          fi
+
+          role_name="GenesisGitHubDeployRole"
+          aws iam get-role --role-name "$role_name" >/dev/null
+
+          aws iam list-role-policies --role-name "$role_name" --output json > inline-policies.json
+          inline_count="$(jq '.PolicyNames | length' inline-policies.json)"
+          if [[ "$inline_count" != "0" ]]; then
+            echo "Expected zero inline policies on $role_name; found $inline_count." >&2
+            jq -r '.PolicyNames[]' inline-policies.json >&2
+            exit 1
+          fi
+
+          aws iam list-attached-role-policies --role-name "$role_name" --output json > attached-policies.json
+          jq -e '
+            [.AttachedPolicies[].PolicyArn] as $attached
+            | [
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning"
+              ] as $expected
+            | [
+                "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+                "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
+                "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+                "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+                "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
+              ] as $broad
+            | (($attached | sort) == ($expected | sort))
+              and (($attached | length) == 5)
+              and (all($broad[]; . as $policy | ($attached | index($policy)) == null))
+          ' attached-policies.json >/dev/null || {
+            echo "SCOPED_POLICY_SET_REQUIRED: expected exactly the five GenesisStagingDeploy managed policies, with no broad AWS-managed or unexpected policies attached to $role_name." >&2
+            jq -r '.AttachedPolicies[].PolicyArn' attached-policies.json >&2
+            exit 1
+          }
+
+          echo "ATTACHED_MANAGED_POLICY_COUNT=5"
+          echo "IAM_INLINE_POLICY_COUNT=0"
+          echo "SCOPED_POLICY_SET=PASS"
+
+      - name: Verify all five managed policy documents match the repository
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in (
+              Path("infra/staging/iam/01-read-only-production-inspection.json"),
+              Path("infra/staging/iam/02-staging-compute-network-auth.json"),
+              Path("infra/staging/iam/03-staging-data-iam.json"),
+              Path("infra/staging/iam/04-production-guardrails-deny.json"),
+              Path("infra/staging/iam/05-staging-postgres-provisioning.json"),
+          ):
+              document = json.loads(path.read_text(encoding="utf-8-sig"))
+              if document.get("Version") != "2012-10-17" or not isinstance(document.get("Statement"), list):
+                  raise SystemExit(f"Invalid repository IAM policy document: {path}")
+          PY
+
+          while IFS='|' read -r policy_name policy_file; do
+            policy_arn="arn:aws:iam::452630323448:policy/$policy_name"
+            error_file="$(mktemp)"
+            if ! aws iam get-policy --policy-arn "$policy_arn" --output json > policy-metadata.json 2>"$error_file"; then
+              cat "$error_file" >&2
+              echo "ADMIN_BOOTSTRAP_REQUIRED: managed policy is missing or unreadable: $policy_arn" >&2
+              exit 1
+            fi
+            rm -f "$error_file"
+
+            version_id="$(jq -r '.Policy.DefaultVersionId // empty' policy-metadata.json)"
+            if [[ -z "$version_id" ]]; then
+              echo "ADMIN_BOOTSTRAP_REQUIRED: default policy version is missing: $policy_arn" >&2
+              exit 1
+            fi
+
+            if ! aws iam get-policy-version \
+              --policy-arn "$policy_arn" \
+              --version-id "$version_id" \
+              --query PolicyVersion.Document \
+              --output json > policy-document.json; then
+              echo "ADMIN_BOOTSTRAP_REQUIRED: default policy document is unreadable: $policy_arn version $version_id" >&2
+              exit 1
+            fi
+
+            python3 - "$policy_file" policy-document.json <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from urllib.parse import unquote
+
+          def load_document(path):
+              value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+              if isinstance(value, str):
+                  value = json.loads(unquote(value))
+              return value
+
+          def normalize(value):
+              if isinstance(value, dict):
+                  return {key: normalize(value[key]) for key in sorted(value)}
+              if isinstance(value, list):
+                  items = [normalize(item) for item in value]
+                  return sorted(items, key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")))
+              return value
+
+          repository_policy = load_document(sys.argv[1])
+          attached_policy = load_document(sys.argv[2])
+          if normalize(repository_policy) != normalize(attached_policy):
+              raise SystemExit(
+                  f"ADMIN_BOOTSTRAP_REQUIRED: attached policy differs from repository policy: {sys.argv[1]}"
+              )
+          PY
+            echo "POLICY_VERIFIED=$policy_name VERSION=$version_id"
+          done <<'POLICIES'
+          GenesisStagingDeploy-01-read-only-production-inspection|infra/staging/iam/01-read-only-production-inspection.json
+          GenesisStagingDeploy-02-staging-compute-network-auth|infra/staging/iam/02-staging-compute-network-auth.json
+          GenesisStagingDeploy-03-staging-data-iam|infra/staging/iam/03-staging-data-iam.json
+          GenesisStagingDeploy-04-production-guardrails-deny|infra/staging/iam/04-production-guardrails-deny.json
+          GenesisStagingDeploy-05-staging-postgres-provisioning|infra/staging/iam/05-staging-postgres-provisioning.json
+          POLICIES
+
+      - name: Inspect live staging runtime health
+        run: node infra/staging/inspect-runtime.mjs
+
+      - name: Run the read-only staging plan
+        run: |
+          set -euo pipefail
+          bash infra/staging/provision.sh plan 2>&1 | tee staging-plan.log
+          grep -Eq '^CUSTOM_POLICY_SIMULATION=PASS([[:space:]]|$)' staging-plan.log
+          grep -Fqx 'GENESIS_STAGING_PLAN_GATE=PASS' staging-plan.log

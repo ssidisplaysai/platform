@@ -11,7 +11,9 @@ const secret = "receiver-test-secret";
 function rawOrder(): string {
   return JSON.stringify({
     id: 650,
-    status: "on-hold",
+    status: "processing",
+    total: "60.00",
+    date_paid_gmt: "2026-10-07T01:37:55Z",
     currency: "USD",
     date_created_gmt: "2026-10-07T01:37:51Z",
     meta_data: [
@@ -46,11 +48,11 @@ function headers(rawBody: string) {
 }
 
 describe("WooCommerce webhook HTTP receiver", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("real staging-shaped order becomes durable creator allocations", () => {
+  test("real staging-shaped order becomes durable creator allocations", async () => {
     const rawBody = rawOrder();
-    const result = processWooCommerceWebhookHttp({
+    const result = await processWooCommerceWebhookHttp({
       rawBody,
       headers: headers(rawBody),
       secret,
@@ -66,18 +68,19 @@ describe("WooCommerce webhook HTTP receiver", () => {
       { beneficiaryId: "jessica", amountMinor: "1295", currency: "USD" },
       { beneficiaryId: "daniel", amountMinor: "555", currency: "USD" },
     ]);
-    expect(listPersistedLedgerEntries().map((entry) => entry.amountMinor)).toEqual([
+    expect((await listPersistedLedgerEntries()).map((entry) => entry.amountMinor)).toEqual([
       "1850",
       "1295",
       "555",
     ]);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements().every((entry) => entry.state === "pending")).toBe(true);
+    const entitlements = await listPersistedPayoutEntitlements();
+    expect(entitlements).toHaveLength(3);
+    expect(entitlements.every((entry) => entry.state === "pending")).toBe(true);
   });
 
-  test("invalid signature is rejected before durable economics", () => {
+  test("invalid signature is rejected before durable economics", async () => {
     const rawBody = rawOrder();
-    expect(() => processWooCommerceWebhookHttp({
+    await expect(processWooCommerceWebhookHttp({
       rawBody,
       headers: {
         ...headers(rawBody),
@@ -86,11 +89,11 @@ describe("WooCommerce webhook HTTP receiver", () => {
       secret,
       receivedAt: "2026-10-07T01:38:00Z",
       recruitedCreatorPartnerIds: ["jessica"],
-    })).toThrow("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
-    expect(listPersistedLedgerEntries()).toHaveLength(0);
+    })).rejects.toThrow("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
+    expect(await listPersistedLedgerEntries()).toHaveLength(0);
   });
 
-  test("exact delivery replay cannot duplicate economics", () => {
+  test("exact delivery replay cannot duplicate economics", async () => {
     const rawBody = rawOrder();
     const input = {
       rawBody,
@@ -99,9 +102,9 @@ describe("WooCommerce webhook HTTP receiver", () => {
       receivedAt: "2026-10-07T01:38:00Z",
       recruitedCreatorPartnerIds: ["jessica"],
     };
-    expect(processWooCommerceWebhookHttp(input).replay).toBe(false);
-    expect(processWooCommerceWebhookHttp(input).replay).toBe(true);
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
+    expect((await processWooCommerceWebhookHttp(input)).replay).toBe(false);
+    expect((await processWooCommerceWebhookHttp(input)).replay).toBe(true);
+    expect(await listPersistedLedgerEntries()).toHaveLength(3);
+    expect(await listPersistedPayoutEntitlements()).toHaveLength(3);
   });
 });

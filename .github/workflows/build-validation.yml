@@ -1,0 +1,27 @@
+name: Build Validation
+
+# Jest alone does not catch module-level parse errors (e.g. duplicate exports).
+# The production Next.js build is a required gate on every PR.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  next-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Required routes exist in build output
+        run: |
+          test -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
+          test -f .next/server/app/api/health/route.js

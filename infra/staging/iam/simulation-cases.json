@@ -1,0 +1,803 @@
+﻿[
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/woocommerce-webhook-secret-AbCdEf",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/other-AbCdEf",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/openai-AbCdEf",
+        "requireExplicitDeny": true,
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "logs:CreateLogGroup",
+        "resource":  "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/staging/web",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "logs:CreateLogGroup",
+        "resource":  "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/production/web",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:CreateFileSystem",
+        "resource":  "*",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticfilesystem:CreateFileSystem",
+        "resource":  "*",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:CreateAccessPoint",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticfilesystem:CreateAccessPoint",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:CreateSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-05035503df7e142d6",
+        "authorizationComponent":  "vpc",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-0123456789abcdef0",
+        "authorizationComponent":  "vpc",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:CreateSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "scenario":  "staging-postgres-security-group-create",
+        "authorizationComponent":  "security-group",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "authorizationComponent":  "security-group",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecs:RegisterTaskDefinition",
+        "resource":  "*",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecs:UpdateService",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-staging-web",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:UpdateService",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-production-web",
+        "requireExplicitDeny": true,
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "cognito-idp:CreateUserPoolClient",
+        "resource":  "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "cognito-idp:UpdateUserPoolClient",
+        "resource":  "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON",
+        "requireExplicitDeny": true,
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:PassRole",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "context":  {
+                        "iam:PassedToService":  "ecs-tasks.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:PassRole",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+        "context":  {
+                        "iam:PassedToService":  "ecs-tasks.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "iam:PassRole",
+        "resource":  "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "iam:PassedToService":  "ecs-tasks.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "iam:PassRole",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+        "context":  {
+                        "iam:PassedToService":  "lambda.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:CreateRole",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "iam:AttachRolePolicy",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "iam:PolicyARN":  "arn:aws:iam::aws:policy/AdministratorAccess"
+                    },
+        "contextTypes":  {
+                        "iam:PolicyARN":  "string"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticloadbalancing:ModifyTargetGroup",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-staging-web/d729ca1a288ec4d1",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticloadbalancing:ModifyTargetGroup",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/some-production-tg/0123456789abcdef",
+        "requireExplicitDeny": true,
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticloadbalancing:ModifyListener",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7",
+        "requireExplicitDeny": true,
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticloadbalancing:CreateRule",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecr:PutImage",
+        "resource":  "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime",
+        "requireExplicitDeny": true,
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecr:PutImage",
+        "resource":  "arn:aws:ecr:us-west-2:452630323448:repository/genesis-staging-runtime",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:AuthorizeSecurityGroupIngress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:AuthorizeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:RevokeSecurityGroupIngress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:RevokeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:ModifySecurityGroupRules",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:DeleteSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:AuthorizeSecurityGroupIngress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "scenario":  "staging-postgres-ingress",
+        "request":  {
+                        "protocol":  "tcp",
+                        "fromPort":  5432,
+                        "toPort":  5432,
+                        "source":  "staging-task-security-group"
+                    },
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:AuthorizeSecurityGroupIngress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "development"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:RevokeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "scenario":  "staging-postgres-remove-default-egress",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:CreateTags",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "ec2:CreateAction":  "CreateSecurityGroup"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateTags",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "ec2:CreateAction":  "None"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateTags",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "ec2:CreateAction":  "CreateSecurityGroup"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticloadbalancing:AddTags",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "verificationMode":  "aws-dependent-action-static",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticloadbalancing:CreateAction":  "CreateRule"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticloadbalancing:AddTags",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticloadbalancing:CreateAction":  "None"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticloadbalancing:AddTags",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "elasticloadbalancing:CreateAction":  "CreateRule"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticloadbalancing:ModifyRule",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:TagResource",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticfilesystem:CreateAction":  "CreateFileSystem"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:TagResource",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:access-point/fsap-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticfilesystem:CreateAction":  "CreateAccessPoint"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticfilesystem:TagResource",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticfilesystem:CreateAction":  "None"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:CreateMountTarget",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:CreateServiceLinkedRole",
+        "resource":  "arn:aws:iam::452630323448:role/aws-service-role/elasticfilesystem.amazonaws.com/AWSServiceRoleForAmazonElasticFileSystem",
+        "context":  {
+                        "iam:AWSServiceName":  "elasticfilesystem.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:CreateServiceLinkedRole",
+        "resource":  "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+        "context":  {
+                        "iam:AWSServiceName":  "rds.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "iam:CreateServiceLinkedRole",
+        "resource":  "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+        "context":  {
+                        "iam:AWSServiceName":  "elasticfilesystem.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:AttachRolePolicy",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "context":  {
+                        "iam:PolicyARN":  "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+                    },
+        "contextTypes":  {
+                        "iam:PolicyARN":  "string"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "cloudtrail:LookupEvents",
+        "resource":  "*",
+        "context":  {
+
+                        }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecs:DescribeTasks",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/0123456789abcdef",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecs:ListTasks",
+        "resource":  "*",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:DescribeTasks",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/0123456789abcdef",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:ListTasks",
+        "resource":  "*",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:DescribeRouteTables",
+        "resource":  "*",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:DescribeSecurityGroups",
+        "resource":  "*",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:DescribeSubnets",
+        "resource":  "*",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBInstances",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBSubnetGroups",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:pg:default.postgres16",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:og:default:postgres-16",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "rds:DatabaseClass":  "db.t4g.micro",
+                        "rds:DatabaseEngine":  "postgres"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                       "aws:RequestTag/Environment":  "production",
+                       "rds:DatabaseClass":  "db.t4g.micro",
+                       "rds:DatabaseEngine":  "postgres"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "context":  {
+                       "aws:RequestTag/Environment":  "production",
+                       "rds:DatabaseClass":  "db.t4g.micro",
+                       "rds:DatabaseEngine":  "postgres"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "rds:DatabaseClass":  "db.t4g.small",
+                        "rds:DatabaseEngine":  "postgres"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "rds:DatabaseClass":  "db.t4g.micro",
+                        "rds:DatabaseEngine":  "mysql"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBSubnetGroup",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBSubnetGroup",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:AddTagsToResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:AddTagsToResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:ListTagsForResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:ListTagsForResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:DescribeSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:DescribeSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-abc123",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:ModifyDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:DeleteDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:RevokeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-08117e5cf7cef2d09",
+        "requireExplicitDeny":  true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RegisterTaskDefinition",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:1042",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RunTask",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:1042",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "cloudformation:CreateStack",
+        "resource":  "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/12345678",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "cloudformation:UpdateStack",
+        "resource":  "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/12345678",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "cloudformation:ExecuteChangeSet",
+        "resource":  "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/12345678",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBInstances",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBSubnetGroups",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
+        "context":  {}
+    }
+]

@@ -1,0 +1,73 @@
+﻿# PROPOSED - NOT ACTIVE. Copy to .github/workflows/ on `main` only after review.
+# Needed because workflow_dispatch only lists workflows present on the default branch.
+# The dispatcher itself contains no deployment logic: it validates inputs and calls the
+# reusable workflows pinned to the single allowed staging branch.
+#
+# OIDC note: for reusable-workflow calls the token `sub` is derived from the CALLER (this
+# dispatcher on main), i.e. repo:ssidisplaysai/platform:ref:refs/heads/main. Because the ref is
+# pinned and validated below, only code on infra/genesis-staging-runtime-v1 can run, but the
+# IAM trust for the branch sub is no longer what gates it; protect that branch (required PR review).
+name: Genesis Staging Dispatcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to run (only infra/genesis-staging-runtime-v1 is accepted)"
+        type: choice
+        options: [infra/genesis-staging-runtime-v1]
+        default: infra/genesis-staging-runtime-v1
+      action:
+        description: "plan = read-only; apply = staging infrastructure; deploy = build+push+ECS staging service"
+        type: choice
+        options: [plan, apply, deploy]
+        default: plan
+      confirm:
+        description: "apply: APPLY-STAGING   deploy: DEPLOY-STAGING   (plan: leave empty)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: genesis-staging-dispatcher
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce allowed ref and confirmation phrase
+        env:
+          REF: ${{ inputs.ref }}
+          ACTION: ${{ inputs.action }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          [ "$REF" = "infra/genesis-staging-runtime-v1" ] || { echo "ref not allowed: $REF"; exit 1; }
+          case "$ACTION" in
+            plan) ;;
+            apply)  [ "$CONFIRM" = "APPLY-STAGING" ]  || { echo "apply requires confirm=APPLY-STAGING"; exit 1; } ;;
+            deploy) [ "$CONFIRM" = "DEPLOY-STAGING" ] || { echo "deploy requires confirm=DEPLOY-STAGING"; exit 1; } ;;
+            *) echo "unknown action"; exit 1 ;;
+          esac
+
+  plan:
+    needs: validate
+    if: inputs.action == 'plan'
+    permissions: { id-token: write, contents: read }
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-infra.yml@infra/genesis-staging-runtime-v1
+    with: { mode: plan }
+
+  apply:
+    needs: validate
+    if: inputs.action == 'apply'
+    permissions: { id-token: write, contents: read }
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-infra.yml@infra/genesis-staging-runtime-v1
+    with: { mode: apply, confirm: APPLY-STAGING }
+
+  deploy:
+    needs: validate
+    if: inputs.action == 'deploy'
+    permissions: { id-token: write, contents: read }
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-deploy.yml@infra/genesis-staging-runtime-v1

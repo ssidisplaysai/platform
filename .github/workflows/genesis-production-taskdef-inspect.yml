@@ -1,0 +1,607 @@
+name: Genesis Production Task Definition Inspection
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  inspect-production-task-definitions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out staging repository history for commit provenance
+        uses: actions/checkout@v4
+        with:
+          ref: infra/genesis-staging-runtime-v1
+          fetch-depth: 0
+
+      - name: Configure read-only inspection credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
+          aws-region: us-west-2
+
+      - name: Extended read-only production evidence collection
+        env:
+          AWS_REGION: us-west-2
+          AWS_DEFAULT_REGION: us-west-2
+        run: node infra/staging/production-inspection.mjs
+
+      - name: Inspect production service and task-definition provenance
+        env:
+          AWS_REGION: us-west-2
+          AWS_DEFAULT_REGION: us-west-2
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import datetime
+          import copy
+          import json
+          import re
+          import subprocess
+
+          ACCOUNT_ID = "452630323448"
+          ROLE_ARN = f"arn:aws:iam::{ACCOUNT_ID}:role/GenesisGitHubDeployRole"
+          REGION = "us-west-2"
+          FAMILY = "genesis-production-web"
+          SERVICE = "genesis-production-web"
+          CLUSTER = "genesis-production"
+          REDACT_NAME = re.compile(r"secret|password|token|key|credential", re.IGNORECASE)
+          HEX_SHA = re.compile(r"^[0-9a-fA-F]{7,40}$")
+
+          class EvidenceError(Exception):
+              pass
+
+          def report(label, value):
+              print(f"{label}={json.dumps(value, sort_keys=True, separators=(',', ':'))}")
+
+          def aws(service, operation, *args, region=REGION):
+              allowed = {
+                  ("sts", "get-caller-identity"),
+                  ("ecs", "describe-services"),
+                  ("ecs", "describe-task-definition"),
+                  ("ecr", "describe-images"),
+                  ("cloudtrail", "lookup-events"),
+              }
+              if (service, operation) not in allowed:
+                  raise EvidenceError(f"Refusing non-read-only AWS API: {service} {operation}")
+              command = ["aws", service, operation, *args, "--region", region, "--output", "json"]
+              try:
+                  output = subprocess.check_output(command, stderr=subprocess.DEVNULL, text=True)
+                  return json.loads(output)
+              except Exception as error:
+                  raise EvidenceError(f"{service} {operation} failed or returned invalid JSON") from error
+
+          identity = aws("sts", "get-caller-identity")
+          if identity.get("Account") != ACCOUNT_ID:
+              raise SystemExit(f"Unexpected AWS account {identity.get('Account')!r}; expected {ACCOUNT_ID}")
+          print(f"AWS_ACCOUNT={ACCOUNT_ID}")
+
+          evidence_complete = True
+          service = None
+          try:
+              response = aws(
+                  "ecs", "describe-services",
+                  "--cluster", CLUSTER, "--services", SERVICE,
+              )
+              if response.get("failures") or not response.get("services"):
+                  raise EvidenceError("production service response was missing or included failures")
+              service = response["services"][0]
+              service_summary = {
+                  "taskDefinition": service.get("taskDefinition"),
+                  "desiredCount": service.get("desiredCount"),
+                  "runningCount": service.get("runningCount"),
+                  "pendingCount": service.get("pendingCount"),
+                  "status": service.get("status"),
+                  "deployments": [
+                      {
+                          key: deployment.get(key)
+                          for key in (
+                              "status", "taskDefinition", "desiredCount", "pendingCount",
+                              "runningCount", "rolloutState", "rolloutStateReason",
+                              "createdAt", "updatedAt",
+                          )
+                      }
+                      for deployment in service.get("deployments", [])
+                  ],
+                  "latestEvents": [
+                      {"createdAt": event.get("createdAt"), "message": event.get("message")}
+                      for event in service.get("events", [])[:20]
+                  ],
+              }
+              report("PRODUCTION_SERVICE", service_summary)
+          except EvidenceError as error:
+              evidence_complete = False
+              print(f"PRODUCTION_SERVICE_EVIDENCE=INCOMPLETE ({error})")
+
+          def safe_environment(container):
+              safe = []
+              for item in container.get("environment", []):
+                  name = str(item.get("name", ""))
+                  entry = {"name": name}
+                  if REDACT_NAME.search(name):
+                      entry["value"] = "<redacted: sensitive-looking variable name>"
+                  else:
+                      entry["value"] = item.get("value")
+                  safe.append(entry)
+              return safe
+
+          def sanitize_task_definition(task):
+              containers = []
+              for container in task.get("containerDefinitions", []):
+                  containers.append({
+                      "name": container.get("name"),
+                      "image": container.get("image"),
+                      "essential": container.get("essential"),
+                      "command": container.get("command"),
+                      "entryPoint": container.get("entryPoint"),
+                      "portMappings": container.get("portMappings"),
+                      "environment": safe_environment(container),
+                      "secrets": [
+                          {"name": secret.get("name"), "valueFrom": secret.get("valueFrom")}
+                          for secret in container.get("secrets", [])
+                      ],
+                      "mountPoints": container.get("mountPoints"),
+                      "volumesFrom": container.get("volumesFrom"),
+                      "logConfiguration": container.get("logConfiguration"),
+                      "healthCheck": container.get("healthCheck"),
+                      "readonlyRootFilesystem": container.get("readonlyRootFilesystem"),
+                  })
+              volumes = []
+              for volume in task.get("volumes", []):
+                  efs = volume.get("efsVolumeConfiguration")
+                  volumes.append({
+                      "name": volume.get("name"),
+                      "efsVolumeConfiguration": None if efs is None else {
+                          key: efs.get(key)
+                          for key in (
+                              "fileSystemId", "rootDirectory", "transitEncryption",
+                              "transitEncryptionPort", "authorizationConfig",
+                          )
+                      },
+                  })
+              return {
+                  "taskDefinitionArn": task.get("taskDefinitionArn"),
+                  "revision": task.get("revision"),
+                  "status": task.get("status"),
+                  "family": task.get("family"),
+                  "taskRoleArn": task.get("taskRoleArn"),
+                  "executionRoleArn": task.get("executionRoleArn"),
+                  "networkMode": task.get("networkMode"),
+                  "requiresCompatibilities": task.get("requiresCompatibilities"),
+                  "cpu": task.get("cpu"),
+                  "memory": task.get("memory"),
+                  "runtimePlatform": task.get("runtimePlatform"),
+                  "ephemeralStorage": task.get("ephemeralStorage"),
+                  "registeredAt": task.get("registeredAt"),
+                  "registeredBy": task.get("registeredBy"),
+                  "containerDefinitions": containers,
+                  "volumes": volumes,
+              }
+
+          tasks = {}
+          for revision in (38, 39):
+              try:
+                  response = aws(
+                      "ecs", "describe-task-definition",
+                      "--task-definition", f"{FAMILY}:{revision}",
+                      "--include", "TAGS",
+                  )
+                  task = response.get("taskDefinition")
+                  if not isinstance(task, dict):
+                      raise EvidenceError(f"task definition {revision} was missing")
+                  tasks[revision] = task
+                  report(f"REVISION_{revision}", sanitize_task_definition(task))
+              except EvidenceError as error:
+                  evidence_complete = False
+                  print(f"REVISION_{revision}_EVIDENCE=INCOMPLETE ({error})")
+
+          def section(label, before, after):
+              if before == after:
+                  print(f"{label}=NO_CHANGE")
+              else:
+                  report(label, {"38": before, "39": after})
+
+          if 38 in tasks and 39 in tasks:
+              old, new = tasks[38], tasks[39]
+              safe_old, safe_new = sanitize_task_definition(old), sanitize_task_definition(new)
+              section("IDENTITY", {k: safe_old.get(k) for k in ("family", "revision", "status", "taskDefinitionArn")},
+                      {k: safe_new.get(k) for k in ("family", "revision", "status", "taskDefinitionArn")})
+              section("ROLES", {k: safe_old.get(k) for k in ("taskRoleArn", "executionRoleArn")},
+                      {k: safe_new.get(k) for k in ("taskRoleArn", "executionRoleArn")})
+              section("COMPUTE", {k: safe_old.get(k) for k in ("networkMode", "requiresCompatibilities", "cpu", "memory")},
+                      {k: safe_new.get(k) for k in ("networkMode", "requiresCompatibilities", "cpu", "memory")})
+              section("RUNTIME", {k: safe_old.get(k) for k in ("runtimePlatform", "ephemeralStorage")},
+                      {k: safe_new.get(k) for k in ("runtimePlatform", "ephemeralStorage")})
+
+              def containers_by_name(task):
+                  return {item.get("name"): item for item in sanitize_task_definition(task)["containerDefinitions"]}
+
+              old_containers, new_containers = containers_by_name(old), containers_by_name(new)
+              def environment_diff(task_before, task_after):
+                  before = {
+                      container.get("name"): {
+                          item.get("name"): item.get("value")
+                          for item in container.get("environment", [])
+                      }
+                      for container in task_before.get("containerDefinitions", [])
+                  }
+                  after = {
+                      container.get("name"): {
+                          item.get("name"): item.get("value")
+                          for item in container.get("environment", [])
+                      }
+                      for container in task_after.get("containerDefinitions", [])
+                  }
+                  result = {}
+                  for container_name in sorted(set(before) | set(after)):
+                      values = {}
+                      for name in sorted(set(before.get(container_name, {})) | set(after.get(container_name, {}))):
+                          old_value = before.get(container_name, {}).get(name)
+                          new_value = after.get(container_name, {}).get(name)
+                          if REDACT_NAME.search(str(name)):
+                              values[name] = {
+                                  "38": "<redacted>" if name in before.get(container_name, {}) else "<absent>",
+                                  "39": "<redacted>" if name in after.get(container_name, {}) else "<absent>",
+                                  "changed": old_value != new_value,
+                              }
+                          else:
+                              values[name] = {"38": old_value, "39": new_value, "changed": old_value != new_value}
+                      result[container_name] = values
+                  return result
+
+              section("CONTAINERS",
+                      {n: {k: c.get(k) for k in ("essential", "command", "entryPoint", "readonlyRootFilesystem")}
+                       for n, c in old_containers.items()},
+                      {n: {k: c.get(k) for k in ("essential", "command", "entryPoint", "readonlyRootFilesystem")}
+                       for n, c in new_containers.items()})
+              section("IMAGE", {n: c.get("image") for n, c in old_containers.items()},
+                      {n: c.get("image") for n, c in new_containers.items()})
+              env_diff = environment_diff(old, new)
+              if any(value["changed"] for variables in env_diff.values() for value in variables.values()):
+                  report("ENVIRONMENT", env_diff)
+              else:
+                  print("ENVIRONMENT=NO_CHANGE")
+              section("SECRETS", {n: c.get("secrets") for n, c in old_containers.items()},
+                      {n: c.get("secrets") for n, c in new_containers.items()})
+              section("PORTS", {n: c.get("portMappings") for n, c in old_containers.items()},
+                      {n: c.get("portMappings") for n, c in new_containers.items()})
+              section("MOUNTS", {n: {"mountPoints": c.get("mountPoints"), "volumesFrom": c.get("volumesFrom")}
+                                for n, c in old_containers.items()},
+                      {n: {"mountPoints": c.get("mountPoints"), "volumesFrom": c.get("volumesFrom")}
+                       for n, c in new_containers.items()})
+              section("VOLUMES", safe_old.get("volumes"), safe_new.get("volumes"))
+              section("LOGGING", {n: c.get("logConfiguration") for n, c in old_containers.items()},
+                      {n: c.get("logConfiguration") for n, c in new_containers.items()})
+              section("HEALTH", {n: c.get("healthCheck") for n, c in old_containers.items()},
+                      {n: c.get("healthCheck") for n, c in new_containers.items()})
+              section("REGISTRATION", {k: safe_old.get(k) for k in ("registeredAt", "registeredBy")},
+                      {k: safe_new.get(k) for k in ("registeredAt", "registeredBy")})
+          else:
+              for label in ("IDENTITY", "ROLES", "COMPUTE", "RUNTIME", "CONTAINERS", "IMAGE",
+                            "ENVIRONMENT", "SECRETS", "PORTS", "MOUNTS", "VOLUMES", "LOGGING",
+                            "HEALTH", "REGISTRATION"):
+                  print(f"{label}=UNAVAILABLE")
+
+          def provenance(image):
+              if not image or "/" not in image:
+                  return {"status": "UNAVAILABLE", "reason": "image URI is missing or malformed"}
+              repository_part = image.split("/", 1)[1]
+              if "@" in repository_part:
+                  repository, digest = repository_part.rsplit("@", 1)
+                  image_id = f"imageDigest={digest}"
+                  requested = {"digest": digest}
+              else:
+                  slash = repository_part.rfind("/")
+                  colon = repository_part.rfind(":")
+                  if colon <= slash:
+                      return {"status": "UNAVAILABLE", "reason": "image URI has neither tag nor digest"}
+                  repository, tag = repository_part[:colon], repository_part[colon + 1:]
+                  image_id = f"imageTag={tag}"
+                  requested = {"tag": tag}
+              result = {"repository": repository, **requested}
+              try:
+                  response = aws(
+                      "ecr", "describe-images",
+                      "--repository-name", repository,
+                      "--image-ids", image_id,
+                  )
+                  matches = response.get("imageDetails", [])
+                  if len(matches) != 1:
+                      raise EvidenceError("ECR returned no unique matching image")
+                  detail = matches[0]
+                  result.update({
+                      "imageDigest": detail.get("imageDigest"),
+                      "imageTags": detail.get("imageTags", []),
+                      "imagePushedAt": detail.get("imagePushedAt"),
+                      "imageSizeInBytes": detail.get("imageSizeInBytes"),
+                      "imageScanStatus": detail.get("imageScanStatus"),
+                      "status": "RESOLVED",
+                  })
+              except EvidenceError as error:
+                  result.update({"status": "UNAVAILABLE", "reason": str(error)})
+              return result
+
+          images = {}
+          commits = {}
+          for revision in (38, 39):
+              task = tasks.get(revision)
+              if task is None:
+                  evidence_complete = False
+                  continue
+              runtime = next(
+                  (container for container in task.get("containerDefinitions", [])
+                   if container.get("name") == "GenesisWebRuntime"),
+                  None,
+              )
+              if runtime is None:
+                  evidence_complete = False
+                  print(f"REVISION_{revision}_GENESIS_RUNTIME=ABSENT")
+                  continue
+              image_result = provenance(runtime.get("image"))
+              images[revision] = image_result
+              report(f"REVISION_{revision}_ECR_PROVENANCE", image_result)
+              if image_result.get("status") != "RESOLVED":
+                  evidence_complete = False
+
+              env = {item.get("name"): item.get("value") for item in runtime.get("environment", [])}
+              for key in ("GIT_COMMIT", "GENESIS_RUNTIME_SHA"):
+                  value = env.get(key)
+                  if not value:
+                      print(f"REVISION_{revision}_{key}=ABSENT")
+                      commits[(revision, key)] = None
+                      continue
+                  print(f"REVISION_{revision}_{key}={value}")
+                  if not HEX_SHA.fullmatch(str(value)):
+                      commits[(revision, key)] = {"status": "NOT_A_COMMIT_SHA"}
+                      print(f"REVISION_{revision}_{key}_PROVENANCE=NOT_A_COMMIT_SHA")
+                      evidence_complete = False
+                      continue
+                  try:
+                      commit = subprocess.check_output(
+                          ["git", "show", "-s", "--format=%H%x1f%s%x1f%cI", value],
+                          stderr=subprocess.DEVNULL, text=True,
+                      ).strip().split("\x1f")
+                      branches = subprocess.check_output(
+                          ["git", "branch", "--all", "--contains", value, "--format=%(refname:short)"],
+                          stderr=subprocess.DEVNULL, text=True,
+                      ).splitlines()
+                      if len(commit) != 3:
+                          raise ValueError("unexpected git metadata")
+                      commits[(revision, key)] = {"sha": commit[0], "subject": commit[1], "date": commit[2]}
+                      report(f"REVISION_{revision}_{key}_PROVENANCE", {
+                          "status": "FOUND_IN_SSIDISPLAYS_AI_PLATFORM",
+                          "commit": commit[0],
+                          "subject": commit[1],
+                          "commitDate": commit[2],
+                          "containingBranches": branches,
+                      })
+                  except Exception:
+                      commits[(revision, key)] = {"status": "NOT_FOUND"}
+                      print(f"REVISION_{revision}_{key}_PROVENANCE=NOT_FOUND_IN_SSIDISPLAYS_AI_PLATFORM")
+                      evidence_complete = False
+
+          cloudtrail_events = []
+          cloudtrail_complete = True
+          end_time = datetime.datetime.now(datetime.timezone.utc)
+          start_time = end_time - datetime.timedelta(days=90)
+          report("CLOUDTRAIL_WINDOW_UTC", {"start": start_time.isoformat(), "end": end_time.isoformat()})
+          for region in ("us-west-2", "us-east-1"):
+              for event_name in ("RegisterTaskDefinition", "UpdateService"):
+                  token = None
+                  while True:
+                      args = [
+                          "--lookup-attributes", f"AttributeKey=EventName,AttributeValue={event_name}",
+                          "--start-time", start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                          "--end-time", end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                          "--max-results", "50",
+                      ]
+                      if token:
+                          args.extend(["--next-token", token])
+                      try:
+                          response = aws("cloudtrail", "lookup-events", *args, region=region)
+                      except EvidenceError as error:
+                          cloudtrail_complete = False
+                          print(f"CLOUDTRAIL_LOOKUP_INCOMPLETE region={region} eventName={event_name}: {error}")
+                          break
+                      for item in response.get("Events", []):
+                          try:
+                              event = json.loads(item.get("CloudTrailEvent") or "{}")
+                          except Exception:
+                              cloudtrail_complete = False
+                              continue
+                          request = event.get("requestParameters") or {}
+                          response_elements = event.get("responseElements") or {}
+                          raw_request_task = request.get("taskDefinition")
+                          raw_response_task = response_elements.get("taskDefinition")
+                          request_task = raw_request_task if isinstance(raw_request_task, dict) else {}
+                          response_task = raw_response_task if isinstance(raw_response_task, dict) else {}
+                          family = (
+                              request_task.get("family") or request.get("family")
+                              or response_task.get("family")
+                          )
+                          revision = (
+                              request_task.get("revision") or response_task.get("revision")
+                          )
+                          task_arn = request_task.get("taskDefinitionArn")
+                          if isinstance(raw_request_task, str):
+                              task_arn = task_arn or raw_request_task
+                          if isinstance(raw_response_task, str):
+                              task_arn = task_arn or raw_response_task
+                          task_arn = task_arn or response_task.get("taskDefinitionArn")
+                          if task_arn:
+                              match = re.search(r"/genesis-production-web:(\d+)$", task_arn)
+                              if match:
+                                  family, revision = FAMILY, int(match.group(1))
+                          if event_name == "RegisterTaskDefinition":
+                              relevant = family == FAMILY and (revision in (None, 39) or task_arn and task_arn.endswith(":39"))
+                          else:
+                              service_name = request.get("service")
+                              cluster_name = request.get("cluster")
+                              relevant = (
+                                  service_name == SERVICE
+                                  and (cluster_name in (CLUSTER, None))
+                                  and (
+                                      revision == 39
+                                      or (task_arn and task_arn.endswith(":39"))
+                                      or (isinstance(request.get("taskDefinition"), str)
+                                          and request["taskDefinition"].endswith(":39"))
+                                  )
+                              )
+                          if not relevant:
+                              continue
+                          user = event.get("userIdentity") or {}
+                          session_issuer = ((user.get("sessionContext") or {}).get("sessionIssuer") or {})
+                          principal_id = user.get("principalId")
+                          sanitized = {
+                              "eventTime": event.get("eventTime") or item.get("EventTime"),
+                              "eventName": event_name,
+                              "awsRegion": event.get("awsRegion") or region,
+                              "userIdentityType": user.get("type"),
+                              "principalId": principal_id,
+                              "sessionIssuerArn": session_issuer.get("arn"),
+                              "eventSource": event.get("eventSource") or item.get("EventSource"),
+                              "service": request.get("service"),
+                              "cluster": request.get("cluster"),
+                              "taskDefinitionArn": task_arn,
+                              "taskDefinitionFamily": family,
+                              "taskDefinitionRevision": revision,
+                              "involvesGenesisGitHubDeployRole": (
+                                  session_issuer.get("arn") == ROLE_ARN
+                                  or (isinstance(principal_id, str) and "GenesisGitHubDeployRole" in principal_id)
+                              ),
+                          }
+                          cloudtrail_events.append(sanitized)
+                      token = response.get("NextToken")
+                      if not token:
+                          break
+          report("CLOUDTRAIL_LOOKUP_COMPLETE", cloudtrail_complete)
+          for item in sorted(cloudtrail_events, key=lambda event: event.get("eventTime") or ""):
+              report("REVISION_39_CLOUDTRAIL_EVENT", item)
+          if not cloudtrail_events:
+              print("REVISION_39_CLOUDTRAIL_EVENT=NONE_FOUND")
+
+          stable_on_39 = False
+          if service:
+              deployments = service.get("deployments", [])
+              primary = [deployment for deployment in deployments if deployment.get("status") == "PRIMARY"]
+              stable_on_39 = (
+                  service.get("status") == "ACTIVE"
+                  and isinstance(service.get("taskDefinition"), str)
+                  and service["taskDefinition"].endswith(":39")
+                  and service.get("desiredCount", 0) > 0
+                  and service.get("pendingCount") == 0
+                  and service.get("desiredCount") == service.get("runningCount")
+                  and len(primary) == 1
+                  and isinstance(primary[0].get("taskDefinition"), str)
+                  and primary[0]["taskDefinition"].endswith(":39")
+                  and primary[0].get("pendingCount") == 0
+                  and primary[0].get("desiredCount") == primary[0].get("runningCount")
+                  and primary[0].get("rolloutState") == "COMPLETED"
+                  and all(
+                      deployment is primary[0]
+                      or (
+                          deployment.get("rolloutState") == "COMPLETED"
+                          and deployment.get("pendingCount") == 0
+                          and deployment.get("runningCount") == 0
+                      )
+                      for deployment in deployments
+                  )
+              )
+
+          material_unsafe_change = False
+          if 38 in tasks and 39 in tasks:
+              old, new = tasks[38], tasks[39]
+              def reviewed_comparison_projection(task):
+                  projected = copy.deepcopy(sanitize_task_definition(task))
+                  for key in ("taskDefinitionArn", "revision", "status", "registeredAt", "registeredBy"):
+                      projected.pop(key, None)
+                  for container in projected["containerDefinitions"]:
+                      original = next(
+                          item for item in task.get("containerDefinitions", [])
+                          if item.get("name") == container.get("name")
+                      )
+                      if container.get("name") == "GenesisWebRuntime":
+                          container.pop("image", None)
+                          allowed_provenance = ("GIT_COMMIT", "GENESIS_RUNTIME_SHA")
+                          compared_environment = [
+                              item for item in original.get("environment", [])
+                              if item.get("name") not in allowed_provenance
+                          ]
+                      else:
+                          compared_environment = original.get("environment", [])
+                      # Compare raw values internally; this projection is never emitted.
+                      container["environment"] = sorted(
+                          [
+                              {"name": item.get("name"), "value": item.get("value")}
+                              for item in compared_environment
+                          ],
+                          key=lambda item: item["name"] or "",
+                      )
+                  return projected
+
+              # A clean baseline transition may change only the image and the
+              # two explicit repository-provenance variables plus registration metadata.
+              material_unsafe_change = (
+                  reviewed_comparison_projection(old) != reviewed_comparison_projection(new)
+              )
+
+          image_commit_ties = False
+          if images.get(39, {}).get("status") == "RESOLVED":
+              image_value = next(
+                  (container.get("image") for container in tasks[39].get("containerDefinitions", [])
+                   if container.get("name") == "GenesisWebRuntime"),
+                  "",
+              )
+              image_tag = image_value.rsplit(":", 1)[-1] if "@" not in image_value else ""
+              resolved_tags = images[39].get("imageTags", [])
+              commit_values = [
+                  commits.get((39, key), {}).get("sha")
+                  for key in ("GIT_COMMIT", "GENESIS_RUNTIME_SHA")
+                  if isinstance(commits.get((39, key)), dict)
+              ]
+              image_commit_ties = any(
+                  tag and sha and (tag == sha or sha.startswith(tag) or tag.startswith(sha))
+                  for tag in [image_tag, *resolved_tags]
+                  for sha in commit_values
+              )
+          registration_found = any(
+              event["eventName"] == "RegisterTaskDefinition"
+              and event.get("taskDefinitionRevision") == 39
+              for event in cloudtrail_events
+          )
+          update_found = any(
+              event["eventName"] == "UpdateService"
+              and event.get("taskDefinitionRevision") == 39
+              for event in cloudtrail_events
+          )
+          provenance_understood = (
+              cloudtrail_complete
+              and registration_found
+              and update_found
+              and all(event.get("involvesGenesisGitHubDeployRole") for event in cloudtrail_events)
+          )
+          both_revisions_active = all(
+              revision in tasks and tasks[revision].get("status") == "ACTIVE"
+              for revision in (38, 39)
+          )
+
+          if material_unsafe_change or (service and service.get("status") not in ("ACTIVE", None)):
+              decision = "UNEXPECTED_PRODUCTION_CHANGE"
+          elif (
+              evidence_complete
+              and cloudtrail_complete
+              and both_revisions_active
+              and stable_on_39
+              and not material_unsafe_change
+              and image_commit_ties
+              and provenance_understood
+          ):
+              decision = "SAFE_NEW_BASELINE"
+          else:
+              decision = "REVIEW_REQUIRED"
+          print(f"REVISION_39_DECISION={decision}")
+          PY
