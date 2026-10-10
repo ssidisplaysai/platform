@@ -39,7 +39,8 @@ const ALLOWED = new Set([
 const SENSITIVE_ENVIRONMENT_NAME = /secret|password|token|key|credential/i;
 
 function operationPermission(operation) {
-  return operation.split("-").map((part) => `${part[0].toUpperCase()}${part.slice(1)}`).join("");
+  return operation.split("-").map((part) =>
+    part.toLowerCase() === "db" ? "DB" : `${part[0].toUpperCase()}${part.slice(1)}`).join("");
 }
 
 const SAFE_REQUEST_KEYS = new Set([
