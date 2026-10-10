@@ -15,6 +15,18 @@
       "Resource": "*"
     },
     {
+      "Sid": "EfsDescribe",
+      "Effect": "Allow",
+      "Action": [
+        "elasticfilesystem:DescribeFileSystems",
+        "elasticfilesystem:DescribeMountTargets",
+        "elasticfilesystem:DescribeAccessPoints",
+        "elasticfilesystem:DescribeBackupPolicy",
+        "elasticfilesystem:DescribeMountTargetSecurityGroups"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "Ec2CreateSecurityGroupsInApprovedVpc",
       "Effect": "Allow",
       "Action": "ec2:CreateSecurityGroup",
@@ -123,18 +135,6 @@
           "aws:ResourceTag/Environment": "staging"
         }
       }
-    },
-    {
-      "Sid": "EfsDescribe",
-      "Effect": "Allow",
-      "Action": [
-        "elasticfilesystem:DescribeFileSystems",
-        "elasticfilesystem:DescribeMountTargets",
-        "elasticfilesystem:DescribeAccessPoints",
-        "elasticfilesystem:DescribeBackupPolicy",
-        "elasticfilesystem:DescribeMountTargetSecurityGroups"
-      ],
-      "Resource": "*"
     },
     {
       "Sid": "EfsServiceLinkedRole",

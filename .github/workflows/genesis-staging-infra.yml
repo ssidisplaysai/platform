@@ -14,12 +14,12 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "plan (read-only) or apply"
+        description: "plan/apply staging infrastructure or isolated postgres-plan/postgres-apply"
         type: choice
-        options: [plan, apply]
+        options: [plan, apply, postgres-plan, postgres-apply]
         default: plan
       confirm:
-        description: "For apply, type APPLY-STAGING"
+        description: "For apply type APPLY-STAGING; for PostgreSQL apply type APPLY-STAGING-POSTGRES"
         required: false
         default: ""
 
@@ -36,9 +36,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Validate workflow mode
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          case "$MODE" in
+            plan|apply|postgres-plan|postgres-apply) ;;
+            *) echo "unsupported staging infrastructure mode" >&2; exit 1 ;;
+          esac
+
       - name: Require explicit confirmation for apply
         if: inputs.mode == 'apply' && inputs.confirm != 'APPLY-STAGING'
         run: echo "apply requires confirm=APPLY-STAGING" && exit 1
+
+      - name: Require explicit confirmation for PostgreSQL apply
+        if: inputs.mode == 'postgres-apply' && inputs.confirm != 'APPLY-STAGING-POSTGRES'
+        run: echo "postgres-apply requires confirm=APPLY-STAGING-POSTGRES" && exit 1
 
       - uses: actions/checkout@v4
         with:
@@ -50,5 +63,17 @@ jobs:
           role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
           aws-region: us-west-2
 
-      - name: Provision (${{ inputs.mode }})
+      - name: Provision staging infrastructure (${{ inputs.mode }})
+        if: inputs.mode == 'plan' || inputs.mode == 'apply'
         run: bash infra/staging/provision.sh "${{ inputs.mode }}"
+
+      - name: Provision isolated staging PostgreSQL (${{ inputs.mode }})
+        if: inputs.mode == 'postgres-plan' || inputs.mode == 'postgres-apply'
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [[ "${{ inputs.mode }}" == "postgres-apply" ]]; then
+            bash infra/staging/postgres-provision.sh apply
+          else
+            bash infra/staging/postgres-provision.sh plan
+          fi

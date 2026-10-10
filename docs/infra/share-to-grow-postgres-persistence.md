@@ -80,8 +80,36 @@ and schema error codes without credentials or customer payloads.
 
 ## Staging certification gate
 
-No isolated staging PostgreSQL target is currently configured or identified by
-this repository. Before certification:
+The isolated staging PostgreSQL target is provisioned separately from the
+general staging infrastructure path. The controlled `Genesis Staging
+Infrastructure` workflow has `postgres-plan` and `postgres-apply` modes; the
+apply mode requires the exact `APPLY-STAGING-POSTGRES` confirmation. Both modes
+run the existing staging plan gate first. An administrator must apply the repository's narrowly scoped policy `03` and
+the dedicated PostgreSQL policy `05` before the workflow can create database
+resources:
+
+```bash
+bash infra/staging/admin-bootstrap-iam.sh --refresh-staging-data-policy
+bash infra/staging/admin-bootstrap-iam.sh --refresh-staging-postgres-policy
+```
+
+The database-only path is restricted to the staging account and VPC, two
+approved private subnets, a single-AZ encrypted PostgreSQL 16 instance, a
+staging-only security group allowing only TCP/5432 from the staging web task
+group (no ingress from CIDRs and no outbound rules), and the
+`genesis/staging/postgres` application secret. RDS default PostgreSQL 16
+parameter and option groups are explicitly scoped in IAM because RDS checks
+those associated resources during instance creation. The RDS-managed master
+secret is not exposed to the application role. Runtime secret binding and the
+Share-to-Grow deployment are deliberately deferred to a separately approved
+phase. EFS remains the active staging persistence path until certification.
+No database resources are created by `postgres-plan`.
+
+The planning estimate is approximately **$15/month** for `db.t4g.micro`, 20 GiB
+of gp3 storage, and Secrets Manager. This is approximate only; review the
+current AWS plan and pricing before applying chargeable resources, including
+the instance, storage, and both Secrets Manager secrets. Do not provision based
+only on this estimate. Certification then requires:
 
 1. Provision or identify a staging-only database/schema and credentials; verify
    its hostname, database identity, security-group path, and TLS CA. Never use

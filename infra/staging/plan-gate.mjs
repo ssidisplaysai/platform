@@ -15,7 +15,7 @@ const PRODUCTION_ECR_REPOSITORY = "genesis-production-runtime";
 const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-task-role`;
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
-const SIMULATION_CASE_COUNT = 56;
+const SIMULATION_CASE_COUNT = 94;
 export const SIMULATION_CONTEXT_TYPES = Object.freeze([
   "string",
   "stringList",
@@ -40,6 +40,9 @@ export const DEFAULT_SIMULATION_CONTEXT = Object.freeze({
     value: `arn:aws:ecs:${REGION}:${ACCOUNT_ID}:cluster/invalid`,
     type: "string",
   }),
+  "rds:DatabaseClass": Object.freeze({ value: "invalid", type: "string" }),
+  "rds:DatabaseEngine": Object.freeze({ value: "invalid", type: "string" }),
+  "rds:DatabaseName": Object.freeze({ value: "invalid", type: "string" }),
   "elasticfilesystem:CreateAction": Object.freeze({ value: "None", type: "string" }),
   "ec2:CreateAction": Object.freeze({ value: "None", type: "string" }),
   "elasticloadbalancing:CreateAction": Object.freeze({ value: "None", type: "string" }),
@@ -52,6 +55,9 @@ const SAFE_SIMULATION_DIAGNOSTIC_KEYS = new Set([
   "iam:PolicyARN",
   "iam:AWSServiceName",
   "ecs:cluster",
+  "rds:DatabaseClass",
+  "rds:DatabaseEngine",
+  "rds:DatabaseName",
   "ec2:CreateAction",
   "elasticloadbalancing:CreateAction",
 ]);
@@ -60,6 +66,7 @@ const PROPOSED_POLICY_FILES = [
   "02-staging-compute-network-auth.json",
   "03-staging-data-iam.json",
   "04-production-guardrails-deny.json",
+  "05-staging-postgres-provisioning.json",
 ];
 const READ_ONLY_APIS = new Set([
   "sts:get-caller-identity",

@@ -24,6 +24,7 @@ readonly POLICY_NAMES=(
   "01-read-only-production-inspection"
   "02-staging-compute-network-auth"
   "03-staging-data-iam"
+  "05-staging-postgres-provisioning"
   "04-production-guardrails-deny"
 )
 
@@ -157,6 +158,7 @@ expected_resources = {
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
         "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
     ],
     "iam:GetPolicyVersion": [
@@ -164,6 +166,7 @@ expected_resources = {
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
         "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
     ],
 }
@@ -323,12 +326,331 @@ PY
   printf 'INSPECTION_POLICY_READ_ONLY=PASS\n'
 }
 
+refresh_staging_data_policy() {
+  local policy_file="$POLICY_DIR/03-staging-data-iam.json"
+  local arn
+  arn="$(policy_arn "03-staging-data-iam")"
+  local account_id
+  account_id="$(aws sts get-caller-identity --query Account --output text)" ||
+    fail "unable to verify the active AWS account"
+  [[ "$account_id" == "$EXPECTED_ACCOUNT" ]] ||
+    fail "expected account $EXPECTED_ACCOUNT; refusing to continue"
+
+  aws iam get-role --role-name "$ROLE_NAME" >/dev/null ||
+    fail "unable to read $ROLE_NAME"
+  aws iam list-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/inline.json" ||
+    fail "unable to list inline policies on $ROLE_NAME"
+  jq -e '.PolicyNames | length == 0' "$WORK_DIR/inline.json" >/dev/null ||
+    fail "$ROLE_NAME must have zero inline policies"
+
+  aws iam list-attached-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/attached.json" ||
+    fail "unable to list attached managed policies on $ROLE_NAME"
+  jq -e --arg arn "$arn" '.AttachedPolicies | any(.PolicyArn == $arn)' "$WORK_DIR/attached.json" >/dev/null ||
+    fail "the existing staging-data policy is not attached to $ROLE_NAME; refusing to attach it"
+
+  if ! python3 - "$policy_file" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+if len("".join(path.read_text(encoding="utf-8-sig").split())) >= 6144:
+    raise SystemExit("policy exceeds the customer-managed policy size limit")
+document = json.loads(path.read_text(encoding="utf-8-sig"))
+expected_actions = {
+    "ec2:AuthorizeSecurityGroupEgress", "ec2:AuthorizeSecurityGroupIngress",
+    "ec2:CreateNetworkInterface", "ec2:CreateSecurityGroup", "ec2:CreateTags",
+    "ec2:DeleteNetworkInterface", "ec2:DeleteSecurityGroup",
+    "ec2:DescribeAvailabilityZones", "ec2:DescribeNetworkInterfaces",
+    "ec2:DescribeVpcs", "ec2:ModifyNetworkInterfaceAttribute",
+    "ec2:RevokeSecurityGroupEgress", "ec2:RevokeSecurityGroupIngress",
+    "elasticfilesystem:CreateAccessPoint", "elasticfilesystem:CreateFileSystem",
+    "elasticfilesystem:CreateMountTarget", "elasticfilesystem:DeleteAccessPoint",
+    "elasticfilesystem:DeleteMountTarget", "elasticfilesystem:DescribeAccessPoints",
+    "elasticfilesystem:DescribeBackupPolicy", "elasticfilesystem:DescribeFileSystems",
+    "elasticfilesystem:DescribeMountTargetSecurityGroups",
+    "elasticfilesystem:DescribeMountTargets", "elasticfilesystem:PutBackupPolicy",
+    "elasticfilesystem:TagResource", "iam:AttachRolePolicy", "iam:CreateRole",
+    "iam:CreateServiceLinkedRole", "iam:GetRole", "iam:GetRolePolicy",
+    "iam:ListAttachedRolePolicies", "iam:ListRolePolicies", "iam:PutRolePolicy",
+    "iam:TagRole",
+}
+actions = []
+for statement in document.get("Statement", []):
+    if statement.get("Effect") != "Allow":
+        raise SystemExit("staging-data policy contains a non-Allow statement")
+    values = statement.get("Action", [])
+    actions.extend([values] if isinstance(values, str) else values)
+if set(actions) != expected_actions:
+    raise SystemExit("staging-data policy has missing or unapproved actions")
+if any("*" in action for action in actions):
+    raise SystemExit("staging-data policy contains a wildcard action")
+if {
+    "secretsmanager:GetSecretValue", "iam:PassRole", "rds:DeleteDBInstance",
+    "rds:ModifyDBInstance", "rds:DeleteDBSubnetGroup", "rds:ModifyDBSubnetGroup",
+}.intersection(actions):
+    raise SystemExit("staging-data policy contains a prohibited action")
+
+expected = {
+    "EfsServiceLinkedRole": {
+        "Action": ["iam:CreateServiceLinkedRole"],
+        "Resource": "arn:aws:iam::452630323448:role/aws-service-role/elasticfilesystem.amazonaws.com/*",
+        "Condition": {"StringEquals": {"iam:AWSServiceName": "elasticfilesystem.amazonaws.com"}},
+    },
+}
+by_sid = {statement.get("Sid"): statement for statement in document.get("Statement", [])}
+for sid, expected_statement in expected.items():
+    statement = by_sid.get(sid)
+    if not statement or statement.get("Effect") != "Allow":
+        raise SystemExit(f"missing approved staging PostgreSQL statement: {sid}")
+    for key, value in expected_statement.items():
+        if statement.get(key) != value:
+            raise SystemExit(f"unexpected {key} scope in {sid}")
+expected_action_sids = {
+    "iam:CreateServiceLinkedRole": {"EfsServiceLinkedRole"},
+}
+for action, expected_sids in expected_action_sids.items():
+    actual_sids = {
+        statement.get("Sid")
+        for statement in document.get("Statement", [])
+        if action in ([statement["Action"]] if isinstance(statement.get("Action"), str) else statement.get("Action", []))
+    }
+    if actual_sids != expected_sids:
+        raise SystemExit(f"unexpected statement/resource scope for {action}")
+PY
+  then
+    fail "the proposed staging-data policy contains unapproved or unsafe permissions"
+  fi
+
+  local metadata_file="$WORK_DIR/staging-data-policy-metadata.json"
+  local document_file="$WORK_DIR/staging-data-policy-document.json"
+  aws iam get-policy --policy-arn "$arn" --output json > "$metadata_file" ||
+    fail "unable to read the existing staging-data policy"
+  local version_id
+  version_id="$(jq -er '.Policy.DefaultVersionId' "$metadata_file")" ||
+    fail "existing staging-data policy has no readable default version"
+  aws iam get-policy-version --policy-arn "$arn" --version-id "$version_id" \
+    --query PolicyVersion.Document --output json > "$document_file" ||
+    fail "unable to read default version $version_id of the staging-data policy"
+  if compare_policy_documents "$policy_file" "$document_file"; then
+    printf 'POLICY_ALREADY_CURRENT=%s VERSION=%s\n' "$arn" "$version_id"
+  else
+    local versions_file="$WORK_DIR/staging-data-policy-versions.json"
+    aws iam list-policy-versions --policy-arn "$arn" --output json > "$versions_file" ||
+      fail "unable to count staging-data policy versions; refusing to update"
+    local version_count
+    version_count="$(jq -er '.Versions | length' "$versions_file")" ||
+      fail "staging-data policy-version response was invalid"
+    [[ "$version_count" -lt 5 ]] ||
+      fail "the staging-data policy already has five versions; refusing to delete a version or change its history"
+    local new_version
+    new_version="$(aws iam create-policy-version \
+      --policy-arn "$arn" \
+      --policy-document "$(aws_cli_file_uri "$policy_file")" \
+      --set-as-default \
+      --query PolicyVersion.VersionId \
+      --output text)" ||
+      fail "unable to create the approved staging-data policy version"
+    printf 'POLICY_VERSION_CREATED=%s VERSION=%s\n' "$arn" "$new_version"
+  fi
+
+  aws iam get-policy --policy-arn "$arn" --output json > "$metadata_file" ||
+    fail "unable to verify the updated staging-data policy"
+  version_id="$(jq -er '.Policy.DefaultVersionId' "$metadata_file")" ||
+    fail "updated staging-data policy has no readable default version"
+  aws iam get-policy-version --policy-arn "$arn" --version-id "$version_id" \
+    --query PolicyVersion.Document --output json > "$document_file" ||
+    fail "unable to verify default version $version_id of the staging-data policy"
+  compare_policy_documents "$policy_file" "$document_file" ||
+    fail "the active staging-data policy does not match the approved repository document"
+  printf 'STAGING_DATA_POLICY=PASS\n'
+}
+
+refresh_staging_postgres_policy() {
+  local policy_file="$POLICY_DIR/05-staging-postgres-provisioning.json"
+  local arn
+  arn="$(policy_arn "05-staging-postgres-provisioning")"
+  local account_id
+  account_id="$(aws sts get-caller-identity --query Account --output text)" ||
+    fail "unable to verify the active AWS account"
+  [[ "$account_id" == "$EXPECTED_ACCOUNT" ]] ||
+    fail "expected account $EXPECTED_ACCOUNT; refusing to continue"
+
+  aws iam get-role --role-name "$ROLE_NAME" >/dev/null ||
+    fail "unable to read $ROLE_NAME"
+  aws iam list-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/inline.json" ||
+    fail "unable to list inline policies on $ROLE_NAME"
+  jq -e '.PolicyNames | length == 0' "$WORK_DIR/inline.json" >/dev/null ||
+    fail "$ROLE_NAME must have zero inline policies"
+  aws iam list-attached-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/attached.json" ||
+    fail "unable to list attached managed policies on $ROLE_NAME"
+  jq -e --arg arn "$arn" '.AttachedPolicies | any(.PolicyArn == $arn)' "$WORK_DIR/attached.json" >/dev/null ||
+    fail "the existing staging PostgreSQL policy is not attached to $ROLE_NAME; refusing to attach it"
+
+  if ! python3 - "$policy_file" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8-sig")
+if len("".join(source.split())) >= 6144:
+    raise SystemExit("policy exceeds the customer-managed policy size limit")
+document = json.loads(source)
+approved = {
+    "ec2:DescribeRouteTables", "ec2:DescribeSecurityGroups", "ec2:DescribeSubnets",
+    "rds:AddTagsToResource", "rds:CreateDBInstance", "rds:CreateDBSubnetGroup",
+    "rds:DescribeDBInstances", "rds:DescribeDBSubnetGroups", "rds:ListTagsForResource",
+    "secretsmanager:CreateSecret", "secretsmanager:DescribeSecret",
+    "secretsmanager:TagResource", "iam:CreateServiceLinkedRole",
+}
+actions = []
+by_sid = {}
+for statement in document.get("Statement", []):
+    if statement.get("Effect") != "Allow":
+        raise SystemExit("staging PostgreSQL policy contains a non-Allow statement")
+    values = statement.get("Action", [])
+    actions.extend([values] if isinstance(values, str) else values)
+    by_sid[statement.get("Sid")] = statement
+if set(actions) != approved:
+    raise SystemExit("staging PostgreSQL policy has missing or unapproved actions")
+if any("*" in action for action in actions):
+    raise SystemExit("staging PostgreSQL policy contains a wildcard action")
+if "secretsmanager:GetSecretValue" in actions or "iam:PassRole" in actions:
+    raise SystemExit("staging PostgreSQL policy contains a prohibited action")
+required = {
+    "RdsPostgresDescribe": {
+        "Action": ["rds:DescribeDBInstances", "rds:DescribeDBSubnetGroups"],
+        "Resource": "*",
+    },
+    "RdsCreateStagingPostgres": {
+        "Action": "rds:CreateDBInstance",
+        "Resource": "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "Condition": {"StringEquals": {
+            "aws:RequestTag/Environment": "staging",
+            "rds:DatabaseClass": "db.t4g.micro",
+            "rds:DatabaseEngine": "postgres",
+            "rds:DatabaseName": "genesis_staging",
+        }},
+    },
+    "RdsUseStagingPostgresSubnetGroup": {
+        "Action": "rds:CreateDBInstance",
+        "Resource": "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+    },
+    "RdsUseDefaultPostgres16Groups": {
+        "Action": "rds:CreateDBInstance",
+        "Resource": [
+            "arn:aws:rds:us-west-2:452630323448:pg:default.postgres16",
+            "arn:aws:rds:us-west-2:452630323448:og:default:postgres-16",
+        ],
+    },
+    "RdsCreateStagingPostgresSubnetGroup": {
+        "Action": "rds:CreateDBSubnetGroup",
+        "Resource": "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "Condition": {"StringEquals": {"aws:RequestTag/Environment": "staging"}},
+    },
+    "RdsTagStagingPostgresOnCreate": {
+        "Action": "rds:AddTagsToResource",
+        "Resource": [
+            "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+            "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        ],
+        "Condition": {"StringEquals": {"aws:RequestTag/Environment": "staging"}},
+    },
+    "RdsListStagingPostgresTags": {
+        "Action": "rds:ListTagsForResource",
+        "Resource": [
+            "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+            "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        ],
+    },
+    "CreateStagingPostgresSecret": {
+        "Action": "secretsmanager:CreateSecret",
+        "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
+        "Condition": {"StringEquals": {"aws:RequestTag/Environment": "staging"}},
+    },
+    "TagStagingPostgresSecret": {
+        "Action": "secretsmanager:TagResource",
+        "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
+        "Condition": {"StringEquals": {"aws:RequestTag/Environment": "staging"}},
+    },
+    "DescribeStagingPostgresSecret": {
+        "Action": "secretsmanager:DescribeSecret",
+        "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
+    },
+    "CreateRdsServiceLinkedRole": {
+        "Action": "iam:CreateServiceLinkedRole",
+        "Resource": "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+        "Condition": {"StringEquals": {"iam:AWSServiceName": "rds.amazonaws.com"}},
+    },
+}
+for sid, expected in required.items():
+    statement = by_sid.get(sid)
+    if not statement or any(statement.get(key) != value for key, value in expected.items()):
+        raise SystemExit(f"missing or unsafe scope in staging PostgreSQL statement {sid}")
+PY
+  then
+    fail "the proposed staging PostgreSQL policy contains unapproved or unsafe permissions"
+  fi
+
+  local metadata_file="$WORK_DIR/staging-postgres-policy-metadata.json"
+  local document_file="$WORK_DIR/staging-postgres-policy-document.json"
+  aws iam get-policy --policy-arn "$arn" --output json > "$metadata_file" ||
+    fail "unable to read the existing staging PostgreSQL policy"
+  local version_id
+  version_id="$(jq -er '.Policy.DefaultVersionId' "$metadata_file")" ||
+    fail "existing staging PostgreSQL policy has no readable default version"
+  aws iam get-policy-version --policy-arn "$arn" --version-id "$version_id" \
+    --query PolicyVersion.Document --output json > "$document_file" ||
+    fail "unable to read default version $version_id of the staging PostgreSQL policy"
+  if compare_policy_documents "$policy_file" "$document_file"; then
+    printf 'POLICY_ALREADY_CURRENT=%s VERSION=%s\n' "$arn" "$version_id"
+  else
+    local versions_file="$WORK_DIR/staging-postgres-policy-versions.json"
+    aws iam list-policy-versions --policy-arn "$arn" --output json > "$versions_file" ||
+      fail "unable to count staging PostgreSQL policy versions; refusing to update"
+    local version_count
+    version_count="$(jq -er '.Versions | length' "$versions_file")" ||
+      fail "staging PostgreSQL policy-version response was invalid"
+    [[ "$version_count" -lt 5 ]] ||
+      fail "the staging PostgreSQL policy already has five versions; refusing to delete a version or change its history"
+    local new_version
+    new_version="$(aws iam create-policy-version \
+      --policy-arn "$arn" \
+      --policy-document "$(aws_cli_file_uri "$policy_file")" \
+      --set-as-default \
+      --query PolicyVersion.VersionId \
+      --output text)" ||
+      fail "unable to create the approved staging PostgreSQL policy version"
+    printf 'POLICY_VERSION_CREATED=%s VERSION=%s\n' "$arn" "$new_version"
+  fi
+
+  aws iam get-policy --policy-arn "$arn" --output json > "$metadata_file" ||
+    fail "unable to verify the updated staging PostgreSQL policy"
+  version_id="$(jq -er '.Policy.DefaultVersionId' "$metadata_file")" ||
+    fail "updated staging PostgreSQL policy has no readable default version"
+  aws iam get-policy-version --policy-arn "$arn" --version-id "$version_id" \
+    --query PolicyVersion.Document --output json > "$document_file" ||
+    fail "unable to verify default version $version_id of the staging PostgreSQL policy"
+  compare_policy_documents "$policy_file" "$document_file" ||
+    fail "the active staging PostgreSQL policy does not match the approved repository document"
+  printf 'STAGING_POSTGRES_POLICY=PASS\n'
+}
+
 if [[ "${1:-}" == "--refresh-production-inspection-policy" ]]; then
   [[ "$#" == "1" ]] || fail "the inspection-policy refresh mode does not accept extra arguments"
   refresh_production_inspection_policy
   exit 0
+elif [[ "${1:-}" == "--refresh-staging-data-policy" ]]; then
+  [[ "$#" == "1" ]] || fail "the staging-data-policy refresh mode does not accept extra arguments"
+  refresh_staging_data_policy
+  exit 0
+elif [[ "${1:-}" == "--refresh-staging-postgres-policy" ]]; then
+  [[ "$#" == "1" ]] || fail "the staging PostgreSQL-policy refresh mode does not accept extra arguments"
+  refresh_staging_postgres_policy
+  exit 0
 elif [[ "$#" != "0" ]]; then
-  fail "unexpected arguments; use --refresh-production-inspection-policy only for the approved read-only inspection policy"
+  fail "unexpected arguments; use only an explicitly supported managed-policy refresh mode"
 fi
 
 account_id="$(aws sts get-caller-identity --query Account --output text)" ||
@@ -359,14 +681,14 @@ jq -e --argjson broad "$(printf '%s\n' "${BROAD_POLICY_ARNS[@]}" | jq -R . | jq 
   | ($broad - $attached) as $missing_broad
   | ($staging - $attached) as $missing_staging
   | ($attached - ($broad + $staging)) as $unexpected
-  | if ($missing_broad | length) == 0 and ($unexpected | length) == 0
+  | if ($missing_broad | length) == 0 and ($unexpected | length) == 0 and ($attached | length) <= 10
     then true
-    else error("unexpected role policy state; missing broad policies: \($missing_broad|join(", ")); unexpected policies: \($unexpected|join(", "))")
+    else error("unexpected role policy state; missing broad policies: \($missing_broad|join(", ")); unexpected policies: \($unexpected|join(", ")); attached count: \($attached|length), maximum: 10")
     end
 ' "$WORK_DIR/attached-before.json" >/dev/null ||
   fail "role policy state differs from the approved broad-plus-staging policy set"
 
-policy04_arn="$(policy_arn "${POLICY_NAMES[3]}")"
+policy04_arn="$(policy_arn "04-production-guardrails-deny")"
 policy04_attached="$(jq -r --arg arn "$policy04_arn" '[.AttachedPolicies[].PolicyArn | select(. == $arn)] | length' "$WORK_DIR/attached-before.json")"
 if [[ "$policy04_attached" == "1" ]]; then
   for name in "${POLICY_NAMES[@]:0:3}"; do
@@ -384,6 +706,13 @@ for index in "${!POLICY_NAMES[@]}"; do
   jq -e ' .Version == "2012-10-17" and (.Statement | type == "array") ' \
     "$policy_file" >/dev/null ||
     fail "repository policy JSON is invalid: $policy_file"
+  python3 - "$policy_file" <<'PY' ||
+import sys
+from pathlib import Path
+if len("".join(Path(sys.argv[1]).read_text(encoding="utf-8-sig").split())) >= 6144:
+    raise SystemExit("policy exceeds the customer-managed policy size limit")
+PY
+    fail "repository policy exceeds the AWS managed-policy size limit: $policy_file"
 
   arn="$(policy_arn "$name")"
   metadata_file="$WORK_DIR/$name-metadata.json"
@@ -406,9 +735,6 @@ for index in "${!POLICY_NAMES[@]}"; do
     if ! grep -q 'NoSuchEntity' "$error_file"; then
       cat "$error_file" >&2
       fail "unable to determine whether $arn exists; refusing to create it"
-    fi
-    if [[ "$policy04_attached" == "1" ]]; then
-      fail "policy 04 is already attached; refusing any subsequent IAM mutation because only read-only verification is permitted"
     fi
     created_arn="$(aws iam create-policy \
       --policy-name "$POLICY_PREFIX-$name" \
@@ -441,7 +767,7 @@ for name in "${POLICY_NAMES[@]}"; do
     fail "policy document verification failed for $arn"
 done
 
-for name in "${POLICY_NAMES[@]:0:3}"; do
+for name in "${POLICY_NAMES[@]:0:4}"; do
   arn="$(policy_arn "$name")"
   if ! jq -e --arg arn "$arn" '.AttachedPolicies | any(.PolicyArn == $arn)' \
     "$WORK_DIR/attached-before.json" >/dev/null; then
@@ -462,7 +788,8 @@ else
   printf 'POLICY_ALREADY_ATTACHED_LAST=%s\n' "$policy04_arn"
 fi
 
-# Policy 04 is the last possible mutation; only read-only verification follows.
+# When absent, policy 04 is attached after all scoped policies. If already attached,
+# it remains in place during an incremental policy addition; only reads follow below.
 aws iam list-attached-role-policies \
   --role-name "$ROLE_NAME" \
   --output json > "$WORK_DIR/attached-after.json" ||
@@ -476,15 +803,15 @@ expected_json="$(printf '%s\n' "${expected_arns[@]}" | jq -R . | jq -s .)"
 jq -e --argjson expected "$expected_json" '
   [.AttachedPolicies[].PolicyArn] as $attached
   | (($attached | sort) == ($expected | sort))
-    and (($attached | length) == 9)
+    and (($attached | length) == 10)
 ' "$WORK_DIR/attached-after.json" >/dev/null ||
-  fail "final attached-policy set is not exactly the five broad plus four staging policies"
+  fail "final attached-policy set is not exactly the five broad plus five staging policies"
 
 aws iam list-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/inline-after.json" ||
   fail "unable to verify inline policies after bootstrap"
 jq -e '.PolicyNames | length == 0' "$WORK_DIR/inline-after.json" >/dev/null ||
   fail "inline policies were found after bootstrap"
 
-printf 'ATTACHED_MANAGED_POLICY_COUNT=9\n'
+printf 'ATTACHED_MANAGED_POLICY_COUNT=10\n'
 printf 'IAM_INLINE_POLICY_COUNT=0\n'
 printf 'ADMIN_BOOTSTRAP=PASS\n'

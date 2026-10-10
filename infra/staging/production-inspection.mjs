@@ -14,6 +14,7 @@ const INSPECTION_POLICY_ARNS = new Set([
   `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-02-staging-compute-network-auth`,
   `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-03-staging-data-iam`,
   `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-04-production-guardrails-deny`,
+  `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-05-staging-postgres-provisioning`,
 ]);
 const DIGESTS = [
   "sha256:f0955c71791a7293969e1e49163e900073dcce06d01fc065e62c4bac7979d5ee",

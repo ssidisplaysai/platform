@@ -43,6 +43,7 @@
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
         "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*"
       ]
     },
@@ -84,7 +85,9 @@
       "Effect": "Allow",
       "Action": [
         "ecr:DescribeImages",
-        "ecr:DescribeRepositories"
+        "ecr:DescribeRepositories",
+        "ecr:BatchGetImage",
+        "ecr:ListImages"
       ],
       "Resource": "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime"
     },
@@ -98,15 +101,6 @@
         "cloudformation:ListStackResources"
       ],
       "Resource": "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*"
-    },
-    {
-      "Sid": "ProductionEcrImageReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "ecr:BatchGetImage",
-        "ecr:ListImages"
-      ],
-      "Resource": "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime"
     },
     {
       "Sid": "ProductionEcsTaskReadOnly",
@@ -151,57 +145,15 @@
       "Resource": "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/production/web:*"
     },
     {
-      "Sid": "ProductionRdsClusterSnapshotReadOnly",
+      "Sid": "ProductionResourceInventoryReadOnly",
       "Effect": "Allow",
       "Action": [
-        "rds:DescribeDBClusterSnapshots"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ProductionRdsClusterReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBClusters"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ProductionRdsInstanceReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBInstances"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ProductionRdsSnapshotReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBSnapshots"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ProductionRdsSubnetGroupReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBSubnetGroups"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ProductionAlarmInventoryReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "cloudwatch:DescribeAlarms"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ProductionRouteTableInventoryReadOnly",
-      "Effect": "Allow",
-      "Action": [
+        "rds:DescribeDBClusterSnapshots",
+        "rds:DescribeDBClusters",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBSnapshots",
+        "rds:DescribeDBSubnetGroups",
+        "cloudwatch:DescribeAlarms",
         "ec2:DescribeRouteTables"
       ],
       "Resource": "*"

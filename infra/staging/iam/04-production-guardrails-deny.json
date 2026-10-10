@@ -12,9 +12,14 @@
         "ecs:DeleteTaskSet",
         "ecs:UpdateTaskSet",
         "ecs:StopTask",
-        "ecs:RunTask"
+        "ecs:RunTask",
+        "ecs:RegisterTaskDefinition",
+        "ecs:DeregisterTaskDefinition"
       ],
-      "Resource": "arn:aws:ecs:us-west-2:452630323448:*/genesis-production/genesis-production-web*"
+      "Resource": [
+        "arn:aws:ecs:us-west-2:452630323448:*/genesis-production/genesis-production-web*",
+        "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:*"
+      ]
     },
     {
       "Sid": "DenyProductionEcr",
@@ -51,7 +56,21 @@
       ]
     },
     {
-      "Sid": "DenyListenerAndLoadBalancerMutation",
+      "Sid": "DenyProductionRdsMutation",
+      "Effect": "Deny",
+      "Action": [
+        "rds:ModifyDBInstance",
+        "rds:DeleteDBInstance",
+        "rds:ModifyDBCluster",
+        "rds:DeleteDBCluster"
+      ],
+      "Resource": [
+        "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "arn:aws:rds:us-west-2:452630323448:cluster:genesis-production-postgres"
+      ]
+    },
+    {
+      "Sid": "DenyGlobalInfrastructureMutation",
       "Effect": "Deny",
       "Action": [
         "elasticloadbalancing:ModifyListener",
@@ -62,9 +81,29 @@
         "elasticloadbalancing:SetSecurityGroups",
         "elasticloadbalancing:SetSubnets",
         "elasticloadbalancing:AddListenerCertificates",
-        "elasticloadbalancing:RemoveListenerCertificates"
+        "elasticloadbalancing:RemoveListenerCertificates",
+        "cognito-idp:UpdateUserPoolClient",
+        "cognito-idp:DeleteUserPoolClient",
+        "cognito-idp:UpdateUserPool",
+        "cognito-idp:DeleteUserPool",
+        "cognito-idp:SetUserPoolMfaConfig"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "DenyProductionCloudFormationMutation",
+      "Effect": "Deny",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:CreateChangeSet",
+        "cloudformation:UpdateStack",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DeleteStack",
+        "cloudformation:DeleteChangeSet",
+        "cloudformation:SetStackPolicy",
+        "cloudformation:UpdateTerminationProtection"
+      ],
+      "Resource": "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*"
     },
     {
       "Sid": "DenyNonStagingTargetGroupMutation",
@@ -79,18 +118,6 @@
       "NotResource": [
         "arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-staging-web/*"
       ]
-    },
-    {
-      "Sid": "DenyCognitoClientAndPoolMutation",
-      "Effect": "Deny",
-      "Action": [
-        "cognito-idp:UpdateUserPoolClient",
-        "cognito-idp:DeleteUserPoolClient",
-        "cognito-idp:UpdateUserPool",
-        "cognito-idp:DeleteUserPool",
-        "cognito-idp:SetUserPoolMfaConfig"
-      ],
-      "Resource": "*"
     },
     {
       "Sid": "DenyProductionSecurityGroupMutation",

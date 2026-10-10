@@ -86,7 +86,8 @@ jobs:
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
-                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny"
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning"
               ] as $expected
             | [
                 "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
@@ -96,19 +97,19 @@ jobs:
                 "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
               ] as $broad
             | (($attached | sort) == ($expected | sort))
-              and (($attached | length) == 4)
+              and (($attached | length) == 5)
               and (all($broad[]; . as $policy | ($attached | index($policy)) == null))
           ' attached-policies.json >/dev/null || {
-            echo "SCOPED_POLICY_SET_REQUIRED: expected exactly the four GenesisStagingDeploy managed policies, with no broad AWS-managed or unexpected policies attached to $role_name." >&2
+            echo "SCOPED_POLICY_SET_REQUIRED: expected exactly the five GenesisStagingDeploy managed policies, with no broad AWS-managed or unexpected policies attached to $role_name." >&2
             jq -r '.AttachedPolicies[].PolicyArn' attached-policies.json >&2
             exit 1
           }
 
-          echo "ATTACHED_MANAGED_POLICY_COUNT=4"
+          echo "ATTACHED_MANAGED_POLICY_COUNT=5"
           echo "IAM_INLINE_POLICY_COUNT=0"
           echo "SCOPED_POLICY_SET=PASS"
 
-      - name: Verify all four managed policy documents match the repository
+      - name: Verify all five managed policy documents match the repository
         run: |
           set -euo pipefail
 
@@ -121,6 +122,7 @@ jobs:
               Path("infra/staging/iam/02-staging-compute-network-auth.json"),
               Path("infra/staging/iam/03-staging-data-iam.json"),
               Path("infra/staging/iam/04-production-guardrails-deny.json"),
+              Path("infra/staging/iam/05-staging-postgres-provisioning.json"),
           ):
               document = json.loads(path.read_text(encoding="utf-8-sig"))
               if document.get("Version") != "2012-10-17" or not isinstance(document.get("Statement"), list):
@@ -185,6 +187,7 @@ jobs:
           GenesisStagingDeploy-02-staging-compute-network-auth|infra/staging/iam/02-staging-compute-network-auth.json
           GenesisStagingDeploy-03-staging-data-iam|infra/staging/iam/03-staging-data-iam.json
           GenesisStagingDeploy-04-production-guardrails-deny|infra/staging/iam/04-production-guardrails-deny.json
+          GenesisStagingDeploy-05-staging-postgres-provisioning|infra/staging/iam/05-staging-postgres-provisioning.json
           POLICIES
 
       - name: Inspect live staging runtime health

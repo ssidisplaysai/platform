@@ -19,8 +19,6 @@ const approvedActions = [
   "cloudformation:ListStackResources",
   "cloudwatch:DescribeAlarms",
   "ec2:DescribeRouteTables",
-  "ecr:BatchGetImage",
-  "ecr:ListImages",
   "ecs:DescribeTasks",
   "ecs:ListTaskDefinitions",
   "ecs:ListTasks",
@@ -64,6 +62,8 @@ test("inspection policy contains exactly the approved new actions and no mutatio
     "ec2:DescribeSubnets",
     "ec2:DescribeNetworkInterfaces",
     "sts:GetCallerIdentity",
+    "ecr:BatchGetImage",
+    "ecr:ListImages",
     "cognito-idp:DescribeUserPool",
     "cognito-idp:DescribeUserPoolClient",
     "cognito-idp:ListUserPoolClients",
@@ -263,6 +263,7 @@ test("IAM managed-policy inspection is limited to Genesis policy resources", () 
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
     "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
   ]);
 });

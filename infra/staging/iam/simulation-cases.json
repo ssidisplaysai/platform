@@ -106,6 +106,7 @@
         "expect":  "allow",
         "action":  "ec2:CreateSecurityGroup",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "scenario":  "staging-postgres-security-group-create",
         "authorizationComponent":  "security-group",
         "context":  {
                         "aws:RequestTag/Environment":  "staging"
@@ -324,6 +325,13 @@
         "expect":  "allow",
         "action":  "ec2:AuthorizeSecurityGroupIngress",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "scenario":  "staging-postgres-ingress",
+        "request":  {
+                        "protocol":  "tcp",
+                        "fromPort":  5432,
+                        "toPort":  5432,
+                        "source":  "staging-task-security-group"
+                    },
         "context":  {
                         "aws:ResourceTag/Environment":  "staging"
                     }
@@ -334,6 +342,15 @@
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
         "context":  {
                         "aws:ResourceTag/Environment":  "development"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:RevokeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "scenario":  "staging-postgres-remove-default-egress",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
                     }
     },
     {
@@ -444,6 +461,22 @@
     },
     {
         "expect":  "allow",
+        "action":  "iam:CreateServiceLinkedRole",
+        "resource":  "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+        "context":  {
+                        "iam:AWSServiceName":  "rds.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "iam:CreateServiceLinkedRole",
+        "resource":  "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+        "context":  {
+                        "iam:AWSServiceName":  "elasticfilesystem.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "allow",
         "action":  "iam:AttachRolePolicy",
         "resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
         "context":  {
@@ -492,5 +525,273 @@
         "context":  {
                         "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging"
                     }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:DescribeRouteTables",
+        "resource":  "*",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:DescribeSecurityGroups",
+        "resource":  "*",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:DescribeSubnets",
+        "resource":  "*",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBInstances",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBSubnetGroups",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:pg:default.postgres16",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:og:default:postgres-16",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "rds:DatabaseClass":  "db.t4g.micro",
+                        "rds:DatabaseEngine":  "postgres",
+                        "rds:DatabaseName":  "genesis_staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "rds:DatabaseClass":  "db.t4g.micro",
+                        "rds:DatabaseEngine":  "postgres",
+                        "rds:DatabaseName":  "genesis_staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "rds:DatabaseClass":  "db.t4g.small",
+                        "rds:DatabaseEngine":  "postgres",
+                        "rds:DatabaseName":  "genesis_staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "rds:DatabaseClass":  "db.t4g.micro",
+                        "rds:DatabaseEngine":  "mysql",
+                        "rds:DatabaseName":  "genesis_staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:CreateDBSubnetGroup",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBSubnetGroup",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:AddTagsToResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:AddTagsToResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:ListTagsForResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:ListTagsForResource",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:DescribeSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-abc123",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:DescribeSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-abc123",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:ModifyDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:DeleteDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:RevokeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-08117e5cf7cef2d09",
+        "requireExplicitDeny":  true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RegisterTaskDefinition",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:1042",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RunTask",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:1042",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "cloudformation:CreateStack",
+        "resource":  "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/12345678",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "cloudformation:UpdateStack",
+        "resource":  "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/12345678",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "cloudformation:ExecuteChangeSet",
+        "resource":  "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/12345678",
+        "requireExplicitDeny":  true,
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBInstances",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "rds:DescribeDBSubnetGroups",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
+        "context":  {}
     }
 ]

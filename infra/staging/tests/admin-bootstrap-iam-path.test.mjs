@@ -69,5 +69,28 @@ test("admin IAM helper routes every AWS file URI through the shared converter", 
   const { readFile } = await import("node:fs/promises");
   const helper = await readFile(new URL("../admin-bootstrap-iam.sh", import.meta.url), "utf8");
   assert.equal((helper.match(/file:\/\//g) ?? []).length, 0);
-  assert.equal((helper.match(/aws_cli_file_uri "\$policy_file"/g) ?? []).length, 2);
+  assert.equal((helper.match(/aws_cli_file_uri "\$policy_file"/g) ?? []).length, 4);
+});
+
+test("admin IAM helper exposes a separately validated staging data policy refresh", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const helper = await readFile(new URL("../admin-bootstrap-iam.sh", import.meta.url), "utf8");
+  assert.match(helper, /--refresh-staging-data-policy/);
+  assert.match(helper, /STAGING_DATA_POLICY=PASS/);
+  assert.match(helper, /secretsmanager:GetSecretValue/);
+  assert.match(helper, /aws_cli_file_uri "\$policy_file"/);
+  assert.match(helper, /already has five versions; refusing to delete a version/);
+});
+
+test("admin IAM helper includes policy 05 before the final guardrail and caps attachments", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const helper = await readFile(new URL("../admin-bootstrap-iam.sh", import.meta.url), "utf8");
+  assert.match(helper, /"05-staging-postgres-provisioning"\s*\n\s*"04-production-guardrails-deny"/);
+  assert.match(helper, /POLICY_NAMES\[@\]:0:4/);
+  assert.match(helper, /ATTACHED_MANAGED_POLICY_COUNT=10/);
+  assert.match(helper, /length\) == 10/);
+  assert.match(helper, /policy04_arn="\$\(policy_arn "04-production-guardrails-deny"\)"/);
+  assert.match(helper, /--refresh-staging-postgres-policy/);
+  assert.match(helper, /STAGING_POSTGRES_POLICY=PASS/);
+  assert.match(helper, /iam:AWSServiceName.*rds\.amazonaws\.com/);
 });

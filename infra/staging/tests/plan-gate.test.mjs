@@ -292,7 +292,7 @@ function createMockAws(options = {}) {
       const policiesIndex = args.indexOf("--policy-input-list");
       const action = option(args, "--action-names");
       const resource = option(args, "--resource-arns");
-      assert.equal(args.slice(policiesIndex + 1, args.indexOf("--action-names")).length, 4);
+      assert.equal(args.slice(policiesIndex + 1, args.indexOf("--action-names")).length, 5);
       const policyArray = args.slice(policiesIndex + 1, args.indexOf("--action-names")).map((policy) => JSON.parse(policy));
       const cases = parseJson(await readFile(resolve(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
       const { context, contextTypes } = contextFromArgs(args);
@@ -326,7 +326,7 @@ function createMockAws(options = {}) {
           }],
         };
       }
-      assert.equal(policyArray.length, 4);
+      assert.equal(policyArray.length, 5);
       assert.ok(policyArray.every((policy) => Array.isArray(policy.Statement)));
       return { EvaluationResults: [{ EvalActionName: action, EvalResourceName: resource, EvalDecision: decision }] };
     }
@@ -388,7 +388,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=56 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=94 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
@@ -414,7 +414,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 55);
+  assert.equal(customSimulationCalls.length, 93);
   assert.equal(principalSimulationCalls.length, cases.filter((item) =>
     item.expect === "allow" && item.verificationMode !== "aws-dependent-action-static"
   ).length);
@@ -460,6 +460,9 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
     "iam:AWSServiceName",
     "iam:PassedToService",
     "iam:PolicyARN",
+    "rds:DatabaseClass",
+    "rds:DatabaseEngine",
+    "rds:DatabaseName",
   ].sort());
   assert.equal(productionContext["aws:RequestTag/Environment"], "production");
   assert.equal(productionContext["aws:ResourceTag/Environment"], "nonstaging");
@@ -503,8 +506,9 @@ test("all conditioned policy statements matched by simulation cases have complet
     "02-staging-compute-network-auth.json",
     "03-staging-data-iam.json",
     "04-production-guardrails-deny.json",
+    "05-staging-postgres-provisioning.json",
   ];
-  assert.equal(cases.length, 56);
+  assert.equal(cases.length, 94);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -537,6 +541,9 @@ test("all conditioned policy statements matched by simulation cases have complet
       "iam:AWSServiceName": "string",
       "iam:PassedToService": "string",
       "iam:PolicyARN": "string",
+      "rds:DatabaseClass": "string",
+      "rds:DatabaseEngine": "string",
+      "rds:DatabaseName": "string",
     },
   );
   assert.deepEqual([...SIMULATION_CONTEXT_TYPES].sort(), [
@@ -565,7 +572,7 @@ test("all conditioned policy statements matched by simulation cases have complet
   assert.ok(!SIMULATION_CONTEXT_TYPES.includes("arn"));
   assert.ok(!SIMULATION_CONTEXT_TYPES.includes("arnList"));
   const secretCreateCases = cases.filter((item) => item.action === "secretsmanager:CreateSecret");
-  assert.equal(secretCreateCases.length, 2);
+  assert.equal(secretCreateCases.length, 4);
   for (const item of secretCreateCases) {
     assert.ok(Object.hasOwn(item.context, "aws:RequestTag/Environment"));
     assert.deepEqual(item.context["aws:TagKeys"], ["Environment"]);
@@ -583,6 +590,9 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   assert.equal(DEFAULT_SIMULATION_CONTEXT["ec2:CreateAction"].value, "None");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticfilesystem:CreateAction"].value, "None");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticloadbalancing:CreateAction"].value, "None");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["rds:DatabaseClass"].value, "invalid");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["rds:DatabaseEngine"].value, "invalid");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["rds:DatabaseName"].value, "invalid");
 
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
   const policies = await Promise.all([
@@ -590,6 +600,7 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
     "02-staging-compute-network-auth.json",
     "03-staging-data-iam.json",
     "04-production-guardrails-deny.json",
+    "05-staging-postgres-provisioning.json",
   ].map(async (file) => parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"))));
   const conditionKeys = policyConditionKeys(policies);
   const passRole = cases.find((item) => item.action === "iam:PassRole" && item.expect === "allow");
@@ -726,7 +737,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=56 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=94 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -767,6 +778,10 @@ test("required IAM simulation contexts preserve PassRole, tagging, and service-l
   const deniedAttach = find("iam:AttachRolePolicy", "genesis-staging-task-role", "deny");
   assert.equal(deniedAttach.contextTypes["iam:PolicyARN"], "string");
   assert.equal(find("iam:CreateServiceLinkedRole", "elasticfilesystem.amazonaws.com", "allow").context["iam:AWSServiceName"], "elasticfilesystem.amazonaws.com");
+  assert.equal(find("iam:CreateServiceLinkedRole", "rds.amazonaws.com", "allow").context["iam:AWSServiceName"], "rds.amazonaws.com");
+  assert.ok(find("iam:CreateServiceLinkedRole", "rds.amazonaws.com", "deny", (context) =>
+    context["iam:AWSServiceName"] === "elasticfilesystem.amazonaws.com"
+  ));
   assert.equal(find("ec2:CreateSecurityGroup", "security-group/", "allow").context["aws:RequestTag/Environment"], "staging");
   const sgTag = find("ec2:CreateTags", "security-group/", "allow");
   assert.equal(sgTag.context["aws:RequestTag/Environment"], "staging");
@@ -880,7 +895,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=56 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=94 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   const createRuleCall = result.calls.find(({ service, operation, args }) =>
     service === "iam" &&
@@ -1072,6 +1087,7 @@ test("Policy 01 grants managed-policy reads only for approved Genesis policies",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
     "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
   ];
   const readActions = ["iam:GetPolicy", "iam:GetPolicyVersion"];
@@ -1131,18 +1147,12 @@ test("Policy 01 grants managed-policy reads only for approved Genesis policies",
   const preservedStatements = policy.Statement
     .filter((item) => ![
       "ProductionCloudFormationStackReadOnly",
-      "ProductionEcrImageReadOnly",
+      "ProductionImageProvenanceReadOnly",
       "ProductionEcsTaskReadOnly",
       "ProductionEcsTaskListReadOnly",
       "ProductionEcsTaskDefinitionListReadOnly",
       "ProductionLogStreamReadOnly",
-      "ProductionRdsClusterSnapshotReadOnly",
-      "ProductionRdsClusterReadOnly",
-      "ProductionRdsInstanceReadOnly",
-      "ProductionRdsSnapshotReadOnly",
-      "ProductionRdsSubnetGroupReadOnly",
-      "ProductionAlarmInventoryReadOnly",
-      "ProductionRouteTableInventoryReadOnly",
+      "ProductionResourceInventoryReadOnly",
       "ProductionSecretMetadataReadOnly",
       "IamManagedPolicyReadOnlyInspection",
     ].includes(item.Sid))
@@ -1216,14 +1226,6 @@ test("Policy 01 grants managed-policy reads only for approved Genesis policies",
       Effect: "Allow",
       Action: ["iam:SimulateCustomPolicy"],
       Resource: "*",
-      NotResource: undefined,
-      Condition: undefined,
-    },
-    {
-      Sid: "ProductionImageProvenanceReadOnly",
-      Effect: "Allow",
-      Action: ["ecr:DescribeImages", "ecr:DescribeRepositories"],
-      Resource: "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime",
       NotResource: undefined,
       Condition: undefined,
     },
