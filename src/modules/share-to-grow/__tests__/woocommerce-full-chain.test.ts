@@ -51,44 +51,44 @@ function envelope(sourceEventId: string, rawBody: string) {
 }
 
 describe("WooCommerce raw webhook full chain", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("signed real-shaped JSON becomes durable 50/35/15 economics and Pending payout", () => {
+  test("signed real-shaped JSON becomes durable 50/35/15 economics and Pending payout", async () => {
     const rawBody = rawCreatorOrder();
     const ledger = new AppendOnlyLedger();
-    const result = processRawWooCommerceOrder({
+    const result = await (processRawWooCommerceOrder({
       webhook: envelope("raw-creator-1", rawBody),
       webhookSecret: secret,
       qualifiedTouches: [],
       recruitedCreatorPartnerIds: ["jessica"],
       ledger,
-    });
+    }));
 
     expect(result.replay).toBe(false);
     expect(result.attribution.selectedPartnerId).toBe("jessica");
     expect(ledger.balanceMinor("stoner")).toBe(1850n);
     expect(ledger.balanceMinor("jessica")).toBe(1295n);
     expect(ledger.balanceMinor("daniel")).toBe(555n);
-    expect(listProcessedCommerceLines()).toHaveLength(1);
-    expect(listPersistedLedgerEntries().map((entry) => entry.amountMinor)).toEqual(["1850", "1295", "555"]);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements().every((entry) => entry.state === "pending")).toBe(true);
+    expect(await (listProcessedCommerceLines())).toHaveLength(1);
+    expect((await listPersistedLedgerEntries()).map((entry) => entry.amountMinor)).toEqual(["1850", "1295", "555"]);
+    expect(await (listPersistedPayoutEntitlements())).toHaveLength(3);
+    expect((await listPersistedPayoutEntitlements()).every((entry) => entry.state === "pending")).toBe(true);
   });
 
-  test("tampering with the signed raw body is rejected before economics", () => {
+  test("tampering with the signed raw body is rejected before economics", async () => {
     const signed = rawCreatorOrder();
     const changed = signed.replace('"60.00"', '"600.00"');
-    expect(() => processRawWooCommerceOrder({
+    await expect(processRawWooCommerceOrder({
       webhook: { ...envelope("raw-tamper-1", signed), rawBody: changed },
       webhookSecret: secret,
       qualifiedTouches: [],
       recruitedCreatorPartnerIds: ["jessica"],
       ledger: new AppendOnlyLedger(),
-    })).toThrow("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
-    expect(listPersistedLedgerEntries()).toHaveLength(0);
+    })).rejects.toThrow("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
+    expect(await (listPersistedLedgerEntries())).toHaveLength(0);
   });
 
-  test("exact webhook replay cannot duplicate durable economics", () => {
+  test("exact webhook replay cannot duplicate durable economics", async () => {
     const rawBody = rawCreatorOrder();
     const ledger = new AppendOnlyLedger();
     const input = {
@@ -98,9 +98,9 @@ describe("WooCommerce raw webhook full chain", () => {
       recruitedCreatorPartnerIds: ["jessica"],
       ledger,
     };
-    expect(processRawWooCommerceOrder(input).replay).toBe(false);
-    expect(processRawWooCommerceOrder(input).replay).toBe(true);
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
-    expect(listPersistedPayoutEntitlements()).toHaveLength(3);
+    expect((await processRawWooCommerceOrder(input)).replay).toBe(false);
+    expect((await processRawWooCommerceOrder(input)).replay).toBe(true);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(3);
+    expect(await (listPersistedPayoutEntitlements())).toHaveLength(3);
   });
 });

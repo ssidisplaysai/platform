@@ -4,12 +4,13 @@ import { normalizeCommerceOrder } from "../commerce";
 import { allocateCommerceLine, type ProcessedCommerceLine } from "../allocation-pipeline";
 import { AppendOnlyLedger } from "../ledger";
 import { createPendingEntitlement, type PayoutEntitlement } from "../payout";
-import { persistProcessedCommerceLine } from "../durable-processing";
+import { persistProcessedCommerceLines } from "../durable-processing";
 import {
   acceptWooCommerceWebhook,
   type WooCommerceWebhookEnvelope,
 } from "./woocommerce-events";
 import type { WooCommerceOrderEligibility } from "./woocommerce-eligibility";
+import { recordSourceEventReceipt } from "../share-to-grow-repository";
 import {
   genesisAttributionFromWooMeta,
   normalizeWooCommerceOrder,
@@ -41,12 +42,15 @@ export interface WooCommerceOrderProcessingResult {
   readonly pendingEntitlements: readonly PayoutEntitlement[];
 }
 
-export function ignoreIneligibleWooCommerceOrder(input: {
+export async function ignoreIneligibleWooCommerceOrder(input: {
   readonly webhook: WooCommerceWebhookEnvelope;
   readonly webhookSecret: string;
   readonly eligibility: WooCommerceOrderEligibility;
-}): WooCommerceOrderProcessingResult {
-  const verified = acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
+}): Promise<WooCommerceOrderProcessingResult> {
+  const verified = await acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
+  if (!verified.replay) {
+    await recordSourceEventReceipt(verified.receipt, verified.persistenceRevision);
+  }
   return Object.freeze({
     replay: verified.replay,
     economicDisposition: "ignored_ineligible" as const,
@@ -56,10 +60,10 @@ export function ignoreIneligibleWooCommerceOrder(input: {
   });
 }
 
-export function processWooCommerceOrder(
+export async function processWooCommerceOrder(
   input: WooCommerceOrderProcessingInput,
-): WooCommerceOrderProcessingResult {
-  const verified = acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
+): Promise<WooCommerceOrderProcessingResult> {
+  const verified = await acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
 
   if (input.order.organizationId !== STONER_GYM_REFERENCE.organizationId) {
     throw new Error("STONER_GYM_ORGANIZATION_MISMATCH");
@@ -110,28 +114,31 @@ export function processWooCommerceOrder(
   );
 
   let anyNewLine = false;
-  const pendingEntitlements = processedLines.flatMap((processed, index) => {
+  const entitlementsByLine = processedLines.map((processed) => {
     const entitlements = processed.ledgerEntries.map((entry) =>
       createPendingEntitlement({
         ledgerEntry: entry,
         policy: STONER_GYM_REFERENCE.payoutPolicy,
       }),
     );
-    const committed = persistProcessedCommerceLine({
-      saleMerchandiseMinor: (
-        lines[index].grossMerchandise.minor - lines[index].discount.minor
-      ).toString(),
-      ruleSnapshot: ruleResolver.resolve({ line: lines[index], attribution }),
-      sourceEventId: input.webhook.sourceEventId,
-      organizationId: input.order.organizationId,
-      processedAt: input.order.convertedAt,
-      processedLine: processed,
-      attribution,
-      entitlements,
-    });
-    if (!committed.replay) anyNewLine = true;
     return entitlements;
   });
+  const pendingEntitlements = entitlementsByLine.flat();
+  const committed = await persistProcessedCommerceLines({
+    sourceEventId: input.webhook.sourceEventId,
+    saleMerchandiseMinor: lines.map((line) =>
+      (line.grossMerchandise.minor - line.discount.minor).toString(),
+    ),
+    ruleSnapshots: lines.map((line) => ruleResolver.resolve({ line, attribution })),
+    organizationId: input.order.organizationId,
+    processedAt: input.order.convertedAt,
+    processedLines,
+    attribution,
+    entitlements: pendingEntitlements,
+    sourceEventReceipt: verified.receipt,
+    expectedRevision: verified.persistenceRevision,
+  });
+  anyNewLine = !committed.replay;
 
   return Object.freeze({
     replay: false,

@@ -50,8 +50,8 @@ function twoLineOrder(id: number): string {
   });
 }
 
-function send(topic: string, deliveryId: string, rawBody: string, signingSecret = secret) {
-  return processWooCommerceWebhookHttp({
+async function send(topic: string, deliveryId: string, rawBody: string, signingSecret = secret) {
+  return await (processWooCommerceWebhookHttp({
     rawBody,
     headers: {
       "x-wc-webhook-signature": createHmac("sha256", signingSecret).update(rawBody).digest("base64"),
@@ -61,18 +61,18 @@ function send(topic: string, deliveryId: string, rawBody: string, signingSecret 
     secret,
     receivedAt: "2026-10-07T02:00:00Z",
     recruitedCreatorPartnerIds: ["jessica"],
-  });
+  }));
 }
 
 describe("WordPress refund bridge contract", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("golden two-line refund payload is accepted by the Genesis parser with exact line association", () => {
-    send("order.updated", "d-1", twoLineOrder(812));
-    const result = send("refund.created", "woo-refund-812-9001", goldenBody);
+  test("golden two-line refund payload is accepted by the Genesis parser with exact line association", async () => {
+    await (send("order.updated", "d-1", twoLineOrder(812)));
+    const result = await (send("refund.created", "woo-refund-812-9001", goldenBody));
     expect(["partially_reversed", "reversed"]).toContain(result.economicDisposition);
 
-    const [adjustment] = listCommerceAdjustments();
+    const [adjustment] = await (listCommerceAdjustments());
     expect(adjustment.adjustmentId).toBe("refund:812:9001");
     const byLine = new Map(adjustment.lineRefunds.map((entry) => [entry.lineKey, entry.refundMinor]));
     expect(byLine.get("woocommerce:812:2")).toBe("2000");
@@ -81,18 +81,18 @@ describe("WordPress refund bridge contract", () => {
     expect(adjustment.economicReversalMinor).toBe("2550");
   });
 
-  test("the bridge delivery id and a duplicate bridge send add no second reversal", () => {
-    send("order.updated", "d-1", twoLineOrder(812));
-    send("refund.created", "woo-refund-812-9001", goldenBody);
-    const entries = listPersistedLedgerEntries().length;
-    expect(send("refund.created", "woo-refund-812-9001", goldenBody).economicDisposition).toBe("replay");
-    expect(send("refund.created", "woo-refund-812-9001-retry", goldenBody).economicDisposition).toBe("replay");
-    expect(listPersistedLedgerEntries()).toHaveLength(entries);
+  test("the bridge delivery id and a duplicate bridge send add no second reversal", async () => {
+    await (send("order.updated", "d-1", twoLineOrder(812)));
+    await (send("refund.created", "woo-refund-812-9001", goldenBody));
+    const entries = (await listPersistedLedgerEntries()).length;
+    expect((await send("refund.created", "woo-refund-812-9001", goldenBody)).economicDisposition).toBe("replay");
+    expect((await send("refund.created", "woo-refund-812-9001-retry", goldenBody)).economicDisposition).toBe("replay");
+    expect(await (listPersistedLedgerEntries())).toHaveLength(entries);
   });
 
-  test("a body signed with a different secret is rejected", () => {
-    send("order.updated", "d-1", twoLineOrder(812));
-    expect(() => send("refund.created", "woo-refund-812-9001", goldenBody, "other-secret")).toThrow();
+  test("a body signed with a different secret is rejected", async () => {
+    await (send("order.updated", "d-1", twoLineOrder(812)));
+    await expect(send("refund.created", "woo-refund-812-9001", goldenBody, "other-secret")).rejects.toThrow();
   });
 
   test("the PHP HMAC test vector equals Node's HMAC (Genesis verification semantics)", () => {

@@ -1,11 +1,7 @@
 import {
-  listCommerceAdjustments,
-  listEconomicRuleVersions,
-  listPersistedLedgerEntries,
-  listPersistedPayoutEntitlements,
-  listProcessedCommerceLines,
-  listSourceEventReceipts,
+  loadShareToGrowRepositorySnapshot,
 } from "./share-to-grow-repository";
+import type { EconomicRuleVersion } from "./economic-rule";
 import type {
   CommerceAdjustmentRecord,
   PersistedLedgerEntry,
@@ -23,7 +19,7 @@ type AuditInput = {
   readonly processedLines: readonly ProcessedCommerceLineRecord[];
   readonly ledgerEntries: readonly PersistedLedgerEntry[];
   readonly entitlements: readonly PersistedPayoutEntitlement[];
-  readonly rules: ReturnType<typeof listEconomicRuleVersions>;
+  readonly rules: readonly EconomicRuleVersion[];
   readonly adjustments?: readonly CommerceAdjustmentRecord[];
 };
 
@@ -337,15 +333,19 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
   };
 }
 
-export function auditWooCommerceOrder(orderId: number, receiptId?: string) {
+export async function auditWooCommerceOrder(orderId: number, receiptId?: string) {
+  const { state } = await loadShareToGrowRepositorySnapshot();
   return buildWooCommerceOrderAudit({
     orderId,
     receiptId,
-    receipts: listSourceEventReceipts(),
-    processedLines: listProcessedCommerceLines(),
-    ledgerEntries: listPersistedLedgerEntries(),
-    entitlements: listPersistedPayoutEntitlements(),
-    rules: listEconomicRuleVersions(),
-    adjustments: listCommerceAdjustments(),
+    receipts: state.sourceEventReceipts,
+    processedLines: state.processedCommerceLines,
+    ledgerEntries: state.ledgerEntries,
+    entitlements: state.payoutEntitlements,
+    rules: state.ruleVersions.map((rule) => ({
+      ...rule,
+      beneficiaries: rule.beneficiaries.map((beneficiary) => ({ ...beneficiary })),
+    })),
+    adjustments: state.commerceAdjustments,
   });
 }

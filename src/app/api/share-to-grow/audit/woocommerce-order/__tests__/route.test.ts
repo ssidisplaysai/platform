@@ -24,6 +24,20 @@ jest.mock("@/modules/share-to-grow/share-to-grow-repository", () => ({
   listPersistedLedgerEntries: (...args: unknown[]) => mockListPersistedLedgerEntries(...args),
   listPersistedPayoutEntitlements: (...args: unknown[]) => mockListPersistedPayoutEntitlements(...args),
   listEconomicRuleVersions: (...args: unknown[]) => mockListEconomicRuleVersions(...args),
+  loadShareToGrowRepositorySnapshot: async () => ({
+    revision: 0,
+    seeded: false,
+    state: {
+      sourceEventReceipts: await mockListSourceEventReceipts(),
+      processedCommerceLines: await mockListProcessedCommerceLines(),
+      ledgerEntries: await mockListPersistedLedgerEntries(),
+      payoutEntitlements: await mockListPersistedPayoutEntitlements(),
+      ruleVersions: await mockListEconomicRuleVersions(),
+      commerceAdjustments: [],
+      participants: [],
+      trackingIdentities: [],
+    },
+  }),
 }));
 
 import { GET } from "../route";

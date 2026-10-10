@@ -56,8 +56,8 @@ function refundBody(orderId: number, refundId: number, amount: string, lineId = 
   });
 }
 
-function send(topic: string, deliveryId: string, rawBody: string) {
-  return processWooCommerceWebhookHttp({
+async function send(topic: string, deliveryId: string, rawBody: string) {
+  return await (processWooCommerceWebhookHttp({
     rawBody,
     headers: {
       "x-wc-webhook-signature": createHmac("sha256", secret).update(rawBody).digest("base64"),
@@ -67,58 +67,58 @@ function send(topic: string, deliveryId: string, rawBody: string) {
     secret,
     receivedAt: "2026-10-07T02:00:00Z",
     recruitedCreatorPartnerIds: ["jessica"],
-  });
+  }));
 }
 
-const sumMinor = () => listPersistedLedgerEntries().reduce((total, entry) => total + BigInt(entry.amountMinor), 0n);
+const sumMinor = async () => (await listPersistedLedgerEntries()).reduce((total, entry) => total + BigInt(entry.amountMinor), 0n);
 
 describe("WooCommerce eligibility gate", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test.each(["processing", "completed"])("%s paid order is eligible", (status) => {
-    const result = send("order.updated", `d-${status}`, order(700, { status }));
+  test.each(["processing", "completed"])("%s paid order is eligible", async (status) => {
+    const result = await (send("order.updated", `d-${status}`, order(700, { status })));
     expect(result.economicDisposition).toBe("processed");
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(3);
   });
 
   test.each(["pending", "on-hold", "failed", "cancelled", "refunded", "draft"])(
     "%s order is ignored with receipt only",
-    (status) => {
-      const result = send("order.created", `d-${status}`, order(701, { status }));
+    async (status) => {
+      const result = await (send("order.created", `d-${status}`, order(701, { status })));
       expect(result.economicDisposition).toBe("ignored_ineligible");
       expect(result.reason).toBe("ORDER_STATUS_INELIGIBLE");
-      expect(listPersistedLedgerEntries()).toHaveLength(0);
-      expect(listProcessedCommerceLines()).toHaveLength(0);
-      expect(listPersistedPayoutEntitlements()).toHaveLength(0);
-      expect(listSourceEventReceipts()).toHaveLength(1);
+      expect(await (listPersistedLedgerEntries())).toHaveLength(0);
+      expect(await (listProcessedCommerceLines())).toHaveLength(0);
+      expect(await (listPersistedPayoutEntitlements())).toHaveLength(0);
+      expect(await (listSourceEventReceipts())).toHaveLength(1);
     },
   );
 
-  test("missing paid date is ignored", () => {
-    const result = send("order.updated", "d-nopaid", order(702, { date_paid_gmt: null }));
+  test("missing paid date is ignored", async () => {
+    const result = await (send("order.updated", "d-nopaid", order(702, { date_paid_gmt: null })));
     expect(result.economicDisposition).toBe("ignored_ineligible");
     expect(result.reason).toBe("ORDER_NOT_PAID");
-    expect(listPersistedLedgerEntries()).toHaveLength(0);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(0);
   });
 
-  test("unpaid order without cost meta does not fail", () => {
+  test("unpaid order without cost meta does not fail", async () => {
     const body = JSON.stringify({ id: 703, status: "on-hold", total: "60.00", line_items: [{ id: 1 }] });
-    expect(send("order.created", "d-bare", body).economicDisposition).toBe("ignored_ineligible");
+    expect((await send("order.created", "d-bare", body)).economicDisposition).toBe("ignored_ineligible");
   });
 
-  test("ignored order later paid becomes economically processed", () => {
-    send("order.created", "d-1", order(704, { status: "on-hold", date_paid_gmt: null }));
-    const paid = send("order.updated", "d-2", order(704));
+  test("ignored order later paid becomes economically processed", async () => {
+    await (send("order.created", "d-1", order(704, { status: "on-hold", date_paid_gmt: null })));
+    const paid = await (send("order.updated", "d-2", order(704)));
     expect(paid.economicDisposition).toBe("processed");
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(3);
   });
 
-  test("replay of eligible order creates no new economics", () => {
-    send("order.updated", "d-1", order(705));
-    const again = send("order.updated", "d-2", order(705));
+  test("replay of eligible order creates no new economics", async () => {
+    await (send("order.updated", "d-1", order(705)));
+    const again = await (send("order.updated", "d-2", order(705)));
     expect(again.economicDisposition).toBe("replay");
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
-    expect(listProcessedCommerceLines()).toHaveLength(1);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(3);
+    expect(await (listProcessedCommerceLines())).toHaveLength(1);
   });
 
   test("eligibility rules are deterministic and reject refunded or zero-total orders", () => {
@@ -131,14 +131,14 @@ describe("WooCommerce eligibility gate", () => {
 });
 
 describe("WooCommerce cancellation reversal", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("cancellation appends exact reversals, keeps originals, nets to zero", () => {
-    send("order.updated", "d-1", order(710));
-    const before = listPersistedLedgerEntries();
-    const result = send("order.cancelled", "d-2", JSON.stringify({ id: 710, status: "cancelled" }));
+  test("cancellation appends exact reversals, keeps originals, nets to zero", async () => {
+    await (send("order.updated", "d-1", order(710)));
+    const before = await (listPersistedLedgerEntries());
+    const result = await (send("order.cancelled", "d-2", JSON.stringify({ id: 710, status: "cancelled" })));
     expect(result.economicDisposition).toBe("reversed");
-    const after = listPersistedLedgerEntries();
+    const after = await (listPersistedLedgerEntries());
     expect(after).toHaveLength(6);
     expect(after.filter((entry) => entry.entryType === "earning")).toEqual(before);
     const reversals = after.filter((entry) => entry.entryType === "reversal");
@@ -149,86 +149,86 @@ describe("WooCommerce cancellation reversal", () => {
       expect(BigInt(reversal.amountMinor)).toBe(-BigInt(source.amountMinor));
       expect(reversal.beneficiaryId).toBe(source.beneficiaryId);
     }
-    expect(sumMinor()).toBe(0n);
-    expect(listPersistedPayoutEntitlements().every((entitlement) => entitlement.state === "reversed")).toBe(true);
+    expect(await (sumMinor())).toBe(0n);
+    expect((await listPersistedPayoutEntitlements()).every((entitlement) => entitlement.state === "reversed")).toBe(true);
   });
 
-  test("repeat and different-delivery cancellations add nothing", () => {
-    send("order.updated", "d-1", order(711));
+  test("repeat and different-delivery cancellations add nothing", async () => {
+    await (send("order.updated", "d-1", order(711)));
     const body = JSON.stringify({ id: 711, status: "cancelled" });
-    send("order.cancelled", "d-2", body);
-    expect(send("order.cancelled", "d-2", body).economicDisposition).toBe("replay");
-    expect(send("order.cancelled", "d-3", body).economicDisposition).toBe("replay");
-    expect(listPersistedLedgerEntries()).toHaveLength(6);
+    await (send("order.cancelled", "d-2", body));
+    expect((await send("order.cancelled", "d-2", body)).economicDisposition).toBe("replay");
+    expect((await send("order.cancelled", "d-3", body)).economicDisposition).toBe("replay");
+    expect(await (listPersistedLedgerEntries())).toHaveLength(6);
   });
 
-  test("cancelling an unknown order is a no-op", () => {
-    const result = send("order.cancelled", "d-1", JSON.stringify({ id: 9999, status: "cancelled" }));
+  test("cancelling an unknown order is a no-op", async () => {
+    const result = await (send("order.cancelled", "d-1", JSON.stringify({ id: 9999, status: "cancelled" })));
     expect(result.economicDisposition).toBe("ignored_no_economics");
-    expect(listPersistedLedgerEntries()).toHaveLength(0);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(0);
   });
 
-  test("later order update cannot resurrect a cancelled order", () => {
-    send("order.updated", "d-1", order(712));
-    send("order.cancelled", "d-2", JSON.stringify({ id: 712, status: "cancelled" }));
-    send("order.updated", "d-3", order(712));
-    expect(listPersistedLedgerEntries()).toHaveLength(6);
-    expect(sumMinor()).toBe(0n);
+  test("later order update cannot resurrect a cancelled order", async () => {
+    await (send("order.updated", "d-1", order(712)));
+    await (send("order.cancelled", "d-2", JSON.stringify({ id: 712, status: "cancelled" })));
+    await (send("order.updated", "d-3", order(712)));
+    expect(await (listPersistedLedgerEntries())).toHaveLength(6);
+    expect(await (sumMinor())).toBe(0n);
   });
 
-  test("cancellation payload must be cancelled", () => {
-    expect(() => send("order.cancelled", "d-1", JSON.stringify({ id: 1, status: "processing" }))).toThrow(
+  test("cancellation payload must be cancelled", async () => {
+    await expect(send("order.cancelled", "d-1", JSON.stringify({ id: 1, status: "processing" }))).rejects.toThrow(
       "INVALID_WOOCOMMERCE_CANCELLATION_STATUS",
     );
   });
 
-  test("reversed entitlements cannot become payable", () => {
-    send("order.updated", "d-1", order(713));
-    send("order.cancelled", "d-2", JSON.stringify({ id: 713, status: "cancelled" }));
-    expect(listPersistedPayoutEntitlements().some((entitlement) => entitlement.state === "payable")).toBe(false);
+  test("reversed entitlements cannot become payable", async () => {
+    await (send("order.updated", "d-1", order(713)));
+    await (send("order.cancelled", "d-2", JSON.stringify({ id: 713, status: "cancelled" })));
+    expect((await listPersistedPayoutEntitlements()).some((entitlement) => entitlement.state === "payable")).toBe(false);
   });
 });
 
 describe("WooCommerce refund reversal", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("full refund reverses and duplicate refund is idempotent", () => {
-    send("order.updated", "d-1", order(720));
-    const result = send("refund.created", "d-2", refundBody(720, 5001, "60.00"));
+  test("full refund reverses and duplicate refund is idempotent", async () => {
+    await (send("order.updated", "d-1", order(720)));
+    const result = await (send("refund.created", "d-2", refundBody(720, 5001, "60.00")));
     expect(result.economicDisposition).toBe("reversed");
-    expect(sumMinor()).toBe(0n);
-    expect(send("refund.created", "d-3", refundBody(720, 5001, "60.00")).economicDisposition).toBe("replay");
-    expect(listPersistedLedgerEntries()).toHaveLength(6);
+    expect(await (sumMinor())).toBe(0n);
+    expect((await send("refund.created", "d-3", refundBody(720, 5001, "60.00"))).economicDisposition).toBe("replay");
+    expect(await (listPersistedLedgerEntries())).toHaveLength(6);
   });
 
-  test("over-refund fails closed", () => {
-    send("order.updated", "d-1", order(723));
-    const result = send("refund.created", "d-2", refundBody(723, 5005, "70.00"));
+  test("over-refund fails closed", async () => {
+    await (send("order.updated", "d-1", order(723)));
+    const result = await (send("refund.created", "d-2", refundBody(723, 5005, "70.00")));
     expect(result.economicDisposition).toBe("manual_review_required");
     expect(result.reason).toBe("REFUND_EXCEEDS_LINE_SALE");
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
+    expect(await (listPersistedLedgerEntries())).toHaveLength(3);
   });
 
-  test("refund before economics is a no-op", () => {
-    const result = send("refund.created", "d-1", refundBody(724, 5006, "60.00"));
+  test("refund before economics is a no-op", async () => {
+    const result = await (send("refund.created", "d-1", refundBody(724, 5006, "60.00")));
     expect(result.economicDisposition).toBe("ignored_no_economics");
   });
 
-  test("cancel after full refund does not double reverse", () => {
-    send("order.updated", "d-1", order(725));
-    send("refund.created", "d-2", refundBody(725, 5007, "60.00"));
-    send("order.cancelled", "d-3", JSON.stringify({ id: 725, status: "cancelled" }));
-    expect(listPersistedLedgerEntries()).toHaveLength(6);
-    expect(sumMinor()).toBe(0n);
+  test("cancel after full refund does not double reverse", async () => {
+    await (send("order.updated", "d-1", order(725)));
+    await (send("refund.created", "d-2", refundBody(725, 5007, "60.00")));
+    await (send("order.cancelled", "d-3", JSON.stringify({ id: 725, status: "cancelled" })));
+    expect(await (listPersistedLedgerEntries())).toHaveLength(6);
+    expect(await (sumMinor())).toBe(0n);
   });
 });
 
 describe("WooCommerce audit with reversals", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("#652-equivalent economics are unchanged", () => {
-    send("order.updated", "d-1", order(652));
-    const audit = auditWooCommerceOrder(652);
+  test("#652-equivalent economics are unchanged", async () => {
+    await (send("order.updated", "d-1", order(652)));
+    const audit = await (auditWooCommerceOrder(652));
     expect(audit.economics.originalDmp.amount).toBe("37.00");
     expect(audit.economics.netDmp.amount).toBe("37.00");
     expect(audit.economics.beneficiaries.map((row) => [row.beneficiary, row.netEarning.amount])).toEqual([
@@ -239,11 +239,11 @@ describe("WooCommerce audit with reversals", () => {
     expect(audit.adjustments).toEqual([]);
   });
 
-  test("audit shows reversal, net zero, reversed entitlement and excludes other orders", () => {
-    send("order.updated", "d-1", order(730));
-    send("order.updated", "d-2", order(731));
-    send("order.cancelled", "d-3", JSON.stringify({ id: 730, status: "cancelled" }));
-    const audit = auditWooCommerceOrder(730);
+  test("audit shows reversal, net zero, reversed entitlement and excludes other orders", async () => {
+    await (send("order.updated", "d-1", order(730)));
+    await (send("order.updated", "d-2", order(731)));
+    await (send("order.cancelled", "d-3", JSON.stringify({ id: 730, status: "cancelled" })));
+    const audit = await (auditWooCommerceOrder(730));
     expect(audit.economics.originalDmp.amount).toBe("37.00");
     expect(audit.economics.reversedDmp.amount).toBe("37.00");
     expect(audit.economics.netDmp.amount).toBe("0.00");
@@ -252,13 +252,13 @@ describe("WooCommerce audit with reversals", () => {
     expect(audit.entitlements.every((entitlement) => entitlement.lifecycle === "reversed")).toBe(true);
     expect(audit.processedLines[0].idempotency.reversalEntryCount).toBe(3);
     expect(JSON.stringify(audit)).not.toContain("woocommerce:731:");
-    expect(JSON.stringify(auditWooCommerceOrder(730))).toBe(JSON.stringify(audit));
+    expect(JSON.stringify(await (auditWooCommerceOrder(730)))).toBe(JSON.stringify(audit));
   });
 
-  test("audit performs no writes", () => {
-    send("order.updated", "d-1", order(732));
-    const snapshot = JSON.stringify([listPersistedLedgerEntries(), listCommerceAdjustments(), listSourceEventReceipts()]);
-    auditWooCommerceOrder(732);
-    expect(JSON.stringify([listPersistedLedgerEntries(), listCommerceAdjustments(), listSourceEventReceipts()])).toBe(snapshot);
+  test("audit performs no writes", async () => {
+    await (send("order.updated", "d-1", order(732)));
+    const snapshot = JSON.stringify([await (listPersistedLedgerEntries()), await (listCommerceAdjustments()), await (listSourceEventReceipts())]);
+    await (auditWooCommerceOrder(732));
+    expect(JSON.stringify([await (listPersistedLedgerEntries()), await (listCommerceAdjustments()), await (listSourceEventReceipts())])).toBe(snapshot);
   });
 });

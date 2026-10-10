@@ -1,9 +1,11 @@
 import {
   deepClone,
-  loadPersistedState,
-  resetPersistedState,
-  savePersistedState,
+  FoundationPersistenceConflictError,
 } from "../foundation/foundation-persistence";
+import {
+  getFoundationStateStore,
+  type FoundationStateLoad,
+} from "../foundation/foundation-state-store";
 import { validateRuleVersion, type EconomicRuleVersion } from "./economic-rule";
 import type { LedgerEntry } from "./ledger";
 import { reversedEntitlementState } from "./payout";
@@ -36,52 +38,53 @@ function createSeedState(): ShareToGrowRepositoryState {
   };
 }
 
-let state: ShareToGrowRepositoryState = createSeedState();
-let stateRevision = 0;
+export type ShareToGrowRepositorySnapshot = FoundationStateLoad<ShareToGrowRepositoryState>;
 
-function loadStateFromPersistence(): void {
-  const loaded = loadPersistedState<ShareToGrowRepositoryState>({
+export async function loadShareToGrowRepositorySnapshot(): Promise<ShareToGrowRepositorySnapshot> {
+  const loaded = await getFoundationStateStore().load<ShareToGrowRepositoryState>({
     namespace: PERSISTENCE_NAMESPACE,
     seedFactory: createSeedState,
   });
-  // State persisted before adjustment support has no commerceAdjustments collection.
-  state = { ...createSeedState(), ...deepClone(loaded.state) };
-  stateRevision = loaded.revision;
+  return {
+    ...loaded,
+    // State persisted before adjustment support has no commerceAdjustments collection.
+    state: { ...createSeedState(), ...deepClone(loaded.state) },
+  };
 }
 
-function persistCurrentState(nextState: ShareToGrowRepositoryState): void {
-  const saved = savePersistedState({
+async function persistCurrentState(
+  nextState: ShareToGrowRepositoryState,
+  expectedRevision: number,
+): Promise<number> {
+  const saved = await getFoundationStateStore().save({
     namespace: PERSISTENCE_NAMESPACE,
     state: nextState,
-    expectedRevision: stateRevision,
+    expectedRevision,
   });
-  state = deepClone(nextState);
-  stateRevision = saved.revision;
+  return saved.revision;
 }
 
-loadStateFromPersistence();
-
-export function reloadShareToGrowRepositoryFromPersistence(): void {
-  loadStateFromPersistence();
+export async function reloadShareToGrowRepositoryFromPersistence(): Promise<void> {
+  await loadShareToGrowRepositorySnapshot();
 }
 
-export function resetShareToGrowRepositoryForTests(): void {
-  const reset = resetPersistedState({
+export async function resetShareToGrowRepositoryForTests(): Promise<void> {
+  await getFoundationStateStore().reset({
     namespace: PERSISTENCE_NAMESPACE,
     seedFactory: createSeedState,
   });
-  state = deepClone(reset.state);
-  stateRevision = reset.revision;
 }
 
-export function listCollaborationParticipants(): readonly CollaborationParticipantRecord[] {
-  return state.participants.map((participant) => deepClone(participant));
+export async function listCollaborationParticipants(): Promise<readonly CollaborationParticipantRecord[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.participants.map((participant) => deepClone(participant));
 }
 
-export function registerCollaborationParticipant(
+export async function registerCollaborationParticipant(
   participant: CollaborationParticipantRecord,
-): CollaborationParticipantRecord {
-  const existing = state.participants.find(
+): Promise<CollaborationParticipantRecord> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const existing = snapshot.state.participants.find(
     (candidate) => candidate.participantId === participant.participantId,
   );
   if (existing) return deepClone(existing);
@@ -89,7 +92,7 @@ export function registerCollaborationParticipant(
   if (
     participant.role === "creator" &&
     participant.sponsorPartnerId &&
-    state.participants.some(
+    snapshot.state.participants.some(
       (candidate) =>
         candidate.canonicalPartnerId === participant.sponsorPartnerId &&
         candidate.role === "creator",
@@ -99,26 +102,28 @@ export function registerCollaborationParticipant(
   }
 
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
-    participants: [...state.participants, deepClone(participant)],
+    ...snapshot.state,
+    participants: [...snapshot.state.participants, deepClone(participant)],
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return deepClone(participant);
 }
 
-export function listTrackingIdentityReferences(): readonly TrackingIdentityReferenceRecord[] {
-  return state.trackingIdentities.map((identity) => deepClone(identity));
+export async function listTrackingIdentityReferences(): Promise<readonly TrackingIdentityReferenceRecord[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.trackingIdentities.map((identity) => deepClone(identity));
 }
 
-export function registerTrackingIdentityReference(
+export async function registerTrackingIdentityReference(
   identity: TrackingIdentityReferenceRecord,
-): TrackingIdentityReferenceRecord {
-  const byId = state.trackingIdentities.find(
+): Promise<TrackingIdentityReferenceRecord> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const byId = snapshot.state.trackingIdentities.find(
     (candidate) => candidate.trackingIdentityId === identity.trackingIdentityId,
   );
   if (byId) return deepClone(byId);
 
-  const slugConflict = state.trackingIdentities.find(
+  const slugConflict = snapshot.state.trackingIdentities.find(
     (candidate) =>
       candidate.organizationId === identity.organizationId &&
       candidate.publicSlug === identity.publicSlug,
@@ -126,78 +131,90 @@ export function registerTrackingIdentityReference(
   if (slugConflict) throw new Error("TRACKING_PUBLIC_SLUG_CONFLICT");
 
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
-    trackingIdentities: [...state.trackingIdentities, deepClone(identity)],
+    ...snapshot.state,
+    trackingIdentities: [...snapshot.state.trackingIdentities, deepClone(identity)],
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return deepClone(identity);
 }
 
-export function listEconomicRuleVersions(): readonly EconomicRuleVersion[] {
-  return state.ruleVersions.map(deserializeRuleVersion);
+export async function listEconomicRuleVersions(): Promise<readonly EconomicRuleVersion[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.ruleVersions.map(deserializeRuleVersion);
 }
 
-export function registerEconomicRuleVersion(
+export async function registerEconomicRuleVersion(
   rule: EconomicRuleVersion,
-): EconomicRuleVersion {
+): Promise<EconomicRuleVersion> {
   validateRuleVersion(rule);
-  const existing = state.ruleVersions.find((candidate) => candidate.id === rule.id);
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const existing = snapshot.state.ruleVersions.find((candidate) => candidate.id === rule.id);
   if (existing) return deserializeRuleVersion(existing);
 
-  const duplicateVersion = state.ruleVersions.find(
+  const duplicateVersion = snapshot.state.ruleVersions.find(
     (candidate) =>
       candidate.ruleId === rule.ruleId && candidate.version === rule.version,
   );
   if (duplicateVersion) throw new Error("ECONOMIC_RULE_VERSION_EXISTS");
 
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
-    ruleVersions: [...state.ruleVersions, serializeRuleVersion(rule)],
+    ...snapshot.state,
+    ruleVersions: [...snapshot.state.ruleVersions, serializeRuleVersion(rule)],
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return deserializeRuleVersion(serializeRuleVersion(rule));
 }
 
-export function listPersistedLedgerEntries(): readonly PersistedLedgerEntry[] {
-  return state.ledgerEntries.map((entry) => deepClone(entry));
+export async function listPersistedLedgerEntries(): Promise<readonly PersistedLedgerEntry[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.ledgerEntries.map((entry) => deepClone(entry));
 }
 
-export function postPersistedLedgerEntry(entry: LedgerEntry): PersistedLedgerEntry {
-  const replay = state.ledgerEntries.find(
+export async function postPersistedLedgerEntry(entry: LedgerEntry): Promise<PersistedLedgerEntry> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const replay = snapshot.state.ledgerEntries.find(
     (candidate) => candidate.idempotencyKey === entry.idempotencyKey,
   );
   if (replay) return deepClone(replay);
 
-  if (state.ledgerEntries.some((candidate) => candidate.id === entry.id)) {
+  if (snapshot.state.ledgerEntries.some((candidate) => candidate.id === entry.id)) {
     throw new Error("LEDGER_ENTRY_ID_EXISTS");
   }
 
   if (
     entry.entryType === "reversal" &&
     (!entry.sourceEntryId ||
-      !state.ledgerEntries.some((candidate) => candidate.id === entry.sourceEntryId))
+      !snapshot.state.ledgerEntries.some((candidate) => candidate.id === entry.sourceEntryId))
   ) {
     throw new Error("REVERSAL_SOURCE_REQUIRED");
   }
 
   const persisted = serializeLedgerEntry(entry);
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
-    ledgerEntries: [...state.ledgerEntries, persisted],
+    ...snapshot.state,
+    ledgerEntries: [...snapshot.state.ledgerEntries, persisted],
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return deepClone(persisted);
 }
 
 
-export function listSourceEventReceipts(): readonly SourceEventReceiptRecord[] {
-  return state.sourceEventReceipts.map((receipt) => deepClone(receipt));
+export async function listSourceEventReceipts(): Promise<readonly SourceEventReceiptRecord[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.sourceEventReceipts.map((receipt) => deepClone(receipt));
 }
 
-export function recordSourceEventReceipt(
+export async function recordSourceEventReceipt(
   receipt: SourceEventReceiptRecord,
-): { receipt: SourceEventReceiptRecord; replay: boolean } {
-  const existing = state.sourceEventReceipts.find(
+  expectedRevision?: number,
+): Promise<{ receipt: SourceEventReceiptRecord; replay: boolean }> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  if (expectedRevision !== undefined && snapshot.revision !== expectedRevision) {
+    throw new FoundationPersistenceConflictError(
+      `Revision conflict for ${PERSISTENCE_NAMESPACE}: expected ${expectedRevision}, found ${snapshot.revision}.`,
+    );
+  }
+  const existing = snapshot.state.sourceEventReceipts.find(
     (candidate) => candidate.sourceEventId === receipt.sourceEventId,
   );
   if (existing) {
@@ -212,40 +229,40 @@ export function recordSourceEventReceipt(
   }
 
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
-    sourceEventReceipts: [...state.sourceEventReceipts, deepClone(receipt)],
+    ...snapshot.state,
+    sourceEventReceipts: [...snapshot.state.sourceEventReceipts, deepClone(receipt)],
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return { receipt: deepClone(receipt), replay: false };
 }
 
-export function listProcessedCommerceLines(): readonly ProcessedCommerceLineRecord[] {
-  return state.processedCommerceLines.map((record) => deepClone(record));
+export async function listProcessedCommerceLines(): Promise<readonly ProcessedCommerceLineRecord[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.processedCommerceLines.map((record) => deepClone(record));
 }
 
-export function listPersistedPayoutEntitlements(): readonly PersistedPayoutEntitlement[] {
-  return state.payoutEntitlements.map((record) => deepClone(record));
+export async function listPersistedPayoutEntitlements(): Promise<readonly PersistedPayoutEntitlement[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.payoutEntitlements.map((record) => deepClone(record));
 }
 
-export function persistProcessedCommerceLine(input: {
+export async function persistProcessedCommerceLine(input: {
   record: ProcessedCommerceLineRecord;
   ledgerEntries: readonly LedgerEntry[];
   payoutEntitlements: readonly PersistedPayoutEntitlement[];
-}): { record: ProcessedCommerceLineRecord; replay: boolean } {
-  const existing = state.processedCommerceLines.find(
+}): Promise<{ record: ProcessedCommerceLineRecord; replay: boolean }> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const existing = snapshot.state.processedCommerceLines.find(
     (candidate) => candidate.lineKey === input.record.lineKey,
   );
   if (existing) {
-    if (
-      existing.sourceEventId !== input.record.sourceEventId ||
-      existing.ruleVersionId !== input.record.ruleVersionId
-    ) {
+    if (existing.ruleVersionId !== input.record.ruleVersionId) {
       throw new Error("PROCESSED_COMMERCE_LINE_COLLISION");
     }
     return { record: deepClone(existing), replay: true };
   }
 
-  const nextLedger = [...state.ledgerEntries];
+  const nextLedger = [...snapshot.state.ledgerEntries];
   for (const entry of input.ledgerEntries) {
     const persisted = serializeLedgerEntry(entry);
     const byKey = nextLedger.find(
@@ -258,7 +275,7 @@ export function persistProcessedCommerceLine(input: {
     nextLedger.push(persisted);
   }
 
-  const nextEntitlements = [...state.payoutEntitlements];
+  const nextEntitlements = [...snapshot.state.payoutEntitlements];
   for (const entitlement of input.payoutEntitlements) {
     const existingEntitlement = nextEntitlements.find(
       (candidate) => candidate.entitlementId === entitlement.entitlementId,
@@ -268,29 +285,97 @@ export function persistProcessedCommerceLine(input: {
   }
 
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
+    ...snapshot.state,
     ledgerEntries: nextLedger,
     payoutEntitlements: nextEntitlements,
     processedCommerceLines: [
-      ...state.processedCommerceLines,
+      ...snapshot.state.processedCommerceLines,
       deepClone(input.record),
     ],
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return { record: deepClone(input.record), replay: false };
 }
 
-export function commitProcessedCommerceLine(input: {
+export async function commitProcessedCommerceLines(input: {
+  readonly records: readonly ProcessedCommerceLineRecord[];
+  readonly ledgerEntries: readonly LedgerEntry[];
+  readonly payoutEntitlements: readonly PersistedPayoutEntitlement[];
+  readonly sourceEventReceipt: SourceEventReceiptRecord;
+  readonly expectedRevision: number;
+}): Promise<{ records: readonly ProcessedCommerceLineRecord[]; replay: boolean }> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  if (snapshot.revision !== input.expectedRevision) {
+    throw new FoundationPersistenceConflictError(
+      `Revision conflict for ${PERSISTENCE_NAMESPACE}: expected ${input.expectedRevision}, found ${snapshot.revision}.`,
+    );
+  }
+
+  const receipt = snapshot.state.sourceEventReceipts.find(
+    (candidate) => candidate.sourceEventId === input.sourceEventReceipt.sourceEventId,
+  );
+  if (receipt) {
+    if (
+      receipt.source !== input.sourceEventReceipt.source
+      || receipt.eventType !== input.sourceEventReceipt.eventType
+      || receipt.payloadHash !== input.sourceEventReceipt.payloadHash
+    ) {
+      throw new Error("SOURCE_EVENT_ID_COLLISION");
+    }
+    return { records: input.records.map(deepClone), replay: true };
+  }
+
+  const existingLines = new Map(
+    snapshot.state.processedCommerceLines.map((record) => [record.lineKey, record]),
+  );
+  const recordsToAppend = input.records.filter((record) => {
+    const existing = existingLines.get(record.lineKey);
+    if (!existing) return true;
+    if (existing.ruleVersionId !== record.ruleVersionId) {
+      throw new Error("PROCESSED_COMMERCE_LINE_COLLISION");
+    }
+    return false;
+  });
+
+  const nextLedger = [...snapshot.state.ledgerEntries];
+  for (const entry of input.ledgerEntries) {
+    const persisted = serializeLedgerEntry(entry);
+    if (nextLedger.some((candidate) => candidate.idempotencyKey === persisted.idempotencyKey)) continue;
+    if (nextLedger.some((candidate) => candidate.id === persisted.id)) {
+      throw new Error("LEDGER_ENTRY_ID_EXISTS");
+    }
+    nextLedger.push(persisted);
+  }
+
+  const nextEntitlements = [...snapshot.state.payoutEntitlements];
+  for (const entitlement of input.payoutEntitlements) {
+    if (nextEntitlements.some((candidate) => candidate.entitlementId === entitlement.entitlementId)) continue;
+    nextEntitlements.push(deepClone(entitlement));
+  }
+
+  const nextState: ShareToGrowRepositoryState = {
+    ...snapshot.state,
+    sourceEventReceipts: [...snapshot.state.sourceEventReceipts, deepClone(input.sourceEventReceipt)],
+    processedCommerceLines: [...snapshot.state.processedCommerceLines, ...recordsToAppend.map(deepClone)],
+    ledgerEntries: nextLedger,
+    payoutEntitlements: nextEntitlements,
+  };
+  await persistCurrentState(nextState, snapshot.revision);
+  return { records: recordsToAppend.map(deepClone), replay: recordsToAppend.length === 0 };
+}
+
+export async function commitProcessedCommerceLine(input: {
   readonly record: ProcessedCommerceLineRecord;
   readonly ledgerEntries: readonly LedgerEntry[];
   readonly payoutEntitlements: readonly PersistedPayoutEntitlement[];
-}): { record: ProcessedCommerceLineRecord; replay: boolean } {
-  const existing = state.processedCommerceLines.find(
+}): Promise<{ record: ProcessedCommerceLineRecord; replay: boolean }> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const existing = snapshot.state.processedCommerceLines.find(
     (candidate) => candidate.lineKey === input.record.lineKey,
   );
   if (existing) return { record: deepClone(existing), replay: true };
 
-  const nextLedgerEntries = [...state.ledgerEntries];
+  const nextLedgerEntries = [...snapshot.state.ledgerEntries];
   for (const entry of input.ledgerEntries) {
     const replay = nextLedgerEntries.find(
       (candidate) => candidate.idempotencyKey === entry.idempotencyKey,
@@ -302,7 +387,7 @@ export function commitProcessedCommerceLine(input: {
     nextLedgerEntries.push(serializeLedgerEntry(entry));
   }
 
-  const nextEntitlements = [...state.payoutEntitlements];
+  const nextEntitlements = [...snapshot.state.payoutEntitlements];
   for (const entitlement of input.payoutEntitlements) {
     const existingEntitlement = nextEntitlements.find(
       (candidate) => candidate.entitlementId === entitlement.entitlementId,
@@ -312,17 +397,18 @@ export function commitProcessedCommerceLine(input: {
   }
 
   const nextState: ShareToGrowRepositoryState = {
-    ...state,
+    ...snapshot.state,
     ledgerEntries: nextLedgerEntries,
-    processedCommerceLines: [...state.processedCommerceLines, deepClone(input.record)],
+    processedCommerceLines: [...snapshot.state.processedCommerceLines, deepClone(input.record)],
     payoutEntitlements: nextEntitlements,
   };
-  persistCurrentState(nextState);
+  await persistCurrentState(nextState, snapshot.revision);
   return { record: deepClone(input.record), replay: false };
 }
 
-export function listCommerceAdjustments(): readonly CommerceAdjustmentRecord[] {
-  return state.commerceAdjustments.map((record) => deepClone(record));
+export async function listCommerceAdjustments(): Promise<readonly CommerceAdjustmentRecord[]> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  return snapshot.state.commerceAdjustments.map((record) => deepClone(record));
 }
 
 /**
@@ -330,18 +416,26 @@ export function listCommerceAdjustments(): readonly CommerceAdjustmentRecord[] {
  * matching entitlement lifecycle transitions. Existing earnings are never
  * modified; entitlements already payable/paid cause the whole commit to fail.
  */
-export function commitCommerceAdjustment(input: {
+export async function commitCommerceAdjustment(input: {
   readonly record: CommerceAdjustmentRecord;
   readonly ledgerEntries: readonly LedgerEntry[];
   readonly reversedEntitlementIds: readonly string[];
   readonly entitlementReductions?: ReadonlyArray<{ readonly entitlementId: string; readonly reduceMinor: string }>;
-}): { record: CommerceAdjustmentRecord; replay: boolean } {
-  const existing = state.commerceAdjustments.find(
+  readonly sourceEventReceipt?: SourceEventReceiptRecord;
+  readonly expectedRevision?: number;
+}): Promise<{ record: CommerceAdjustmentRecord; replay: boolean }> {
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  if (input.expectedRevision !== undefined && snapshot.revision !== input.expectedRevision) {
+    throw new FoundationPersistenceConflictError(
+      `Revision conflict for ${PERSISTENCE_NAMESPACE}: expected ${input.expectedRevision}, found ${snapshot.revision}.`,
+    );
+  }
+  const existing = snapshot.state.commerceAdjustments.find(
     (candidate) => candidate.adjustmentId === input.record.adjustmentId,
   );
   if (existing) return { record: deepClone(existing), replay: true };
 
-  const nextLedgerEntries = [...state.ledgerEntries];
+  const nextLedgerEntries = [...snapshot.state.ledgerEntries];
   for (const entry of input.ledgerEntries) {
     if (nextLedgerEntries.some((candidate) => candidate.idempotencyKey === entry.idempotencyKey)) continue;
     if (nextLedgerEntries.some((candidate) => candidate.id === entry.id)) {
@@ -361,7 +455,7 @@ export function commitCommerceAdjustment(input: {
   const reductions = new Map(
     (input.entitlementReductions ?? []).map((item) => [item.entitlementId, BigInt(item.reduceMinor)]),
   );
-  const nextEntitlements = state.payoutEntitlements.map((entitlement) => {
+  const nextEntitlements = snapshot.state.payoutEntitlements.map((entitlement) => {
     if (reversedIds.has(entitlement.entitlementId)) {
       return { ...deepClone(entitlement), state: reversedEntitlementState(entitlement.state) };
     }
@@ -377,11 +471,29 @@ export function commitCommerceAdjustment(input: {
     return deepClone(entitlement);
   });
 
-  persistCurrentState({
-    ...state,
+  const sourceEventReceipts = [...snapshot.state.sourceEventReceipts];
+  if (input.sourceEventReceipt) {
+    const receipt = sourceEventReceipts.find(
+      (candidate) => candidate.sourceEventId === input.sourceEventReceipt?.sourceEventId,
+    );
+    if (receipt) {
+      if (
+        receipt.source !== input.sourceEventReceipt.source
+        || receipt.eventType !== input.sourceEventReceipt.eventType
+        || receipt.payloadHash !== input.sourceEventReceipt.payloadHash
+      ) {
+        throw new Error("SOURCE_EVENT_ID_COLLISION");
+      }
+    } else {
+      sourceEventReceipts.push(deepClone(input.sourceEventReceipt));
+    }
+  }
+  await persistCurrentState({
+    ...snapshot.state,
     ledgerEntries: nextLedgerEntries,
     payoutEntitlements: nextEntitlements,
-    commerceAdjustments: [...state.commerceAdjustments, deepClone(input.record)],
-  });
+    sourceEventReceipts,
+    commerceAdjustments: [...snapshot.state.commerceAdjustments, deepClone(input.record)],
+  }, snapshot.revision);
   return { record: deepClone(input.record), replay: false };
 }

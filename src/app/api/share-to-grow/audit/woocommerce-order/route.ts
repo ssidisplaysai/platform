@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    return NextResponse.json(auditWooCommerceOrder(orderId, receiptId), { headers: noStore });
+    return NextResponse.json(await auditWooCommerceOrder(orderId, receiptId), { headers: noStore });
   } catch (error) {
     if (error instanceof WooCommerceAuditReceiptNotFoundError) {
       return invalidRequest("RECEIPT_NOT_FOUND", 404);

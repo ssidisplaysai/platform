@@ -79,9 +79,9 @@ function isCancelledOrderUpdate(rawBody: string): boolean {
   }
 }
 
-export function processWooCommerceWebhookHttp(
+export async function processWooCommerceWebhookHttp(
   input: WooCommerceWebhookHttpInput,
-): WooCommerceWebhookHttpResult {
+): Promise<WooCommerceWebhookHttpResult> {
   const signature = header(input.headers, "x-wc-webhook-signature");
   const sourceEventId =
     header(input.headers, "x-wc-webhook-delivery-id") ??
@@ -97,9 +97,9 @@ export function processWooCommerceWebhookHttp(
   // A normal order.updated whose status is cancelled is the authoritative cancellation signal.
   const cancelledUpdate = eventType === "order.updated" && isCancelledOrderUpdate(input.rawBody);
   if (eventType === "order.cancelled" || eventType === "refund.created" || cancelledUpdate) {
-    const adjustment = eventType !== "refund.created"
+    const adjustment = await (eventType !== "refund.created"
       ? processWooCommerceCancellation({ webhook: webhookEnvelope, webhookSecret: input.secret })
-      : processWooCommerceRefund({ webhook: webhookEnvelope, webhookSecret: input.secret });
+      : processWooCommerceRefund({ webhook: webhookEnvelope, webhookSecret: input.secret }));
     return Object.freeze({
       sourceEventId,
       replay: adjustment.replay,
@@ -112,7 +112,7 @@ export function processWooCommerceWebhookHttp(
     });
   }
 
-  const result = processRawWooCommerceOrder({
+  const result = await processRawWooCommerceOrder({
     webhook: {
       sourceEventId,
       eventType,

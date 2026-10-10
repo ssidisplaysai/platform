@@ -4,11 +4,8 @@ import { stonerGymEconomicRules } from "../reference/stoner-gym";
 import type { LedgerEntry } from "../ledger";
 import {
   commitCommerceAdjustment,
-  listCommerceAdjustments,
-  listEconomicRuleVersions,
-  listPersistedLedgerEntries,
-  listPersistedPayoutEntitlements,
-  listProcessedCommerceLines,
+  loadShareToGrowRepositorySnapshot,
+  recordSourceEventReceipt,
 } from "../share-to-grow-repository";
 import type {
   CommerceAdjustmentRecord,
@@ -63,9 +60,9 @@ export interface WooCommerceAdjustmentResult {
 
 export const REFUND_AFTER_PAYOUT_REASON = "REFUND_AFTER_PAYOUT_THRESHOLD";
 
-function linesForOrder(orderId: string): ProcessedCommerceLineRecord[] {
+function linesForOrder(orderId: string, lines: readonly ProcessedCommerceLineRecord[]): ProcessedCommerceLineRecord[] {
   const prefix = `woocommerce:${orderId}:`;
-  return listProcessedCommerceLines().filter(
+  return lines.filter(
     (line) => line.lineKey.startsWith(prefix) && line.lineKey.length > prefix.length,
   );
 }
@@ -99,10 +96,30 @@ function result(
   });
 }
 
+async function recordReceipt(verified: Awaited<ReturnType<typeof acceptWooCommerceWebhook>>) {
+  if (!verified.replay) {
+    await recordSourceEventReceipt(verified.receipt, verified.persistenceRevision);
+  }
+}
+
+async function noEconomicAdjustment(
+  verified: Awaited<ReturnType<typeof acceptWooCommerceWebhook>>,
+  envelope: WooCommerceWebhookEnvelope,
+  orderId: string,
+  disposition: WooCommerceAdjustmentDisposition,
+  extra: Parameters<typeof result>[3] = {},
+): Promise<WooCommerceAdjustmentResult> {
+  await recordReceipt(verified);
+  return result(envelope, orderId, disposition, extra);
+}
+
 /** Original locked rule: persisted snapshot, then registered version, then the reference rule with the same id. */
-function resolveLockedRule(line: ProcessedCommerceLineRecord): EconomicRuleVersion | undefined {
+function resolveLockedRule(
+  line: ProcessedCommerceLineRecord,
+  registeredRules: readonly EconomicRuleVersion[],
+): EconomicRuleVersion | undefined {
   if (line.ruleSnapshot) return line.ruleSnapshot;
-  const registered = listEconomicRuleVersions().find((candidate) => candidate.id === line.ruleVersionId);
+  const registered = registeredRules.find((candidate) => candidate.id === line.ruleVersionId);
   if (registered) return registered;
   const creatorMatch = /^stoner-gym-creator-(.+)-v1$/.exec(line.ruleVersionId);
   const rules = stonerGymEconomicRules(creatorMatch ? { creatorPartnerId: creatorMatch[1] } : {});
@@ -127,6 +144,7 @@ interface LinePlan {
 function planLineReversal(input: {
   readonly line: ProcessedCommerceLineRecord;
   readonly ledger: readonly PersistedLedgerEntry[];
+  readonly registeredRules: readonly EconomicRuleVersion[];
   readonly adjustmentId: string;
   readonly postedAt: string;
   readonly targetMinor: bigint | "all";
@@ -157,7 +175,7 @@ function planLineReversal(input: {
   if (delta === remainingTotal) {
     for (const earning of earnings) amounts.set(earning.id, remaining.get(earning.id) ?? 0n);
   } else {
-    const rule = resolveLockedRule(line);
+    const rule = resolveLockedRule(line, input.registeredRules);
     if (!rule) return { error: "ORIGINAL_RULE_VERSION_NOT_FOUND" };
     const split = allocateByRule(money(delta, currency), rule);
     const byBeneficiary = new Map(earnings.map((earning) => [earning.beneficiaryId, earning]));
@@ -208,8 +226,10 @@ function planLineReversal(input: {
   return { ...base, reversalMinor: reversal, entries };
 }
 
-function reverseLines(input: {
+async function reverseLines(input: {
   readonly envelope: WooCommerceWebhookEnvelope;
+  readonly verified: Awaited<ReturnType<typeof acceptWooCommerceWebhook>>;
+  readonly repositoryState: Awaited<ReturnType<typeof loadShareToGrowRepositorySnapshot>>["state"];
   readonly orderId: string;
   readonly lines: readonly ProcessedCommerceLineRecord[];
   readonly kind: "cancellation" | "refund";
@@ -219,15 +239,19 @@ function reverseLines(input: {
   readonly priorRefundByLine: ReadonlyMap<string, bigint>;
   readonly fullByLine: boolean;
   readonly baseRecord: Pick<CommerceAdjustmentRecord, "adjustmentId" | "kind" | "orderId" | "sourceEventId" | "refundId" | "lineRefunds">;
-}): WooCommerceAdjustmentResult {
-  const ledger = listPersistedLedgerEntries();
-  const entitlements = listPersistedPayoutEntitlements();
+}): Promise<WooCommerceAdjustmentResult> {
+  const ledger = input.repositoryState.ledgerEntries;
+  const entitlements = input.repositoryState.payoutEntitlements;
   const plans: LinePlan[] = [];
   for (const line of input.lines) {
     const cumulative = input.cumulativeRefundByLine.get(line.lineKey) ?? 0n;
     const plan = planLineReversal({
       line,
       ledger,
+      registeredRules: input.repositoryState.ruleVersions.map((rule) => ({
+        ...rule,
+        beneficiaries: rule.beneficiaries.map((beneficiary) => ({ ...beneficiary })),
+      })),
       adjustmentId: input.adjustmentId,
       postedAt: input.envelope.receivedAt,
       targetMinor: input.kind === "cancellation" || (input.fullByLine && cumulative >= BigInt(line.saleMerchandiseMinor ?? "0"))
@@ -235,6 +259,7 @@ function reverseLines(input: {
         : cumulative,
     });
     if ("error" in plan) {
+      await recordReceipt(input.verified);
       return result(input.envelope, input.orderId, "manual_review_required", { reason: plan.error });
     }
     plans.push(plan);
@@ -247,6 +272,7 @@ function reverseLines(input: {
     const entitlement = entitlements.find((candidate) => candidate.ledgerEntryId === entry.sourceEntryId);
     if (!entitlement) continue;
     if (entitlement.state === "payable" || entitlement.state === "paid") {
+      await recordReceipt(input.verified);
       return result(input.envelope, input.orderId, "manual_review_required", { reason: input.payoutReason });
     }
     const reverse = -entry.amount.minor;
@@ -298,7 +324,12 @@ function reverseLines(input: {
   else disposition = "partially_reversed";
 
   if (reversalMinor === 0n && input.kind === "cancellation") {
-    return result(input.envelope, input.orderId, "replay");
+    return noEconomicAdjustment(
+      input.verified,
+      input.envelope,
+      input.orderId,
+      "replay",
+    );
   }
 
   const refund: WooCommerceRefundSummary | undefined = input.kind === "refund"
@@ -319,7 +350,7 @@ function reverseLines(input: {
     : disposition === "replay" || disposition === "ignored_no_economics" || disposition === "manual_review_required"
       ? "manual_review_required"
       : disposition;
-  commitCommerceAdjustment({
+  await commitCommerceAdjustment({
     record: {
       ...input.baseRecord,
       disposition: recordDisposition,
@@ -335,6 +366,8 @@ function reverseLines(input: {
     ledgerEntries: allEntries,
     reversedEntitlementIds,
     entitlementReductions,
+    sourceEventReceipt: input.verified.receipt,
+    expectedRevision: input.verified.persistenceRevision,
   });
 
   return result(input.envelope, input.orderId, disposition, {
@@ -349,25 +382,30 @@ function reverseLines(input: {
   });
 }
 
-export function processWooCommerceCancellation(input: {
+export async function processWooCommerceCancellation(input: {
   readonly webhook: WooCommerceWebhookEnvelope;
   readonly webhookSecret: string;
-}): WooCommerceAdjustmentResult {
+}): Promise<WooCommerceAdjustmentResult> {
   const { webhook } = input;
-  const verified = acceptWooCommerceWebhook(webhook, input.webhookSecret);
+  const verified = await acceptWooCommerceWebhook(webhook, input.webhookSecret);
   const { orderId } = parseWooCommerceCancellationPayload(webhook.rawBody);
   if (verified.replay) return result(webhook, orderId, "replay");
 
-  const lines = linesForOrder(orderId);
-  if (lines.length === 0) return result(webhook, orderId, "ignored_no_economics");
+  const repositoryState = verified.repositorySnapshot.state;
+  const lines = linesForOrder(orderId, repositoryState.processedCommerceLines);
+  if (lines.length === 0) {
+    return noEconomicAdjustment(verified, webhook, orderId, "ignored_no_economics");
+  }
 
   // Order-scoped identity: different deliveries of the same cancellation never re-reverse.
   const adjustmentId = `cancellation:${orderId}`;
-  if (listCommerceAdjustments().some((record) => record.adjustmentId === adjustmentId)) {
-    return result(webhook, orderId, "replay");
+  if (repositoryState.commerceAdjustments.some((record) => record.adjustmentId === adjustmentId)) {
+    return noEconomicAdjustment(verified, webhook, orderId, "replay");
   }
   return reverseLines({
     envelope: webhook,
+    verified,
+    repositoryState,
     orderId,
     lines,
     kind: "cancellation",
@@ -394,25 +432,29 @@ export function processWooCommerceCancellation(input: {
  * reported as brand loss (not allocated to collaborators). Taxes, customer
  * shipping and fees are not part of the participant math.
  */
-export function processWooCommerceRefund(input: {
+export async function processWooCommerceRefund(input: {
   readonly webhook: WooCommerceWebhookEnvelope;
   readonly webhookSecret: string;
-}): WooCommerceAdjustmentResult {
+}): Promise<WooCommerceAdjustmentResult> {
   const { webhook } = input;
-  const verified = acceptWooCommerceWebhook(webhook, input.webhookSecret);
+  const verified = await acceptWooCommerceWebhook(webhook, input.webhookSecret);
   const refund = parseWooCommerceRefundPayload(webhook.rawBody);
   const { orderId } = refund;
   if (verified.replay) return result(webhook, orderId, "replay");
 
-  const lines = linesForOrder(orderId);
-  if (lines.length === 0) return result(webhook, orderId, "ignored_no_economics");
-
-  const adjustmentId = `refund:${orderId}:${refund.refundId}`;
-  if (listCommerceAdjustments().some((record) => record.adjustmentId === adjustmentId)) {
-    return result(webhook, orderId, "replay");
+  const repositoryState = verified.repositorySnapshot.state;
+  const lines = linesForOrder(orderId, repositoryState.processedCommerceLines);
+  if (lines.length === 0) {
+    return noEconomicAdjustment(verified, webhook, orderId, "ignored_no_economics");
   }
 
-  const review = (reason: string) => result(webhook, orderId, "manual_review_required", { reason });
+  const adjustmentId = `refund:${orderId}:${refund.refundId}`;
+  if (repositoryState.commerceAdjustments.some((record) => record.adjustmentId === adjustmentId)) {
+    return noEconomicAdjustment(verified, webhook, orderId, "replay");
+  }
+
+  const review = (reason: string) =>
+    noEconomicAdjustment(verified, webhook, orderId, "manual_review_required", { reason });
 
   const lineKeyOf = (lineItemId: string) => `woocommerce:${orderId}:${lineItemId}`;
   const thisRefund = new Map<string, bigint>();
@@ -424,14 +466,20 @@ export function processWooCommerceRefund(input: {
     thisRefund.set(key, (thisRefund.get(key) ?? 0n) + lineRefund.refundGrossMinor);
   }
   if (thisRefund.size === 0) {
-    return result(webhook, orderId, "ignored_no_economics", { reason: "REFUND_HAS_NO_MERCHANDISE_LINES_V1" });
+    return noEconomicAdjustment(
+      verified,
+      webhook,
+      orderId,
+      "ignored_no_economics",
+      { reason: "REFUND_HAS_NO_MERCHANDISE_LINES_V1" },
+    );
   }
   if (lines.some((line) => line.saleMerchandiseMinor === undefined)) {
     return review("ORDER_LINE_SALE_AMOUNT_NOT_PERSISTED");
   }
 
   const priorRefunded = new Map<string, bigint>();
-  for (const record of listCommerceAdjustments()) {
+  for (const record of repositoryState.commerceAdjustments) {
     if (record.kind !== "refund" || record.orderId !== orderId) continue;
     for (const lineRefund of record.lineRefunds) {
       priorRefunded.set(lineRefund.lineKey, (priorRefunded.get(lineRefund.lineKey) ?? 0n) + BigInt(lineRefund.refundMinor));
@@ -447,6 +495,8 @@ export function processWooCommerceRefund(input: {
 
   return reverseLines({
     envelope: webhook,
+    verified,
+    repositoryState,
     orderId,
     lines,
     kind: "refund",

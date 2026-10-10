@@ -27,9 +27,9 @@ export interface RawWooCommerceOrderProcessingInput {
  * verified are parsed into the provider snapshot; callers cannot substitute a
  * different parsed order after verification.
  */
-export function processRawWooCommerceOrder(
+export async function processRawWooCommerceOrder(
   input: RawWooCommerceOrderProcessingInput,
-): WooCommerceOrderProcessingResult {
+): Promise<WooCommerceOrderProcessingResult> {
   if (input.webhook.eventType !== "order.created" && input.webhook.eventType !== "order.updated") {
     throw new Error("UNSUPPORTED_WOOCOMMERCE_ORDER_EVENT");
   }
