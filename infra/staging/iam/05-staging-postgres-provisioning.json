@@ -105,6 +105,18 @@
       }
     },
     {
+      "Sid": "CreateRdsManagedMasterSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:CreateSecret",
+      "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*"
+    },
+    {
+      "Sid": "TagRdsManagedMasterSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:TagResource",
+      "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*"
+    },
+    {
       "Sid": "DescribeStagingPostgresSecret",
       "Effect": "Allow",
       "Action": "secretsmanager:DescribeSecret",

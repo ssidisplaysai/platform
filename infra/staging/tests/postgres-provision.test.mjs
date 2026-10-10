@@ -56,6 +56,8 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
     "RdsListStagingPostgresTags",
     "CreateStagingPostgresSecret",
     "TagStagingPostgresSecret",
+    "CreateRdsManagedMasterSecret",
+    "TagRdsManagedMasterSecret",
     "DescribeStagingPostgresSecret",
     "CreateRdsServiceLinkedRole",
     "DescribeSecretsManagerDefaultKeyForRdsManagedMasterPassword",
@@ -63,6 +65,7 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
   const targetDb = "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres";
   const targetSubnetGroup = "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres";
   const targetSecret = "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*";
+  const targetRdsMasterSecret = "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*";
 
   assert.ok(Buffer.byteLength(source.replace(/\s/g, "")) < 6144);
   assert.deepEqual([...new Set(actions)].sort(), expectedActions.sort());
@@ -84,6 +87,18 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
   assert.deepEqual(findStatement(policy, "RdsCreateStagingPostgresSubnetGroup").Resource, targetSubnetGroup);
   assert.deepEqual(findStatement(policy, "CreateStagingPostgresSecret").Resource, targetSecret);
   assert.deepEqual(findStatement(policy, "DescribeStagingPostgresSecret").Resource, targetSecret);
+  assert.deepEqual(findStatement(policy, "CreateRdsManagedMasterSecret"), {
+    Sid: "CreateRdsManagedMasterSecret",
+    Effect: "Allow",
+    Action: "secretsmanager:CreateSecret",
+    Resource: targetRdsMasterSecret,
+  });
+  assert.deepEqual(findStatement(policy, "TagRdsManagedMasterSecret"), {
+    Sid: "TagRdsManagedMasterSecret",
+    Effect: "Allow",
+    Action: "secretsmanager:TagResource",
+    Resource: targetRdsMasterSecret,
+  });
   assert.deepEqual(findStatement(policy, "CreateRdsServiceLinkedRole").Resource,
     "arn:aws:iam::452630323448:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS");
   assert.deepEqual(findStatement(policy, "CreateRdsServiceLinkedRole").Condition, {
@@ -143,7 +158,7 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
       .includes(action),
   ));
   const secretsActions = actions.filter((action) => action.startsWith("secretsmanager:"));
-  assert.deepEqual(secretsActions.sort(), [
+  assert.deepEqual([...new Set(secretsActions)].sort(), [
     "secretsmanager:CreateSecret",
     "secretsmanager:DescribeSecret",
     "secretsmanager:TagResource",
@@ -164,6 +179,8 @@ test("PostgreSQL policy simulation covers scoped staging allows and production d
     ["secretsmanager:CreateSecret", "allow", "secret:genesis/staging/postgres-"],
     ["secretsmanager:TagResource", "allow", "secret:genesis/staging/postgres-"],
     ["secretsmanager:DescribeSecret", "allow", "secret:genesis/staging/postgres-"],
+    ["secretsmanager:CreateSecret", "allow", "secret:rds!db-"],
+    ["secretsmanager:TagResource", "allow", "secret:rds!db-"],
   ];
   for (const [action, expect, resourceFragment] of expected) {
     assert.ok(cases.some((simulationCase) =>
@@ -182,7 +199,7 @@ test("PostgreSQL policy simulation covers scoped staging allows and production d
     item.expect === "deny" &&
     item.context["rds:DatabaseEngine"] === "mysql",
   ));
-  assert.equal(cases.length, 102);
+  assert.equal(cases.length, 112);
   const keyCases = cases.filter((item) => item.action.startsWith("kms:"));
   assert.equal(keyCases.length, 7);
   assert.ok(keyCases.some((item) =>

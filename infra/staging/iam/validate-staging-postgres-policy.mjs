@@ -81,6 +81,14 @@ const requiredStatements = {
     Resource: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
     Condition: { StringEquals: { "aws:RequestTag/Environment": "staging" } },
   },
+  CreateRdsManagedMasterSecret: {
+    Action: "secretsmanager:CreateSecret",
+    Resource: "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*",
+  },
+  TagRdsManagedMasterSecret: {
+    Action: "secretsmanager:TagResource",
+    Resource: "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*",
+  },
   DescribeStagingPostgresSecret: {
     Action: "secretsmanager:DescribeSecret",
     Resource: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",

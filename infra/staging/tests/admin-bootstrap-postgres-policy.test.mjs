@@ -14,6 +14,7 @@ const validatorPath = join(repoRoot, "infra/staging/iam/validate-staging-postgre
 const helperPath = join(repoRoot, "infra/staging/admin-bootstrap-iam.sh");
 const kmsKeyArn = "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a";
 const kmsStatementSid = "DescribeSecretsManagerDefaultKeyForRdsManagedMasterPassword";
+const rdsMasterSecretResource = "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*";
 
 async function readJson(path) {
   return JSON.parse((await readFile(path, "utf8")).replace(/^\uFEFF/, ""));
@@ -38,6 +39,10 @@ function kmsStatement(policy) {
   return policy.Statement.find((statement) => statement.Sid === kmsStatementSid);
 }
 
+function rdsMasterSecretStatement(policy, sid) {
+  return policy.Statement.find((statement) => statement.Sid === sid);
+}
+
 test("current approved PostgreSQL policy passes the bootstrap validator", async () => {
   const policy = await readJson(policyPath);
   const helper = await readFile(helperPath, "utf8");
@@ -55,6 +60,58 @@ test("bootstrap validator rejects removal of the approved KMS describe statement
   const result = await runValidator(policy);
   assert.notEqual(result.status, 0);
 });
+
+test("bootstrap validator requires exact RDS-managed master-secret statements", async () => {
+  const policy = await readJson(policyPath);
+  for (const [sid, action] of [
+    ["CreateRdsManagedMasterSecret", "secretsmanager:CreateSecret"],
+    ["TagRdsManagedMasterSecret", "secretsmanager:TagResource"],
+  ]) {
+    assert.deepEqual(rdsMasterSecretStatement(policy, sid), {
+      Sid: sid,
+      Effect: "Allow",
+      Action: action,
+      Resource: rdsMasterSecretResource,
+    });
+  }
+  const result = await runValidator(policy);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+for (const [description, resource] of [
+  ["wildcard resource", "*"],
+  ["application-secret namespace", "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*"],
+  ["production secret namespace", "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/*"],
+  ["arbitrary secret namespace", "arn:aws:secretsmanager:us-west-2:452630323448:secret:unrelated-*"],
+]) {
+  test(`bootstrap validator rejects RDS-managed master-secret permission on ${description}`, async () => {
+    const policy = await readJson(policyPath);
+    rdsMasterSecretStatement(policy, "CreateRdsManagedMasterSecret").Resource = resource;
+    const result = await runValidator(policy);
+    assert.notEqual(result.status, 0);
+  });
+}
+
+for (const action of [
+  "secretsmanager:GetSecretValue",
+  "secretsmanager:PutSecretValue",
+  "secretsmanager:UpdateSecret",
+  "secretsmanager:DeleteSecret",
+  "secretsmanager:RotateSecret",
+  "secretsmanager:RestoreSecret",
+  "secretsmanager:ReplicateSecretToRegions",
+  "secretsmanager:RemoveRegionsFromReplication",
+]) {
+  test(`bootstrap validator rejects additional ${action}`, async () => {
+    const policy = await readJson(policyPath);
+    const statement = clone(rdsMasterSecretStatement(policy, "CreateRdsManagedMasterSecret"));
+    statement.Sid = `Unexpected${action.replace("secretsmanager:", "")}`;
+    statement.Action = action;
+    policy.Statement.push(statement);
+    const result = await runValidator(policy);
+    assert.notEqual(result.status, 0);
+  });
+}
 
 for (const [description, resource] of [
   ["wildcard resource", "*"],

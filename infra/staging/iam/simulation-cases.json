@@ -841,5 +841,65 @@
         "action":  "rds:DescribeDBSubnetGroups",
         "resource":  "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-production-postgres",
         "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-test",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:PutSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:DeleteSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:RotateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:CreateSecret",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:unrelated-test",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:TagResource",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:unrelated-test",
+        "context":  {}
     }
 ]
