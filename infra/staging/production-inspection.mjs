@@ -165,17 +165,62 @@ export function evaluateSecurityGroupPath({ taskGroupIds, taskVpcId, taskSubnets
   };
 }
 
-export function sanitizeSecretMetadata(secret) {
+export function sanitizeSecretMetadata(secret, taskBinding = {}) {
+  const value = (...keys) => keys.map((key) => secret[key]).find((item) => item !== undefined) ?? null;
   return {
-    name: secret.name ?? null,
-    arn: secret.arn ?? null,
-    description: secret.description ?? null,
-    kmsKeyId: secret.kmsKeyId ?? null,
-    lastChangedDate: secret.lastChangedDate ?? null,
-    lastAccessedDate: secret.lastAccessedDate ?? null,
-    rotationEnabled: secret.rotationEnabled ?? null,
-    rotationRules: secret.rotationRules ?? null,
+    taskBindingNames: taskBinding.names ?? [],
+    taskSecretArn: taskBinding.arn ?? null,
+    name: value("name", "Name"),
+    arn: value("arn", "ARN"),
+    description: value("description", "Description"),
+    kmsKeyId: value("kmsKeyId", "KmsKeyId"),
+    lastChangedDate: value("lastChangedDate", "LastChangedDate"),
+    lastAccessedDate: value("lastAccessedDate", "LastAccessedDate"),
+    rotationEnabled: value("rotationEnabled", "RotationEnabled"),
+    rotationRules: value("rotationRules", "RotationRules"),
   };
+}
+
+export function summarizeRunningTask(task, serviceNetworkConfiguration = {}) {
+  return {
+    taskArn: task.taskArn,
+    taskDefinitionArn: task.taskDefinitionArn,
+    lastStatus: task.lastStatus,
+    desiredStatus: task.desiredStatus,
+    healthStatus: task.healthStatus,
+    launchType: task.launchType,
+    startedAt: task.startedAt,
+    platformVersion: task.platformVersion,
+    securityGroups: serviceNetworkConfiguration.securityGroups ?? [],
+    attachments: asArray(task.attachments).map((attachment) => ({
+      type: attachment.type,
+      details: asArray(attachment.details).filter(({ name }) =>
+        ["subnetId", "networkInterfaceId", "privateIPv4Address", "vpcId"].includes(name)),
+    })),
+    containers: asArray(task.containers).map((container) => ({
+      name: container.name,
+      lastStatus: container.lastStatus,
+      healthStatus: container.healthStatus,
+      image: container.image,
+      imageDigest: container.imageDigest,
+      reason: container.reason,
+    })),
+  };
+}
+
+export function summarizeIamPolicyDocument(policyDocument) {
+  const document = typeof policyDocument === "string"
+    ? JSON.parse(decodeURIComponent(policyDocument))
+    : policyDocument;
+  return asArray(document?.Statement).map((statement) => ({
+    sid: statement.Sid,
+    effect: statement.Effect,
+    action: statement.Action,
+    resource: statement.Resource,
+    notAction: statement.NotAction,
+    notResource: statement.NotResource,
+    condition: statement.Condition,
+  }));
 }
 
 export function filterTaskDefinition(task, revision) {
@@ -330,6 +375,33 @@ function inspect(gaps) {
   }
   emit("INSPECTION_AWS_IDENTITY", identity.__accessDenied ? "ACCESS_DENIED" : { account: identity.Account, arn: identity.Arn });
 
+  const inspectionRolePolicies = aws("iam", "list-attached-role-policies", ["--role-name", "GenesisGitHubDeployRole"], REGION, gaps);
+  for (const attachedPolicy of asArray(inspectionRolePolicies.AttachedPolicies)) {
+    if (!isGenesisManagedPolicyArn(attachedPolicy.PolicyArn)) continue;
+    const details = aws("iam", "get-policy", ["--policy-arn", attachedPolicy.PolicyArn], REGION, gaps);
+    const policy = details.Policy;
+    if (!policy) continue;
+    const metadata = {
+      arn: policy.Arn,
+      name: policy.PolicyName,
+      attachmentCount: policy.AttachmentCount,
+      createDate: policy.CreateDate,
+      updateDate: policy.UpdateDate,
+      defaultVersionId: policy.DefaultVersionId,
+    };
+    let statements = null;
+    if (policy.DefaultVersionId) {
+      const version = aws("iam", "get-policy-version", [
+        "--policy-arn", attachedPolicy.PolicyArn,
+        "--version-id", policy.DefaultVersionId,
+      ], REGION, gaps);
+      if (version.PolicyVersion?.Document) {
+        statements = summarizeIamPolicyDocument(version.PolicyVersion.Document);
+      }
+    }
+    emit("PRODUCTION_INSPECTION_IAM_POLICY", { ...metadata, statements });
+  }
+
   const services = aws("ecs", "describe-services", [
     "--cluster", TASK_CLUSTER, "--services", TASK_SERVICE,
   ], REGION, gaps);
@@ -402,27 +474,38 @@ function inspect(gaps) {
         if (versionId) aws("iam", "get-policy-version", ["--policy-arn", policy.PolicyArn, "--version-id", versionId], REGION, gaps);
       }
       for (const policyName of asArray(inline.PolicyNames)) {
-        aws("iam", "get-role-policy", ["--role-name", roleName, "--policy-name", policyName], REGION, gaps);
+        const inlinePolicy = aws("iam", "get-role-policy", ["--role-name", roleName, "--policy-name", policyName], REGION, gaps);
+        if (!inlinePolicy.__accessDenied && !inlinePolicy.__queryFailed) {
+          emit("PRODUCTION_IAM_INLINE_POLICY", {
+            role: roleName,
+            policyName,
+            statements: summarizeIamPolicyDocument(inlinePolicy.PolicyDocument),
+          });
+        }
       }
     }
-    for (const secret of containers.flatMap((container) => container.secrets ?? [])) {
-      const arn = secret.valueFrom?.split(":").slice(0, 7).join(":");
-      if (!arn) continue;
-      const metadata = aws("secretsmanager", "describe-secret", ["--secret-id", arn], REGION, gaps);
-      if (!metadata.__accessDenied && !metadata.__queryFailed) emit("SECRET_METADATA", sanitizeSecretMetadata(metadata));
+    if (task.taskDefinitionArn === service?.taskDefinition) {
+      const secretsByArn = new Map();
+      for (const secret of containers.flatMap((container) => container.secrets ?? [])) {
+        const arn = secret.valueFrom?.split(":").slice(0, 7).join(":");
+        if (!arn) continue;
+        const names = secretsByArn.get(arn) ?? [];
+        names.push(secret.name);
+        secretsByArn.set(arn, names);
+      }
+      for (const [arn, names] of secretsByArn) {
+        const metadata = aws("secretsmanager", "describe-secret", ["--secret-id", arn], REGION, gaps);
+        if (!metadata.__accessDenied && !metadata.__queryFailed) {
+          emit("SECRET_METADATA", sanitizeSecretMetadata(metadata, { names: [...new Set(names)].sort(), arn }));
+        }
+      }
     }
   }
 
   const tasks = aws("ecs", "list-tasks", ["--cluster", TASK_CLUSTER, "--service-name", TASK_SERVICE], REGION, gaps);
   const taskDetails = aws("ecs", "describe-tasks", ["--cluster", TASK_CLUSTER, "--tasks", ...asArray(tasks.taskArns)], REGION, gaps);
-  emit("PRODUCTION_RUNNING_TASKS", asArray(taskDetails.tasks).map((task) => ({
-    taskArn: task.taskArn, taskDefinitionArn: task.taskDefinitionArn, lastStatus: task.lastStatus,
-    desiredStatus: task.desiredStatus, healthStatus: task.healthStatus, launchType: task.launchType,
-    attachments: asArray(task.attachments).map((attachment) => ({
-      type: attachment.type,
-      details: asArray(attachment.details).filter(({ name }) => ["subnetId", "networkInterfaceId", "privateIPv4Address", "vpcId"].includes(name)),
-    })),
-  })));
+  emit("PRODUCTION_RUNNING_TASKS", asArray(taskDetails.tasks)
+    .map((task) => summarizeRunningTask(task, service?.networkConfiguration?.awsvpcConfiguration)));
 
   const imageReferences = new Map(DIGESTS.map((digest) => [
     `imageDigest=${digest}`,

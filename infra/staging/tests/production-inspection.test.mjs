@@ -11,6 +11,8 @@ import {
   sanitizeCloudTrailEvent,
   sanitizeRequestParameters,
   sanitizeSecretMetadata,
+  summarizeIamPolicyDocument,
+  summarizeRunningTask,
   summarizeAlarmInventory,
   summarizeAlarm,
   summarizeRdsResource,
@@ -157,6 +159,88 @@ test("secret metadata sanitizer cannot expose a secret value", () => {
   const result = sanitizeSecretMetadata({ name: "db", arn: "secret-arn", secretString: "private-value", kmsKeyId: "kms" });
   assert.equal(result.name, "db");
   assert.equal(JSON.stringify(result).includes("private-value"), false);
+});
+
+test("secret metadata sanitizer maps AWS CLI fields and includes task binding without values", () => {
+  const result = sanitizeSecretMetadata({
+    Name: "genesis/production/wordpress",
+    ARN: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-AbCdEf",
+    Description: "Production integration credentials",
+    KmsKeyId: "arn:aws:kms:us-west-2:452630323448:key/12345678",
+    LastChangedDate: "2026-10-09T00:00:00.000Z",
+    LastAccessedDate: "2026-10-08T00:00:00.000Z",
+    RotationEnabled: true,
+    RotationRules: { AutomaticallyAfterDays: 30 },
+    SecretString: "never-expose-this",
+  }, {
+    names: ["WORDPRESS_APP_PASSWORD", "WORDPRESS_USERNAME"],
+    arn: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-AbCdEf",
+  });
+  assert.deepEqual(result, {
+    taskBindingNames: ["WORDPRESS_APP_PASSWORD", "WORDPRESS_USERNAME"],
+    taskSecretArn: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-AbCdEf",
+    name: "genesis/production/wordpress",
+    arn: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-AbCdEf",
+    description: "Production integration credentials",
+    kmsKeyId: "arn:aws:kms:us-west-2:452630323448:key/12345678",
+    lastChangedDate: "2026-10-09T00:00:00.000Z",
+    lastAccessedDate: "2026-10-08T00:00:00.000Z",
+    rotationEnabled: true,
+    rotationRules: { AutomaticallyAfterDays: 30 },
+  });
+  assert.equal(JSON.stringify(result).includes("never-expose-this"), false);
+});
+
+test("IAM policy summary reports read-safe authorization statements", () => {
+  assert.deepEqual(summarizeIamPolicyDocument({
+    Version: "2012-10-17",
+    Statement: [{
+      Sid: "ReadPolicy",
+      Effect: "Allow",
+      Action: ["iam:GetPolicy"],
+      Resource: "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
+      Condition: { StringEquals: { "aws:RequestedRegion": "us-west-2" } },
+    }],
+  }), [{
+    sid: "ReadPolicy",
+    effect: "Allow",
+    action: ["iam:GetPolicy"],
+    resource: "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
+    notAction: undefined,
+    notResource: undefined,
+    condition: { StringEquals: { "aws:RequestedRegion": "us-west-2" } },
+  }]);
+});
+
+test("running task summary exposes health, start time, ENI and container image digest", () => {
+  const result = summarizeRunningTask({
+    taskArn: "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/task-id",
+    taskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:59",
+    lastStatus: "RUNNING",
+    desiredStatus: "RUNNING",
+    healthStatus: "UNKNOWN",
+    launchType: "FARGATE",
+    startedAt: "2026-10-10T01:26:14Z",
+    attachments: [{
+      type: "ElasticNetworkInterface",
+      details: [
+        { name: "subnetId", value: "subnet-prod" },
+        { name: "networkInterfaceId", value: "eni-prod" },
+        { name: "privateIPv4Address", value: "10.0.0.1" },
+      ],
+    }],
+    containers: [{
+      name: "GenesisWebRuntime",
+      lastStatus: "RUNNING",
+      healthStatus: "UNKNOWN",
+      image: "runtime@sha256:abc",
+      imageDigest: "sha256:abc",
+    }],
+  }, { securityGroups: ["sg-prod"] });
+  assert.equal(result.startedAt, "2026-10-10T01:26:14Z");
+  assert.deepEqual(result.securityGroups, ["sg-prod"]);
+  assert.equal(result.attachments[0].details[1].value, "eni-prod");
+  assert.equal(result.containers[0].imageDigest, "sha256:abc");
 });
 
 test("security-group connectivity requires same VPC and DB ingress from task group on DB port", () => {
