@@ -24,6 +24,12 @@ jobs:
           role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
           aws-region: us-west-2
 
+      - name: Extended read-only production evidence collection
+        env:
+          AWS_REGION: us-west-2
+          AWS_DEFAULT_REGION: us-west-2
+        run: node infra/staging/production-inspection.mjs
+
       - name: Inspect production service and task-definition provenance
         env:
           AWS_REGION: us-west-2
