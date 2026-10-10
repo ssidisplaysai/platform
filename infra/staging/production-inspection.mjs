@@ -124,13 +124,23 @@ export function evaluateSecurityGroupPath({ taskGroupIds, taskVpcId, taskSubnets
   }));
   const ingress = [];
   for (const group of dbSecurityGroups ?? []) {
-    for (const permission of group.ipPermissions ?? []) {
-      const portAllowed = permission.ipProtocol === "-1"
-        || (permission.ipProtocol === "tcp" && permission.fromPort <= dbPort && permission.toPort >= dbPort);
+    const permissions = group.ipPermissions ?? group.IpPermissions ?? [];
+    for (const permission of permissions) {
+      const protocol = permission.ipProtocol ?? permission.IpProtocol;
+      const fromPort = permission.fromPort ?? permission.FromPort;
+      const toPort = permission.toPort ?? permission.ToPort;
+      const sources = permission.userIdGroupPairs ?? permission.UserIdGroupPairs ?? [];
+      const portAllowed = protocol === "-1"
+        || (protocol === "tcp" && fromPort <= dbPort && toPort >= dbPort);
       if (!portAllowed) continue;
-      for (const source of permission.userIdGroupPairs ?? []) {
-        if (taskGroups.has(source.groupId)) {
-          ingress.push({ dbSecurityGroupId: group.groupId, sourceGroupId: source.groupId, dbPort });
+      for (const source of sources) {
+        const sourceGroupId = source.groupId ?? source.GroupId;
+        if (taskGroups.has(sourceGroupId)) {
+          ingress.push({
+            dbSecurityGroupId: group.groupId ?? group.GroupId,
+            sourceGroupId,
+            dbPort,
+          });
         }
       }
     }

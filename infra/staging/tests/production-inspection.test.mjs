@@ -159,6 +159,31 @@ test("security-group connectivity requires same VPC and DB ingress from task gro
   assert.equal(result.securityGroupIngressFromTask[0].sourceGroupId, "sg-app");
 });
 
+test("security-group connectivity accepts AWS DescribeSecurityGroups field casing", () => {
+  const result = evaluateSecurityGroupPath({
+    taskGroupIds: ["sg-app"],
+    taskVpcId: "vpc-1",
+    taskSubnets: [{ subnetId: "subnet-app", vpcId: "vpc-1" }],
+    dbVpcId: "vpc-1",
+    dbPort: 5432,
+    dbSecurityGroups: [{
+      GroupId: "sg-db",
+      IpPermissions: [{
+        IpProtocol: "tcp",
+        FromPort: 5432,
+        ToPort: 5432,
+        UserIdGroupPairs: [{ GroupId: "sg-app" }],
+      }],
+    }],
+  });
+  assert.equal(result.configurationAllows, true);
+  assert.deepEqual(result.securityGroupIngressFromTask, [{
+    dbSecurityGroupId: "sg-db",
+    sourceGroupId: "sg-app",
+    dbPort: 5432,
+  }]);
+});
+
 test("alarm inventory summary captures identifying metadata", () => {
   assert.deepEqual(summarizeAlarm({
     AlarmName: "production-target-5xx",
