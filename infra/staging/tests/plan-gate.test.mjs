@@ -388,7 +388,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=52 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=56 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
@@ -414,7 +414,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 51);
+  assert.equal(customSimulationCalls.length, 55);
   assert.equal(principalSimulationCalls.length, cases.filter((item) =>
     item.expect === "allow" && item.verificationMode !== "aws-dependent-action-static"
   ).length);
@@ -454,6 +454,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
     "aws:RequestTag/Environment",
     "aws:ResourceTag/Environment",
     "ec2:CreateAction",
+    "ecs:cluster",
     "elasticfilesystem:CreateAction",
     "elasticloadbalancing:CreateAction",
     "iam:AWSServiceName",
@@ -467,6 +468,10 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.equal(productionContext["iam:AWSServiceName"], "invalid.amazonaws.com");
   assert.equal(productionContext["ec2:CreateAction"], "None");
   assert.equal(productionContext["elasticloadbalancing:CreateAction"], "None");
+  assert.equal(
+    productionContext["ecs:cluster"],
+    "arn:aws:ecs:us-west-2:452630323448:cluster/invalid",
+  );
   assert.equal(productionContext["aws:TagKeys"][0], "Environment");
   assert.equal(productionContextTypes["aws:TagKeys"], "stringList");
   assert.equal(productionContextTypes["iam:PolicyARN"], "string");
@@ -499,7 +504,7 @@ test("all conditioned policy statements matched by simulation cases have complet
     "03-staging-data-iam.json",
     "04-production-guardrails-deny.json",
   ];
-  assert.equal(cases.length, 52);
+  assert.equal(cases.length, 56);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -528,6 +533,7 @@ test("all conditioned policy statements matched by simulation cases have complet
       "ec2:CreateAction": "string",
       "elasticfilesystem:CreateAction": "string",
       "elasticloadbalancing:CreateAction": "string",
+      "ecs:cluster": "string",
       "iam:AWSServiceName": "string",
       "iam:PassedToService": "string",
       "iam:PolicyARN": "string",
@@ -720,7 +726,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=52 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=56 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -874,7 +880,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=52 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=56 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   const createRuleCall = result.calls.find(({ service, operation, args }) =>
     service === "iam" &&
@@ -1052,7 +1058,7 @@ test("production guardrail deny simulations remain explicit and context-complete
   }
 });
 
-test("Policy 01 grants managed-policy reads only for the four Genesis policies", async () => {
+test("Policy 01 grants managed-policy reads only for approved Genesis policies", async () => {
   const policy = parseJson(await readFile(
     join(repoRoot, "infra/staging/iam/01-read-only-production-inspection.json"),
     "utf8",
@@ -1066,6 +1072,7 @@ test("Policy 01 grants managed-policy reads only for the four Genesis policies",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
     "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+    "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
   ];
   const readActions = ["iam:GetPolicy", "iam:GetPolicyVersion"];
   const statement = policy.Statement.find((item) => item.Sid === "IamManagedPolicyReadOnlyInspection");
@@ -1074,7 +1081,11 @@ test("Policy 01 grants managed-policy reads only for the four Genesis policies",
   assert.equal(statement.Effect, "Allow");
   assert.deepEqual(statement.Action, readActions);
   assert.deepEqual(statement.Resource, expectedResources);
-  assert.ok(!statement.Resource.includes("*"));
+  assert.equal(
+    statement.Resource.filter((resource) => resource === "*").length,
+    0,
+    "managed-policy inspection must not use Resource star",
+  );
 
   const allows = (action, resource) => policy.Statement.some((candidate) =>
     candidate.Effect === "Allow" &&
@@ -1132,6 +1143,7 @@ test("Policy 01 grants managed-policy reads only for the four Genesis policies",
       "ProductionRdsSubnetGroupReadOnly",
       "ProductionAlarmInventoryReadOnly",
       "ProductionRouteTableInventoryReadOnly",
+      "ProductionSecretMetadataReadOnly",
       "IamManagedPolicyReadOnlyInspection",
     ].includes(item.Sid))
     .map(({ Sid, Effect, Action, Resource, NotResource, Condition }) => ({

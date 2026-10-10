@@ -109,6 +109,11 @@ approved = {
     "rds:DescribeDBInstances",
     "rds:DescribeDBSnapshots",
     "rds:DescribeDBSubnetGroups",
+    "cloudformation:DescribeStackEvents",
+    "cloudformation:ListChangeSets",
+    "cloudformation:ListStackResources",
+    "iam:GetPolicy",
+    "secretsmanager:DescribeSecret",
 }
 expected_resources = {
     "cloudformation:DescribeStacks": [
@@ -122,14 +127,9 @@ expected_resources = {
     "ecr:ListImages": [
         "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime",
     ],
-    "ecs:DescribeTasks": [
-        "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
-        "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/*",
-    ],
+    "ecs:DescribeTasks": ["*"],
     "ecs:ListTaskDefinitions": ["*"],
-    "ecs:ListTasks": [
-        "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
-    ],
+    "ecs:ListTasks": ["*"],
     "logs:DescribeLogStreams": [
         "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/production/web:*",
     ],
@@ -138,6 +138,46 @@ expected_resources = {
     "rds:DescribeDBInstances": ["*"],
     "rds:DescribeDBSnapshots": ["*"],
     "rds:DescribeDBSubnetGroups": ["*"],
+    "cloudformation:DescribeStackEvents": [
+        "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*",
+    ],
+    "cloudformation:ListChangeSets": [
+        "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*",
+    ],
+    "cloudformation:ListStackResources": [
+        "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*",
+    ],
+    "secretsmanager:DescribeSecret": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:GenesisFoundationStackGenes-qUJa9sj48pI1-D65uuI",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/openai-*",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-*",
+    ],
+    "iam:GetPolicy": [
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
+    ],
+    "iam:GetPolicyVersion": [
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
+    ],
+}
+expected_conditions = {
+    "ecs:DescribeTasks": {
+        "ArnEquals": {
+            "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+        },
+    },
+    "ecs:ListTasks": {
+        "ArnEquals": {
+            "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+        },
+    },
 }
 baseline = {
     "ecs:DescribeServices",
@@ -156,7 +196,6 @@ baseline = {
     "cognito-idp:DescribeUserPool",
     "cognito-idp:DescribeUserPoolClient",
     "cognito-idp:ListUserPoolClients",
-    "iam:GetPolicy",
     "iam:GetPolicyVersion",
     "iam:GetRole",
     "iam:ListAttachedRolePolicies",
@@ -170,18 +209,32 @@ baseline = {
 forbidden = {
     "secretsmanager:GetSecretValue",
     "iam:PassRole",
+    "iam:AttachRolePolicy",
+    "iam:DetachRolePolicy",
+    "iam:PutRolePolicy",
+    "iam:CreateRole",
+    "iam:CreatePolicy",
+    "iam:CreatePolicyVersion",
+    "iam:DeletePolicyVersion",
+    "iam:SetDefaultPolicyVersion",
+    "iam:UpdateAssumeRolePolicy",
     "ecs:UpdateService",
     "ecs:RegisterTaskDefinition",
     "ecs:DeregisterTaskDefinition",
+    "ecs:RunTask",
+    "ecs:StopTask",
     "ecr:PutImage",
     "cloudformation:CreateStack",
+    "cloudformation:CreateChangeSet",
     "cloudformation:UpdateStack",
     "cloudformation:ExecuteChangeSet",
+    "cloudformation:DeleteStack",
+    "cloudformation:DeleteChangeSet",
     "rds:ModifyDBInstance",
     "rds:ModifyDBCluster",
 }
 path = Path(sys.argv[1])
-if path.stat().st_size >= 6144:
+if len("".join(path.read_text(encoding="utf-8").split())) >= 6144:
     raise SystemExit("policy exceeds the customer-managed policy size limit")
 document = json.loads(path.read_text(encoding="utf-8"))
 actions = []
@@ -200,11 +253,27 @@ if not approved.issubset(actions):
     raise SystemExit("one or more explicitly approved inspection actions are missing")
 if set(actions) != baseline | approved or len(actions) != len(set(actions)):
     raise SystemExit("policy has an unexpected action set")
-if forbidden.intersection(actions) or any("*" in action for action in actions):
+if (
+    forbidden.intersection(actions)
+    or any("*" in action for action in actions)
+    or any(action.startswith(("rds:Modify", "rds:Create", "rds:Delete")) for action in actions)
+):
     raise SystemExit("policy contains a prohibited action or wildcard action")
 for action, expected in expected_resources.items():
     if sorted(resources_by_action.get(action, [])) != sorted(expected):
         raise SystemExit(f"unexpected resource scope for {action}")
+statements_by_action = {}
+for statement in document.get("Statement", []):
+    values = statement.get("Action", [])
+    values = [values] if isinstance(values, str) else values
+    for action in values:
+        statements_by_action.setdefault(action, []).append(statement)
+for action, expected in expected_conditions.items():
+    if any(statement.get("Condition") != expected for statement in statements_by_action.get(action, [])):
+        raise SystemExit(f"unexpected condition for {action}")
+for action in set(actions) - set(expected_conditions):
+    if any("Condition" in statement for statement in statements_by_action.get(action, [])):
+        raise SystemExit(f"unexpected condition for {action}")
 PY
   then
     fail "the proposed inspection policy contains unapproved or mutating permissions"

@@ -8,6 +8,13 @@ const TASK_CLUSTER = "genesis-production";
 const TASK_SERVICE = "genesis-production-web";
 const CLOUDFORMATION_STACK = "GenesisRuntimeStack";
 const WEB_LOG_GROUP = "/genesis/production/web";
+const GENESIS_POLICY_PREFIX = `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisRuntimeStack-`;
+const INSPECTION_POLICY_ARNS = new Set([
+  `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-01-read-only-production-inspection`,
+  `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-02-staging-compute-network-auth`,
+  `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-03-staging-data-iam`,
+  `arn:aws:iam::${ACCOUNT_ID}:policy/GenesisStagingDeploy-04-production-guardrails-deny`,
+]);
 const DIGESTS = [
   "sha256:f0955c71791a7293969e1e49163e900073dcce06d01fc065e62c4bac7979d5ee",
   "sha256:fa8edfa7fd779a43d28e74ff6e479de2a3b4eb95cb964217f484ab47e0d8ce73",
@@ -60,6 +67,11 @@ function emit(label, value) {
 
 export function isAccessDenied(message) {
   return /AccessDenied|AccessDeniedException|UnauthorizedOperation|not authorized/i.test(String(message));
+}
+
+export function isGenesisManagedPolicyArn(arn) {
+  return typeof arn === "string"
+    && (INSPECTION_POLICY_ARNS.has(arn) || arn.startsWith(GENESIS_POLICY_PREFIX));
 }
 
 export function sanitizeRequestParameters(parameters = {}) {
@@ -381,6 +393,10 @@ function inspect(gaps) {
       const inline = aws("iam", "list-role-policies", ["--role-name", roleName], REGION, gaps);
       emit("PRODUCTION_IAM_INLINE_POLICY_NAMES", { role: roleName, names: asArray(inline.PolicyNames) });
       for (const policy of asArray(attached.AttachedPolicies)) {
+        if (!isGenesisManagedPolicyArn(policy.PolicyArn)) {
+          emit("PRODUCTION_IAM_POLICY_DETAILS_SKIPPED_OUT_OF_SCOPE", policy.PolicyArn);
+          continue;
+        }
         const detail = aws("iam", "get-policy", ["--policy-arn", policy.PolicyArn], REGION, gaps);
         const versionId = detail.Policy?.DefaultVersionId;
         if (versionId) aws("iam", "get-policy-version", ["--policy-arn", policy.PolicyArn, "--version-id", versionId], REGION, gaps);

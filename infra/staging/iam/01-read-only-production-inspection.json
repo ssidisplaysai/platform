@@ -42,7 +42,8 @@
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
-        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny"
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*"
       ]
     },
     {
@@ -91,7 +92,10 @@
       "Sid": "ProductionCloudFormationStackReadOnly",
       "Effect": "Allow",
       "Action": [
-        "cloudformation:DescribeStacks"
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:ListChangeSets",
+        "cloudformation:ListStackResources"
       ],
       "Resource": "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*"
     },
@@ -110,10 +114,12 @@
       "Action": [
         "ecs:DescribeTasks"
       ],
-      "Resource": [
-        "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/*",
-        "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
-      ]
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+        }
+      }
     },
     {
       "Sid": "ProductionEcsTaskListReadOnly",
@@ -121,7 +127,12 @@
       "Action": [
         "ecs:ListTasks"
       ],
-      "Resource": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+        }
+      }
     },
     {
       "Sid": "ProductionEcsTaskDefinitionListReadOnly",
@@ -194,6 +205,18 @@
         "ec2:DescribeRouteTables"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "ProductionSecretMetadataReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:GenesisFoundationStackGenes-qUJa9sj48pI1-D65uuI",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/openai-*",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-*"
+      ]
     }
   ]
 }

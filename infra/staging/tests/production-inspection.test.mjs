@@ -4,6 +4,7 @@ import {
   evaluateSecurityGroupPath,
   filterTaskDefinition,
   isAccessDenied,
+  isGenesisManagedPolicyArn,
   isTrackedImageDigest,
   productionImageReference,
   READ_ONLY_AWS_CALLS,
@@ -42,6 +43,21 @@ test("production inspection calls only the read-only API allowlist", () => {
       `${action} must remain read-only`,
     );
   }
+});
+
+test("managed policy metadata inspection is restricted to Genesis customer-managed policies", () => {
+  assert.equal(isGenesisManagedPolicyArn(
+    "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-RuntimePolicy",
+  ), true);
+  assert.equal(isGenesisManagedPolicyArn(
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+  ), true);
+  assert.equal(isGenesisManagedPolicyArn(
+    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+  ), false);
+  assert.equal(isGenesisManagedPolicyArn(
+    "arn:aws:iam::452630323448:policy/UnrelatedPolicy",
+  ), false);
 });
 
 test("CloudTrail sanitization handles taskDefinition as ARN string and omits unsafe request fields", () => {

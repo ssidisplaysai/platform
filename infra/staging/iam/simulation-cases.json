@@ -460,5 +460,37 @@
         "context":  {
 
                         }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecs:DescribeTasks",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/0123456789abcdef",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ecs:ListTasks",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:DescribeTasks",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task/genesis-production/0123456789abcdef",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:ListTasks",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging"
+                    }
     }
 ]
