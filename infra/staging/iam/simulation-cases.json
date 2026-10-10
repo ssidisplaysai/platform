@@ -472,7 +472,7 @@
     {
         "expect":  "allow",
         "action":  "ecs:ListTasks",
-        "resource":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+        "resource":  "*",
         "context":  {
                         "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
                     }
@@ -488,7 +488,7 @@
     {
         "expect":  "deny",
         "action":  "ecs:ListTasks",
-        "resource":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging",
+        "resource":  "*",
         "context":  {
                         "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging"
                     }

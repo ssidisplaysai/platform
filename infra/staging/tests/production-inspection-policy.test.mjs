@@ -200,6 +200,28 @@ test("ECS task inspection is authorized only for the production cluster", () => 
   }
 });
 
+test("ListTasks simulation uses wildcard resource and constrains access by cluster context", async () => {
+  const rawCases = await readFile(new URL("../iam/simulation-cases.json", import.meta.url), "utf8");
+  const cases = JSON.parse(rawCases.replace(/^\uFEFF/, ""));
+  const listTasksCases = cases.filter((testCase) => testCase.action === "ecs:ListTasks");
+  assert.equal(listTasksCases.length, 2);
+  assert.deepEqual(
+    listTasksCases.map(({ resource, expect, context }) => ({ resource, expect, cluster: context["ecs:cluster"] })),
+    [
+      {
+        resource: "*",
+        expect: "allow",
+        cluster: "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+      },
+      {
+        resource: "*",
+        expect: "deny",
+        cluster: "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-staging",
+      },
+    ],
+  );
+});
+
 test("only AWS APIs that require it use Resource star", () => {
   const starActions = addedStatements
     .filter((statement) => statement.Resource === "*")
