@@ -198,47 +198,6 @@ function aws(service, operation, args = [], region = REGION, gaps = new Set()) {
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
   });
-  const productionGroups = asArray(groups.SecurityGroups);
-  const productionVpcIds = new Set(asArray(networkInterfaces.NetworkInterfaces)
-    .filter((eni) => asArray(eni.Groups).some((group) =>
-      (service?.networkConfiguration?.awsvpcConfiguration?.securityGroups ?? []).includes(group.GroupId)))
-    .map((eni) => eni.VpcId));
-  const taskGroupIds = service?.networkConfiguration?.awsvpcConfiguration?.securityGroups ?? [];
-  const taskSubnets = asArray(subnets.Subnets).filter((subnet) =>
-    (service?.networkConfiguration?.awsvpcConfiguration?.subnets ?? []).includes(subnet.SubnetId));
-  const dbInstances = rdsInventory.DB_INSTANCES === "ACCESS_DENIED" ? [] : asArray(rdsInventory.DB_INSTANCES);
-  const dbClusters = rdsInventory.DB_CLUSTERS === "ACCESS_DENIED" ? [] : asArray(rdsInventory.DB_CLUSTERS);
-  const databaseRows = [...dbInstances, ...dbClusters];
-  const connectivity = databaseRows.map((database) => {
-    const dbGroups = database.securityGroups.map(({ id }) =>
-      productionGroups.find((group) => group.GroupId === id)).filter(Boolean);
-    const endpoint = database.endpoint ?? {};
-    const port = endpoint.port ?? database.port ?? 5432;
-    const taskGroupRecords = taskGroupIds.map((id) => productionGroups.find((group) => group.GroupId === id)).filter(Boolean);
-    const egressAllowed = taskGroupRecords.some((group) => asArray(group.IpPermissionsEgress).some((rule) =>
-      rule.IpProtocol === "-1" || (rule.IpProtocol === "tcp" && rule.FromPort <= port && rule.ToPort >= port)));
-    const path = evaluateSecurityGroupPath({
-      taskGroupIds,
-      taskVpcId: [...productionVpcIds][0],
-      taskSubnets: taskSubnets.map((subnet) => ({ subnetId: subnet.SubnetId, vpcId: subnet.VpcId })),
-      dbSecurityGroups: dbGroups.map((group) => ({
-        groupId: group.GroupId,
-        ipPermissions: group.IpPermissions,
-      })),
-      dbVpcId: database.vpcId,
-      dbPort: port,
-    });
-    return {
-      database: database.identifier,
-      endpoint: endpoint.address ?? null,
-      port,
-      taskSecurityGroups: taskGroupIds,
-      dbSecurityGroups: dbGroups.map((group) => group.GroupId),
-      taskEgressAllowsPort: egressAllowed,
-      ...path,
-    };
-  });
-  emit("PRODUCTION_ECS_TO_RDS_NETWORK", connectivity);
   if (result.status !== 0) {
     const message = result.stderr || result.stdout || "AWS CLI failed";
     if (isAccessDenied(message)) {
@@ -491,6 +450,47 @@ function inspect(gaps) {
     networkInterfaces: asArray(networkInterfaces.NetworkInterfaces).map(({ NetworkInterfaceId, VpcId, SubnetId, Groups, PrivateIpAddress, Description }) =>
       ({ NetworkInterfaceId, VpcId, SubnetId, Groups, PrivateIpAddress, Description })),
   });
+  const productionGroups = asArray(groups.SecurityGroups);
+  const productionVpcIds = new Set(asArray(networkInterfaces.NetworkInterfaces)
+    .filter((eni) => asArray(eni.Groups).some((group) =>
+      (service?.networkConfiguration?.awsvpcConfiguration?.securityGroups ?? []).includes(group.GroupId)))
+    .map((eni) => eni.VpcId));
+  const taskGroupIds = service?.networkConfiguration?.awsvpcConfiguration?.securityGroups ?? [];
+  const taskSubnets = asArray(subnets.Subnets).filter((subnet) =>
+    (service?.networkConfiguration?.awsvpcConfiguration?.subnets ?? []).includes(subnet.SubnetId));
+  const dbInstances = rdsInventory.DB_INSTANCES === "ACCESS_DENIED" ? [] : asArray(rdsInventory.DB_INSTANCES);
+  const dbClusters = rdsInventory.DB_CLUSTERS === "ACCESS_DENIED" ? [] : asArray(rdsInventory.DB_CLUSTERS);
+  const databaseRows = [...dbInstances, ...dbClusters];
+  const connectivity = databaseRows.map((database) => {
+    const dbGroups = database.securityGroups.map(({ id }) =>
+      productionGroups.find((group) => group.GroupId === id)).filter(Boolean);
+    const endpoint = database.endpoint ?? {};
+    const port = endpoint.port ?? database.port ?? 5432;
+    const taskGroupRecords = taskGroupIds.map((id) => productionGroups.find((group) => group.GroupId === id)).filter(Boolean);
+    const egressAllowed = taskGroupRecords.some((group) => asArray(group.IpPermissionsEgress).some((rule) =>
+      rule.IpProtocol === "-1" || (rule.IpProtocol === "tcp" && rule.FromPort <= port && rule.ToPort >= port)));
+    const path = evaluateSecurityGroupPath({
+      taskGroupIds,
+      taskVpcId: [...productionVpcIds][0],
+      taskSubnets: taskSubnets.map((subnet) => ({ subnetId: subnet.SubnetId, vpcId: subnet.VpcId })),
+      dbSecurityGroups: dbGroups.map((group) => ({
+        groupId: group.GroupId,
+        ipPermissions: group.IpPermissions,
+      })),
+      dbVpcId: database.vpcId,
+      dbPort: port,
+    });
+    return {
+      database: database.identifier,
+      endpoint: endpoint.address ?? null,
+      port,
+      taskSecurityGroups: taskGroupIds,
+      dbSecurityGroups: dbGroups.map((group) => group.GroupId),
+      taskEgressAllowsPort: egressAllowed,
+      ...path,
+    };
+  });
+  emit("PRODUCTION_ECS_TO_RDS_NETWORK", connectivity);
 
   const alarms = aws("cloudwatch", "describe-alarms", ["--max-records", "100"], REGION, gaps);
   emit("PRODUCTION_CLOUDWATCH_ALARMS", asArray(alarms.MetricAlarms).map(summarizeAlarm));
