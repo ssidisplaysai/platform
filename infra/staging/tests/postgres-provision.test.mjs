@@ -271,6 +271,7 @@ test("all five scoped managed policies remain below the IAM size ceiling", async
 
 test("database-only provisioning is isolated and gated from the broad staging provisioner", async () => {
   const script = await readRepoFile("infra/staging/postgres-provision.sh");
+  const secretHelper = await readRepoFile("infra/staging/create-postgres-app-secret.sh");
   const workflow = await readRepoFile(".github/workflows/genesis-staging-infra.yml");
   const admin = await readRepoFile("infra/staging/admin-bootstrap-iam.sh");
 
@@ -281,6 +282,21 @@ test("database-only provisioning is isolated and gated from the broad staging pr
   assert.match(script, /--engine-version 16\.13/);
   assert.match(script, /readonly DATABASE_NAME="genesis_staging"/);
   assert.match(script, /--db-name "\$DATABASE_NAME"/);
+  assert.match(script, /if \[ -z "\$app_secret_json" \]; then/);
+  assert.match(script, /create-postgres-app-secret\.sh/);
+  assert.match(script, /app_secret_json="\$\(aws_call secretsmanager describe-secret --secret-id "\$APP_SECRET_NAME" --output json\)"/);
+  assert.doesNotMatch(script, /--generate-secret-string/);
+  assert.match(secretHelper, /node "\$SCRIPT_DIR\/create-postgres-app-secret-payload\.mjs"/);
+  assert.match(secretHelper, /--secret-string "\$\(aws_cli_file_uri "\$secret_payload_file"\)"/);
+  assert.match(secretHelper, /--tags Key=Environment,Value=staging/);
+  assert.match(secretHelper, /trap cleanup_secret_payload EXIT/);
+  assert.match(secretHelper, /rm -f -- "\$secret_payload_file"/);
+  assert.match(secretHelper, /secretsmanager create-secret/);
+  assert.doesNotMatch(secretHelper, /put-secret-value|get-secret-value|GetRandomPassword/i);
+  assert.match(secretHelper, /outside the repository/);
+  const secretPayload = await readRepoFile("infra/staging/create-postgres-app-secret-payload.mjs");
+  assert.match(secretPayload, /randomBytes\(32\)\.toString\("hex"\)/);
+  assert.match(secretPayload, /open\(filePath, "wx", 0o600\)/);
   assert.match(script, /--db-instance-class db\.t4g\.micro/);
   assert.match(script, /--allocated-storage 20/);
   assert.match(script, /--storage-type gp3/);

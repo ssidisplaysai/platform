@@ -24,6 +24,7 @@ readonly DB_USERNAME="genesis_app"
 readonly PRIVATE_SUBNET_A="subnet-06cd58ffc45d36758"
 readonly PRIVATE_SUBNET_B="subnet-0f085d9270cd1bfe6"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/aws-cli-file-path.sh"
 
 export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
 
@@ -263,12 +264,9 @@ if [ -z "$subnet_group_json" ]; then
 fi
 
 if [ -z "$app_secret_json" ]; then
-  aws_call secretsmanager create-secret \
-    --name "$APP_SECRET_NAME" \
-    --description "$APP_SECRET_DESCRIPTION" \
-    --generate-secret-string "$(jq -cn --arg username "$DB_USERNAME" --arg database "$DATABASE_NAME" \
-      '{SecretStringTemplate:({username:$username,database:$database}|tojson),GenerateStringKey:"password",PasswordLength:40,ExcludePunctuation:true}')" \
-    --tags Key=Environment,Value=staging >/dev/null
+  bash "$SCRIPT_DIR/create-postgres-app-secret.sh" \
+    "$APP_SECRET_NAME" "$APP_SECRET_DESCRIPTION" "$DB_USERNAME" "$DATABASE_NAME" ||
+    fail "unable to create the staging PostgreSQL application secret"
   app_secret_json="$(aws_call secretsmanager describe-secret --secret-id "$APP_SECRET_NAME" --output json)"
 fi
 app_secret_arn="$(jq -er '.ARN' <<< "$app_secret_json")"
