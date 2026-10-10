@@ -642,6 +642,12 @@ elif [[ "${1:-}" == "--refresh-staging-postgres-policy" ]]; then
   [[ "$#" == "1" ]] || fail "the staging PostgreSQL-policy refresh mode does not accept extra arguments"
   refresh_staging_postgres_policy
   exit 0
+elif [[ "${1:-}" == "--refresh-production-guardrails-policy" ]]; then
+  [[ "$#" == "1" ]] || fail "the production guardrails-policy refresh mode does not accept extra arguments"
+  policy_file="$POLICY_DIR/04-production-guardrails-deny.json"
+  node "$POLICY_DIR/refresh-production-guardrails-policy.mjs" \
+    "$policy_file" "$(aws_cli_file_uri "$policy_file")"
+  exit $?
 elif [[ "$#" != "0" ]]; then
   fail "unexpected arguments; use only an explicitly supported managed-policy refresh mode"
 fi

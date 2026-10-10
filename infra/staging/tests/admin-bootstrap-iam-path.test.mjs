@@ -75,7 +75,7 @@ test("admin IAM helper routes every AWS file URI through the shared converter", 
   const { readFile } = await import("node:fs/promises");
   const helper = await readFile(new URL("../admin-bootstrap-iam.sh", import.meta.url), "utf8");
   assert.equal((helper.match(/file:\/\//g) ?? []).length, 0);
-  assert.equal((helper.match(/aws_cli_file_uri "\$policy_file"/g) ?? []).length, 4);
+  assert.equal((helper.match(/aws_cli_file_uri "\$policy_file"/g) ?? []).length, 5);
 });
 
 test("admin IAM helper exposes a separately validated staging data policy refresh", async () => {
@@ -99,6 +99,8 @@ test("admin IAM helper adds policy 05 without detaching the existing guardrail",
   assert.equal((helper.match(/aws iam attach-role-policy/g) ?? []).length, 1);
   assert.doesNotMatch(helper, /aws iam detach-role-policy/);
   assert.match(helper, /--refresh-staging-postgres-policy/);
+  assert.match(helper, /--refresh-production-guardrails-policy/);
+  assert.match(helper, /refresh-production-guardrails-policy\.mjs/);
   assert.match(helper, /STAGING_POSTGRES_POLICY=PASS/);
   assert.match(helper, /iam:AWSServiceName.*rds\.amazonaws\.com/);
 });

@@ -33,6 +33,14 @@ bash infra/staging/admin-bootstrap-iam.sh --refresh-staging-postgres-policy
 
 Each mode requires the relevant scoped policy to be already attached, requires zero inline policies, verifies the policy document and size, preserves the existing version history, and verifies the newly active default version. It never attaches a policy or modifies runtime resources.
 
+Policy 04 has a separate, stricter administrator-only refresh mode:
+
+```sh
+bash infra/staging/admin-bootstrap-iam.sh --refresh-production-guardrails-policy
+```
+
+It requires the expected account, existing role, zero inline policies, existing attached policy 04, and the exact reviewed deny-only document (pinned to its reviewed SHA-256 digest). It does not change attachments. If a new version is needed, the mode refuses to proceed at the five-version IAM limit rather than deleting history; after creation it rereads the default document and requires exact semantic equality. Any future policy 04 edit requires reviewing the semantic diff, updating the digest intentionally, and passing the guardrail tests.
+
 ECS `DescribeTasks` and `ListTasks` use `Resource: "*"` with `ArnEquals` on `ecs:cluster` set to the exact `genesis-production` cluster ARN. AWS's ECS IAM examples use this resource/condition pattern to scope task inspection to a cluster; task-resource-only or cluster-resource-only scopes do not authorize the combined API calls used by this inspection. The cluster condition prevents access to staging or unrelated ECS clusters.
 
 Other resource scopes are limited to the production ECR repository and production web log streams. AWS requires `Resource: "*"` for the RDS Describe APIs, `ecs:ListTaskDefinitions`, and `ec2:DescribeRouteTables` because they do not support resource-level permissions. `cloudwatch:DescribeAlarms` uses wildcard resource scope because alarm inventory includes composite alarms. These statements contain no wildcard actions.
