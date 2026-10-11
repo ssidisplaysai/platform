@@ -6,5 +6,12 @@ node_modules
 *.log
 coverage
 infra
+!infra/
+infra/*
+!infra/staging/
+infra/staging/*
+!infra/staging/certificates/
+infra/staging/certificates/*
+!infra/staging/certificates/aws-rds-global-bundle.pem
 docs
 .genesis-*

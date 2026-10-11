@@ -48,6 +48,10 @@
           "value": "genesis_staging"
         },
         {
+          "name": "GENESIS_RDS_CA_CERT",
+          "value": "/app/certs/rds-global-bundle.pem"
+        },
+        {
           "name": "POSTGRES_CERTIFICATION_SOURCE",
           "value": "/mnt/genesis-persistence/foundation/share-to-grow-repository.json"
         }

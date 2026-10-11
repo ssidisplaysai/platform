@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Client, Pool } from "pg";
 import { FOUNDATION_STATE_COLLECTIONS } from "./foundation-state-envelope.mjs";
 import { postgresClientConfig } from "./postgres-connection.mjs";
+import { validateRdsCaCertificate } from "./postgres-ca-preflight.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedHost = "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com";
@@ -331,6 +332,10 @@ async function verifyImport(config, sourceEnvelope, expectedRowCount) {
 async function main() {
   if (process.env.GENESIS_ENVIRONMENT !== "staging") fail("certification requires GENESIS_ENVIRONMENT=staging");
   if (process.env.GENESIS_STATE_BACKEND) fail("certification must not select or change the application runtime backend");
+
+  currentStep = "RDS CA certificate preflight";
+  validateRdsCaCertificate(process.env);
+  console.log("RDS_CA_CERTIFICATE=READY");
 
   const sourcePath = process.env.POSTGRES_CERTIFICATION_SOURCE;
   if (sourcePath !== expectedSource) fail("certification source path differs from the approved EFS foundation path");

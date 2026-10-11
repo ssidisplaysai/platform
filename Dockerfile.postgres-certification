@@ -10,6 +10,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
+COPY infra/staging/certificates/aws-rds-global-bundle.pem /app/certs/rds-global-bundle.pem
 RUN chown -R node:node /app
 
 USER node

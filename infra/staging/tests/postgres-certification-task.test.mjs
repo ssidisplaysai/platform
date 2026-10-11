@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -35,11 +36,14 @@ test("certification task is a private one-off with read-only EFS and no producti
   ]);
   assert.ok(container.environment.some(({ name, value }) =>
     name === "GENESIS_ENVIRONMENT" && value === "staging"));
+  assert.ok(container.environment.some(({ name, value }) =>
+    name === "GENESIS_RDS_CA_CERT" && value === "/app/certs/rds-global-bundle.pem"));
   assert.deepEqual(container.environment.map(({ name }) => name).sort(), [
     "DB_HOST",
     "DB_NAME",
     "DB_PORT",
     "GENESIS_ENVIRONMENT",
+    "GENESIS_RDS_CA_CERT",
     "POSTGRES_CERTIFICATION_SOURCE",
   ]);
   assert.ok(!container.environment.some(({ name }) => name === "GENESIS_STATE_BACKEND"));
@@ -55,15 +59,36 @@ test("certification task is a private one-off with read-only EFS and no producti
   assert.equal(container.logConfiguration.options["awslogs-stream-prefix"], "postgres-certification");
 });
 
+test("certification path keeps TLS verification enabled and has no TLS bypass", async () => {
+  const paths = [
+    "scripts/postgres-connection.mjs",
+    "scripts/postgres-ca-preflight.mjs",
+    "scripts/staging-postgres-certification.mjs",
+    "Dockerfile.postgres-certification",
+    "infra/staging/postgres-certification-task-definition.template.json",
+  ];
+  const sources = await Promise.all(paths.map((path) => readFile(resolve(repoRoot, path), "utf8")));
+  const source = sources.join("\n");
+  assert.match(source, /rejectUnauthorized:\s*true/);
+  assert.doesNotMatch(source, /rejectUnauthorized:\s*false/);
+  assert.doesNotMatch(source, /NODE_TLS_REJECT_UNAUTHORIZED\s*=/);
+});
+
 test("certification image is isolated from the live runtime Dockerfile", async () => {
-  const [runtime, certification] = await Promise.all([
+  const [runtime, certification, bundle] = await Promise.all([
     readFile(resolve(repoRoot, "Dockerfile"), "utf8"),
     readFile(resolve(repoRoot, "Dockerfile.postgres-certification"), "utf8"),
+    readFile(resolve(repoRoot, "infra/staging/certificates/aws-rds-global-bundle.pem")),
   ]);
   assert.match(runtime, /CMD \["node_modules\/next\/dist\/bin\/next", "start"/);
   assert.match(certification, /scripts\/staging-postgres-certification\.mjs/);
+  assert.match(certification, /COPY infra\/staging\/certificates\/aws-rds-global-bundle\.pem \/app\/certs\/rds-global-bundle\.pem/);
   assert.match(certification, /30m/);
   assert.match(certification, /USER node/);
+  assert.equal(
+    createHash("sha256").update(bundle).digest("hex"),
+    "fe45bbebf92ad3e27a583bbb2ddd1553c521ed4d49af5514dc0a40372ea5395c",
+  );
 });
 
 test("permission plan identifies only missing task launch and scoped credential injection grants", async () => {
