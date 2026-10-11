@@ -28,6 +28,8 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/.next ./.next
 COPY --from=build --chown=node:node /app/resources ./resources
 COPY --from=build --chown=node:node /app/public ./public
+COPY --chown=node:node infra/staging/certificates/aws-rds-global-bundle.pem /app/certs/rds-global-bundle.pem
+RUN echo "fe45bbebf92ad3e27a583bbb2ddd1553c521ed4d49af5514dc0a40372ea5395c  /app/certs/rds-global-bundle.pem" | sha256sum -c -
 USER node
 EXPOSE 3000
 CMD ["node_modules/next/dist/bin/next", "start", "-p", "3000", "-H", "0.0.0.0"]
