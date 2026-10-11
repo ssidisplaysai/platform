@@ -57,6 +57,7 @@ function fakePool({
             namespace,
             schema_version: schemaVersion,
             revision,
+            updated_at_raw: updatedAt,
             updated_at: updatedAt,
             canonical_text: canonicalText,
             source_event_ids: sourceEventIds,

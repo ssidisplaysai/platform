@@ -20,6 +20,7 @@ const PRECHECK_QUERY = `SELECT
   namespace,
   schema_version,
   revision::text AS revision,
+  updated_at AS updated_at_raw,
   to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at,
   data::text AS canonical_text,
   (
@@ -139,7 +140,7 @@ export async function restorePostgresBaselineFromCertifiedEfs({
       JSON.stringify(sourceEnvelope.data),
       expectedPreRestore.schemaVersion,
       expectedPreRestore.revision,
-      expectedPreRestore.updatedAt,
+      row.updated_at_raw,
     ]);
     if (update.rowCount !== 1) {
       throw new Error("restore update affected zero or multiple rows");
