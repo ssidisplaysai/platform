@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client, Pool } from "pg";
-import { FOUNDATION_STATE_COLLECTIONS } from "./foundation-state-envelope.mjs";
+import { FOUNDATION_STATE_COLLECTIONS, validateFoundationStateEnvelope } from "./foundation-state-envelope.mjs";
 import { postgresClientConfig } from "./postgres-connection.mjs";
 import { validateRdsCaCertificate } from "./postgres-ca-preflight.mjs";
 import { diagnosePostgresSchemaReadOnly } from "./postgres-schema-diagnostic.mjs";
@@ -14,6 +14,11 @@ import { verifyFoundationSchema } from "./postgres-schema-verifier.mjs";
 import { formatChildFailureOutput } from "./postgres-child-output.mjs";
 import { inventoryFoundationRows } from "./postgres-adapter-diagnostic.mjs";
 import { cleanupLegacyCertificationRows } from "./postgres-legacy-cleanup.mjs";
+import {
+  BUSINESS_NAMESPACE as RESTORE_NAMESPACE,
+  KNOWN_SYNTHETIC_RECEIPTS,
+  restorePostgresBaselineFromCertifiedEfs,
+} from "./postgres-baseline-restore.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedHost = "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com";
@@ -22,6 +27,13 @@ const expectedAppUser = "genesis_app";
 const expectedAdminUser = "genesis_admin";
 const expectedSource = "/mnt/genesis-persistence/foundation/share-to-grow-repository.json";
 const namespace = "share-to-grow-repository";
+const expectedEfsRevision = 24;
+const expectedEfsUpdatedAt = "2026-10-09T23:30:07.250Z";
+const expectedEfsSourceSha256 = "f1c46c53164e5f155bc09fe952a70f10dd3467fec662277927a25c6d5d07421c";
+const expectedEfsDataHash = "eaa47329a63dcfe8097d42b234461be9b7a16d35a8349df3d69f21061b3d9b37";
+const expectedPreRestoreRevision = 35;
+const expectedPreRestoreUpdatedAt = "2026-10-11T13:17:40.115Z";
+const expectedPreRestoreDataHash = "49e92d03abc8b710598660bb7c7ccd33d19541947be497cbcb90dea2a5d21af2";
 let currentStep = "preflight";
 
 function fail(message) {
@@ -79,6 +91,8 @@ async function verifyEfsSource(sourcePath) {
   } catch {
     fail("EFS foundation source is not valid JSON");
   }
+  validateFoundationStateEnvelope(envelope);
+  const canonicalData = canonicalJson(envelope.data);
   const counts = Object.fromEntries(FOUNDATION_STATE_COLLECTIONS.map((key) => [
     key,
     Array.isArray(envelope?.data?.[key]) ? envelope.data[key].length : 0,
@@ -106,6 +120,7 @@ async function verifyEfsSource(sourcePath) {
     counts,
     ids,
     sha256: createHash("sha256").update(raw).digest("hex"),
+    canonicalDataHash: createHash("sha256").update(canonicalData, "utf8").digest("hex"),
   };
 }
 
@@ -279,6 +294,77 @@ async function cleanupLegacyRows(config) {
   console.log("POSTGRES_LEGACY_CERT_ROWS_CLEANUP=PASS");
 }
 
+async function restoreBusinessBaselineFromCertifiedEfs(config) {
+  if (config.user !== expectedAppUser) fail("baseline restore requires the approved application database role");
+  if (namespace !== RESTORE_NAMESPACE) fail("restore namespace guard differs from the approved business namespace");
+
+  currentStep = "private endpoint";
+  await verifyEndpoint();
+  console.log("DATABASE_ENDPOINT_PRIVATE=PASS");
+
+  currentStep = "EFS pre-restore verification";
+  const source = await verifyEfsSource(expectedSource);
+  if (
+    source.sha256 !== expectedEfsSourceSha256
+    || source.envelope.schemaVersion !== 1
+    || source.envelope.revision !== expectedEfsRevision
+    || source.envelope.updatedAt !== expectedEfsUpdatedAt
+    || source.canonicalDataHash !== expectedEfsDataHash
+  ) {
+    fail("precheck failed: certified EFS source metadata differs from the approved revision-24 baseline");
+  }
+  console.log(`EFS_SOURCE_PRESENT=PASS sha256=${source.sha256}`);
+  console.log(`EFS_BASELINE_METADATA=${JSON.stringify({
+    namespace,
+    schemaVersion: source.envelope.schemaVersion,
+    revision: source.envelope.revision,
+    updatedAt: source.envelope.updatedAt,
+    canonicalHash: source.canonicalDataHash,
+    counts: source.counts,
+  })}`);
+
+  currentStep = "PostgreSQL baseline restore";
+  const pool = new Pool({
+    ...config,
+    max: 1,
+    application_name: "genesis-staging-postgres-baseline-restore",
+  });
+  let result;
+  try {
+    result = await restorePostgresBaselineFromCertifiedEfs({
+      pool,
+      sourceEnvelope: source.envelope,
+      sourceCanonicalHash: source.canonicalDataHash,
+      expectedPreRestore: {
+        schemaVersion: 1,
+        revision: expectedPreRestoreRevision,
+        updatedAt: expectedPreRestoreUpdatedAt,
+        canonicalHash: expectedPreRestoreDataHash,
+      },
+      allowedSyntheticReceiptIds: KNOWN_SYNTHETIC_RECEIPTS,
+    });
+    console.log(`POSTGRES_RESTORE_BEFORE=${JSON.stringify(result.before)}`);
+    console.log(`POSTGRES_RESTORE_AFTER=${JSON.stringify(result.after)}`);
+    console.log(`POSTGRES_RESTORE_ROWS_UPDATED=${result.rowsUpdated}`);
+    await verifyFoundationSchema(pool, expectedDatabase, expectedAppUser);
+    console.log("POSTGRES_SCHEMA=PASS columns=5 primary_key=namespace indexes=1 constraints=3 migration=recorded");
+    const migrations = await pool.query(
+      "SELECT name, count(*)::integer AS count FROM public.genesis_schema_migrations GROUP BY name ORDER BY name",
+    );
+    console.log(`POSTGRES_MIGRATION_RECORDS=${JSON.stringify(migrations.rows)}`);
+  } finally {
+    await pool.end();
+  }
+
+  currentStep = "EFS post-restore verification";
+  const efsAfter = await verifyEfsSource(expectedSource);
+  if (efsAfter.sha256 !== expectedEfsSourceSha256) {
+    fail("postcheck failed: EFS source checksum changed during restore");
+  }
+  console.log("EFS_SOURCE_UNCHANGED=PASS");
+  console.log("POSTGRES_BASELINE_RESTORE=PASS");
+}
+
 async function diagnoseAdapter(config) {
   currentStep = "private endpoint";
   await verifyEndpoint();
@@ -397,6 +483,12 @@ async function main() {
     if (config.user !== expectedAppUser) fail("adapter diagnostic requires the approved application database role");
     await diagnoseAdapter(config);
     console.log("POSTGRES_ADAPTER_DIAGNOSTIC=PASS");
+    return;
+  }
+
+  if (process.argv[2] === "--restore-postgres-from-certified-efs") {
+    const config = safeConfig();
+    await restoreBusinessBaselineFromCertifiedEfs(config);
     return;
   }
 
