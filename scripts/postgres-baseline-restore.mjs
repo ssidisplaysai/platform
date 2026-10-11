@@ -59,6 +59,16 @@ function canonicalDataHash(data) {
   return createHash("sha256").update(stableJson(data), "utf8").digest("hex");
 }
 
+function hashPostgresJsonbText(text, phase) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error(`${phase} failed: PostgreSQL business namespace data is not valid JSON`);
+  }
+  return canonicalDataHash(parsed);
+}
+
 function canonicalSet(values) {
   return [...new Set(values)].sort();
 }
@@ -108,7 +118,7 @@ export async function restorePostgresBaselineFromCertifiedEfs({
     ) {
       throw new Error("precheck failed: business namespace metadata differs from the expected pre-restore state");
     }
-    const preHash = createHash("sha256").update(row.canonical_text, "utf8").digest("hex");
+    const preHash = hashPostgresJsonbText(row.canonical_text, "precheck");
     if (preHash !== expectedPreRestore.canonicalHash) {
       throw new Error("precheck failed: business namespace canonical hash differs from expectation");
     }
@@ -149,7 +159,7 @@ export async function restorePostgresBaselineFromCertifiedEfs({
     ) {
       throw new Error("postcheck failed: business namespace metadata does not match the certified EFS envelope");
     }
-    const postHash = createHash("sha256").update(after.canonical_text, "utf8").digest("hex");
+    const postHash = hashPostgresJsonbText(after.canonical_text, "postcheck");
     if (postHash !== sourceCanonicalHash || canonicalDataHash(sourceEnvelope.data) !== sourceCanonicalHash) {
       throw new Error("postcheck failed: canonical hash mismatch after restore");
     }
