@@ -20,7 +20,7 @@ const PRECHECK_QUERY = `SELECT
   namespace,
   schema_version,
   revision::text AS revision,
-  updated_at AS updated_at_raw,
+  updated_at::text AS updated_at_raw,
   to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at,
   data::text AS canonical_text,
   (

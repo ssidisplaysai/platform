@@ -38,6 +38,7 @@ function fakePool({
   postRevision = "24",
   postUpdatedAt = "2026-10-09T23:30:07.250Z",
   postCanonicalText = '{"sourceEventReceipts":[{"sourceEventId":"base-receipt"}]}',
+  updatedAtRaw = updatedAt,
 }) {
   const state = { calls: [], committed: false };
   const client = {
@@ -57,7 +58,7 @@ function fakePool({
             namespace,
             schema_version: schemaVersion,
             revision,
-            updated_at_raw: updatedAt,
+            updated_at_raw: updatedAtRaw,
             updated_at: updatedAt,
             canonical_text: canonicalText,
             source_event_ids: sourceEventIds,
@@ -187,6 +188,25 @@ test("POSTCHECK rejects actual data differences", async () => {
     /postcheck failed: canonical hash mismatch/,
   );
   assert.ok(state.calls.some(({ sql }) => sql === "ROLLBACK"));
+});
+
+test("UPDATE guard uses exact locked updated_at value from database row", async () => {
+  const sourceData = { sourceEventReceipts: [{ sourceEventId: "base-receipt" }] };
+  const preData = { sourceEventReceipts: [{ sourceEventId: "base-receipt" }, ...KNOWN_SYNTHETIC_RECEIPTS.map((id) => ({ sourceEventId: id }))] };
+  const updatedAtRounded = "2026-10-11T13:17:40.115Z";
+  const updatedAtExact = "2026-10-11 13:17:40.115362+00";
+  const { pool, state } = fakePool({
+    canonicalText: JSON.stringify(preData),
+    updatedAt: updatedAtRounded,
+    updatedAtRaw: updatedAtExact,
+  });
+  await restorePostgresBaselineFromCertifiedEfs({
+    ...restoreInput({ sourceData, preData }),
+    pool,
+  });
+  const updateCall = state.calls.find(({ sql }) => sql.startsWith("UPDATE public.genesis_foundation_state"));
+  assert.ok(updateCall);
+  assert.equal(updateCall.params[7], updatedAtExact);
 });
 
 test("transaction begins before precheck row lock", async () => {
