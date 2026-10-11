@@ -10,6 +10,7 @@ import { FOUNDATION_STATE_COLLECTIONS } from "./foundation-state-envelope.mjs";
 import { postgresClientConfig } from "./postgres-connection.mjs";
 import { validateRdsCaCertificate } from "./postgres-ca-preflight.mjs";
 import { diagnosePostgresSchemaReadOnly } from "./postgres-schema-diagnostic.mjs";
+import { verifyFoundationSchema } from "./postgres-schema-verifier.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedHost = "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com";
@@ -231,62 +232,7 @@ function applicationEnvironment() {
 async function verifySchema(config) {
   const pool = new Pool({ ...config, max: 1, application_name: "genesis-staging-postgres-certification-schema" });
   try {
-    const result = await pool.query(`
-      SELECT
-        current_database() AS database,
-        current_user AS username,
-        to_regclass('public.genesis_foundation_state') IS NOT NULL AS table_exists,
-        (
-          SELECT array_agg(column_name ORDER BY ordinal_position)
-          FROM information_schema.columns
-          WHERE table_schema = 'public' AND table_name = 'genesis_foundation_state'
-        ) AS columns,
-        (
-          SELECT array_agg(a.attname ORDER BY key_column.ordinality)
-          FROM pg_index i
-          JOIN pg_class t ON t.oid = i.indrelid
-          JOIN pg_namespace n ON n.oid = t.relnamespace
-          CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS key_column(attnum, ordinality)
-          JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = key_column.attnum
-          WHERE n.nspname = 'public' AND t.relname = 'genesis_foundation_state' AND i.indisprimary
-        ) AS primary_key,
-        (
-          SELECT array_agg(indexname ORDER BY indexname)
-          FROM pg_indexes
-          WHERE schemaname = 'public' AND tablename = 'genesis_foundation_state'
-        ) AS indexes,
-        (
-          SELECT array_agg(conname ORDER BY conname)
-          FROM pg_constraint c
-          JOIN pg_class t ON t.oid = c.conrelid
-          JOIN pg_namespace n ON n.oid = t.relnamespace
-          WHERE n.nspname = 'public' AND t.relname = 'genesis_foundation_state'
-        ) AS constraints
-    `);
-    const row = result.rows[0];
-    const expectedColumns = ["namespace", "schema_version", "revision", "updated_at", "data"];
-    const expectedConstraints = [
-      "genesis_foundation_state_data_object",
-      "genesis_foundation_state_pkey",
-      "genesis_foundation_state_revision_nonnegative",
-    ];
-    const expectedIndexes = ["genesis_foundation_state_pkey"];
-    if (
-      row?.database !== expectedDatabase
-      || row?.username !== expectedAppUser
-      || row?.table_exists !== true
-      || JSON.stringify(row.columns) !== JSON.stringify(expectedColumns)
-      || JSON.stringify(row.primary_key) !== JSON.stringify(["namespace"])
-      || JSON.stringify(row.indexes) !== JSON.stringify(expectedIndexes)
-      || JSON.stringify(row.constraints) !== JSON.stringify(expectedConstraints)
-    ) {
-      fail("foundation state schema does not match the approved migration");
-    }
-    const migration = await pool.query(
-      "SELECT 1 FROM public.genesis_schema_migrations WHERE name = $1",
-      ["20261009000000_foundation_state"],
-    );
-    if (migration.rowCount !== 1) fail("foundation state migration is not recorded");
+    await verifyFoundationSchema(pool, expectedDatabase, expectedAppUser);
     console.log("POSTGRES_SCHEMA=PASS columns=5 primary_key=namespace indexes=1 constraints=3 migration=recorded");
   } finally {
     await pool.end();
