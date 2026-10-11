@@ -9,7 +9,10 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build \
+RUN ./node_modules/.bin/tsc scripts/staging-runtime-postgres-probe.ts \
+      --outDir probe-dist --rootDir . --target ES2022 --module commonjs \
+      --moduleResolution node --esModuleInterop --skipLibCheck --strict --types node \
+ && npm run build \
  && test -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js \
  && npm prune --omit=dev
 
@@ -28,6 +31,7 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/.next ./.next
 COPY --from=build --chown=node:node /app/resources ./resources
 COPY --from=build --chown=node:node /app/public ./public
+COPY --from=build --chown=node:node /app/probe-dist ./probe-dist
 COPY --chown=node:node infra/staging/certificates/aws-rds-global-bundle.pem /app/certs/rds-global-bundle.pem
 RUN echo "fe45bbebf92ad3e27a583bbb2ddd1553c521ed4d49af5514dc0a40372ea5395c  /app/certs/rds-global-bundle.pem" | sha256sum -c -
 USER node
