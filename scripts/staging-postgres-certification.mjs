@@ -13,6 +13,7 @@ import { diagnosePostgresSchemaReadOnly } from "./postgres-schema-diagnostic.mjs
 import { verifyFoundationSchema } from "./postgres-schema-verifier.mjs";
 import { formatChildFailureOutput } from "./postgres-child-output.mjs";
 import { inventoryFoundationRows } from "./postgres-adapter-diagnostic.mjs";
+import { cleanupLegacyCertificationRows } from "./postgres-legacy-cleanup.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedHost = "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com";
@@ -256,6 +257,28 @@ async function logFoundationRowInventory(config, phase) {
   }
 }
 
+async function cleanupLegacyRows(config) {
+  const pool = new Pool({ ...config, max: 1, application_name: "genesis-staging-postgres-legacy-cleanup" });
+  try {
+    const result = await cleanupLegacyCertificationRows(pool);
+    console.log(`POSTGRES_BUSINESS_SNAPSHOT_BEFORE=${JSON.stringify(result.before)}`);
+    console.log(`POSTGRES_LEGACY_ROWS_DELETED=${result.deleted}`);
+    console.log(`POSTGRES_FOUNDATION_NAMESPACES_AFTER=${JSON.stringify(result.namespaces)}`);
+    console.log(`POSTGRES_BUSINESS_SNAPSHOT_AFTER=${JSON.stringify(result.after)}`);
+    await verifyFoundationSchema(pool, expectedDatabase, expectedAppUser);
+    console.log("POSTGRES_SCHEMA=PASS columns=5 primary_key=namespace indexes=1 constraints=3 migration=recorded");
+    const migrations = await pool.query(
+      "SELECT name, count(*)::integer AS count FROM public.genesis_schema_migrations GROUP BY name ORDER BY name",
+    );
+    console.log(`POSTGRES_MIGRATION_RECORDS=${JSON.stringify(migrations.rows)}`);
+  } finally {
+    await pool.end();
+  }
+  const efs = await verifyEfsSource(expectedSource);
+  console.log(`EFS_SOURCE_PRESENT=PASS sha256=${efs.sha256}`);
+  console.log("POSTGRES_LEGACY_CERT_ROWS_CLEANUP=PASS");
+}
+
 async function diagnoseAdapter(config) {
   currentStep = "private endpoint";
   await verifyEndpoint();
@@ -374,6 +397,17 @@ async function main() {
     if (config.user !== expectedAppUser) fail("adapter diagnostic requires the approved application database role");
     await diagnoseAdapter(config);
     console.log("POSTGRES_ADAPTER_DIAGNOSTIC=PASS");
+    return;
+  }
+
+  if (process.argv[2] === "--cleanup-legacy-certification-rows") {
+    const config = safeConfig();
+    if (config.user !== expectedAppUser) fail("legacy certification cleanup requires the approved application database role");
+    currentStep = "private endpoint";
+    await verifyEndpoint();
+    console.log("DATABASE_ENDPOINT_PRIVATE=PASS");
+    currentStep = "legacy certification row cleanup";
+    await cleanupLegacyRows(config);
     return;
   }
 
