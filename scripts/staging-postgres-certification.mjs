@@ -11,6 +11,8 @@ import { postgresClientConfig } from "./postgres-connection.mjs";
 import { validateRdsCaCertificate } from "./postgres-ca-preflight.mjs";
 import { diagnosePostgresSchemaReadOnly } from "./postgres-schema-diagnostic.mjs";
 import { verifyFoundationSchema } from "./postgres-schema-verifier.mjs";
+import { formatChildFailureOutput } from "./postgres-child-output.mjs";
+import { inventoryFoundationRows } from "./postgres-adapter-diagnostic.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedHost = "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com";
@@ -211,9 +213,76 @@ function runRepositoryCommand(label, executable, args, environment, expectedErro
   }
   if (result.error || result.status !== 0) {
     const code = result.error?.code ?? `EXIT_${result.status}`;
+    console.error(formatChildFailureOutput(label, result, environment));
     fail(`${label} failed (${code})`);
   }
   return result;
+}
+
+const liveTestFile = "src/modules/foundation/__tests__/postgres-foundation-state-store.live.test.ts";
+
+function runLiveAdapterTest(label, testNamePattern) {
+  const testEnvironment = applicationEnvironment();
+  testEnvironment.POSTGRES_LIVE_CERTIFICATION = "1";
+  runRepositoryCommand(
+    label,
+    process.execPath,
+    [
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--cacheDirectory=/tmp/jest-cache",
+      liveTestFile,
+      "-t",
+      testNamePattern,
+    ],
+    testEnvironment,
+  );
+  console.log(`${label}=PASS`);
+}
+
+function runLiveAdapterTests() {
+  runLiveAdapterTest("POSTGRES_LIVE_INTEGRATION", "POSTGRES_LIVE_INTEGRATION");
+  runLiveAdapterTest("POSTGRES_CONCURRENCY_CERTIFICATION", "POSTGRES_CONCURRENCY_CERTIFICATION");
+}
+
+async function logFoundationRowInventory(config, phase) {
+  const pool = new Pool({ ...config, max: 1, application_name: "genesis-staging-postgres-adapter-diagnostic-inventory" });
+  try {
+    const rows = await inventoryFoundationRows(pool);
+    console.log(`POSTGRES_FOUNDATION_ROWS_${phase}=${JSON.stringify(rows)}`);
+    return rows;
+  } finally {
+    await pool.end();
+  }
+}
+
+async function diagnoseAdapter(config) {
+  currentStep = "private endpoint";
+  await verifyEndpoint();
+  console.log("DATABASE_ENDPOINT_PRIVATE=PASS");
+
+  currentStep = "database connection";
+  const identityPool = new Pool({ ...config, max: 1, application_name: "genesis-staging-postgres-adapter-diagnostic-identity" });
+  try {
+    const identity = await identityPool.query("SELECT current_database() AS database, current_user AS username");
+    if (identity.rows[0]?.database !== expectedDatabase || identity.rows[0]?.username !== expectedAppUser) {
+      fail("application database connection identity does not match the approved staging target");
+    }
+  } finally {
+    await identityPool.end();
+  }
+  console.log("DATABASE_CONNECTION=PASS");
+
+  currentStep = "foundation row inventory before";
+  await logFoundationRowInventory(config, "BEFORE");
+
+  currentStep = "live adapter integration test";
+  runLiveAdapterTest("POSTGRES_LIVE_INTEGRATION", "POSTGRES_LIVE_INTEGRATION");
+  currentStep = "live adapter concurrency test";
+  runLiveAdapterTest("POSTGRES_CONCURRENCY_CERTIFICATION", "POSTGRES_CONCURRENCY_CERTIFICATION");
+
+  currentStep = "foundation row inventory after";
+  await logFoundationRowInventory(config, "AFTER");
 }
 
 function applicationEnvironment() {
@@ -300,6 +369,14 @@ async function main() {
   validateRdsCaCertificate(process.env);
   console.log("RDS_CA_CERTIFICATE=READY");
 
+  if (process.argv[2] === "--diagnose-adapter") {
+    const config = safeConfig();
+    if (config.user !== expectedAppUser) fail("adapter diagnostic requires the approved application database role");
+    await diagnoseAdapter(config);
+    console.log("POSTGRES_ADAPTER_DIAGNOSTIC=PASS");
+    return;
+  }
+
   if (process.argv[2] === "--diagnose-schema") {
     const diagnosticUsername = process.env.DB_ADMIN_USERNAME?.trim();
     const diagnosticPassword = process.env.DB_ADMIN_PASSWORD;
@@ -361,19 +438,7 @@ async function main() {
   await verifySchema(config);
 
   currentStep = "real adapter integration and concurrency tests";
-  const testEnvironment = applicationEnvironment();
-  testEnvironment.POSTGRES_LIVE_CERTIFICATION = "1";
-  runRepositoryCommand(
-    "POSTGRES_LIVE_ADAPTER_TESTS",
-    process.execPath,
-    [
-      "node_modules/jest/bin/jest.js",
-      "--runInBand",
-      "--cacheDirectory=/tmp/jest-cache",
-      "src/modules/foundation/__tests__/postgres-foundation-state-store.live.test.ts",
-    ],
-    testEnvironment,
-  );
+  runLiveAdapterTests();
   console.log("POSTGRES_ADAPTER_CERTIFICATION=PASS");
 
   currentStep = "import dry run";

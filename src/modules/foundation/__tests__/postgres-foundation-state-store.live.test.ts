@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { Pool } from "pg";
 import {
   FoundationPersistenceConflictError,
@@ -6,17 +7,42 @@ import {
 import { createPostgresFoundationStateStore } from "../postgres-foundation-state-store";
 
 const enabled = process.env.POSTGRES_LIVE_CERTIFICATION === "1";
+const BUSINESS_NAMESPACE = "share-to-grow-repository";
+const CERTIFICATION_PREFIXES = ["certification-integration-", "certification-concurrency-"];
+
+function tlsConfig() {
+  const configured = process.env.GENESIS_RDS_CA_CERT?.trim();
+  if (!configured) return { rejectUnauthorized: true };
+  const ca = configured.includes("-----BEGIN CERTIFICATE-----")
+    ? configured
+    : existsSync(configured)
+      ? readFileSync(configured, "utf8")
+      : undefined;
+  if (!ca) throw new Error("GENESIS_RDS_CA_CERT does not reference a PEM certificate.");
+  return { ca, rejectUnauthorized: true };
+}
+
+function directPool(applicationName: string) {
+  return new Pool({
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || "5432"),
+    database: process.env.DB_NAME,
+    user: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    ssl: tlsConfig(),
+    max: 1,
+    application_name: applicationName,
+  });
+}
+
+function isOwnedCertificationNamespace(namespace: string) {
+  return namespace !== BUSINESS_NAMESPACE
+    && CERTIFICATION_PREFIXES.some((prefix) => namespace.startsWith(prefix));
+}
 
 (enabled ? describe : describe.skip)("live staging PostgreSQL foundation state certification", () => {
-  const config = {
-    DB_HOST: process.env.DB_HOST,
-    DB_PORT: process.env.DB_PORT,
-    DB_NAME: process.env.DB_NAME,
-    DB_USERNAME: process.env.DB_USERNAME,
-    DB_PASSWORD: process.env.DB_PASSWORD,
-  };
-  const integrationNamespace = `staging-certification:${randomUUID()}`;
-  const concurrencyNamespace = `staging-certification:${randomUUID()}`;
+  const integrationNamespace = `certification-integration-${randomUUID()}`;
+  const concurrencyNamespace = `certification-concurrency-${randomUUID()}`;
   const ownedNamespaces = [integrationNamespace, concurrencyNamespace];
 
   function createStore(applicationName: string) {
@@ -24,27 +50,18 @@ const enabled = process.env.POSTGRES_LIVE_CERTIFICATION === "1";
   }
 
   afterAll(async () => {
-    const cleanupPool = new Pool({
-      host: config.DB_HOST,
-      port: Number(config.DB_PORT || "5432"),
-      database: config.DB_NAME,
-      user: config.DB_USERNAME,
-      password: config.DB_PASSWORD,
-      ssl: { rejectUnauthorized: true },
-      max: 1,
-      application_name: "genesis-staging-postgres-certification-cleanup",
-    });
+    const cleanupPool = directPool("genesis-staging-postgres-certification-cleanup");
     try {
       await cleanupPool.query(
         "DELETE FROM public.genesis_foundation_state WHERE namespace = ANY($1::text[])",
-        [ownedNamespaces.filter((namespace) => namespace.startsWith("staging-certification:"))],
+        [ownedNamespaces.filter(isOwnedCertificationNamespace)],
       );
     } finally {
       await cleanupPool.end();
     }
   });
 
-  test("write, read, update, reconnect, and verify JSON persistence", async () => {
+  test("POSTGRES_LIVE_INTEGRATION write, read, update, reconnect, and verify JSON persistence", async () => {
     const firstClient = createStore("genesis-staging-certification-integration-1");
     let updatedState: { certification: boolean; entries: string[] } | undefined;
     try {
@@ -88,19 +105,10 @@ const enabled = process.env.POSTGRES_LIVE_CERTIFICATION === "1";
     }
   });
 
-  test("two independent adapter pools reject the stale concurrent writer", async () => {
+  test("POSTGRES_CONCURRENCY_CERTIFICATION two independent adapter pools reject the stale concurrent writer", async () => {
     const firstClient = createStore("genesis-staging-certification-race-1");
     const secondClient = createStore("genesis-staging-certification-race-2");
-    const observer = new Pool({
-      host: config.DB_HOST,
-      port: Number(config.DB_PORT || "5432"),
-      database: config.DB_NAME,
-      user: config.DB_USERNAME,
-      password: config.DB_PASSWORD,
-      ssl: { rejectUnauthorized: true },
-      max: 1,
-      application_name: "genesis-staging-certification-race-observer",
-    });
+    const observer = directPool("genesis-staging-certification-race-observer");
     try {
       const seed = { certification: true, winner: "seed", records: ["base"] };
       await firstClient.save({ namespace: concurrencyNamespace, state: seed, expectedRevision: 0 });

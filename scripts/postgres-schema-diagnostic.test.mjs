@@ -149,7 +149,7 @@ test("diagnostic runner mode validates target and returns before normal certific
   assert.ok(diagnosticBranch < source.indexOf("const sourcePath = process.env.POSTGRES_CERTIFICATION_SOURCE"));
   assert.ok(diagnosticBranch < source.indexOf("await provisionApplicationRole(config)"));
   assert.ok(diagnosticBranch < source.indexOf('["scripts/migrate-foundation-state.mjs", "up"]'));
-  assert.ok(diagnosticBranch < source.indexOf('"POSTGRES_LIVE_ADAPTER_TESTS"'));
+  assert.ok(diagnosticBranch < source.indexOf('runLiveAdapterTests();'));
   const diagnosticCode = source.slice(diagnosticBranch, source.indexOf("const sourcePath", diagnosticBranch));
   assert.match(diagnosticCode, /DB_USERNAME:\s*diagnosticUsername/);
   assert.match(diagnosticCode, /DB_PASSWORD:\s*diagnosticPassword/);
@@ -255,5 +255,5 @@ test("diagnostic implementation contains no database mutation statements or norm
   assert.doesNotMatch(diagnostic, /\b(?:INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE)\b/i);
   const branch = runner.indexOf('process.argv[2] === "--diagnose-schema"');
   const mode = runner.slice(branch, runner.indexOf("const sourcePath", branch));
-  assert.doesNotMatch(mode, /provisionApplicationRole|migrate-foundation-state|import-foundation-state|POSTGRES_LIVE_ADAPTER_TESTS|verifyEfsSource/);
+  assert.doesNotMatch(mode, /provisionApplicationRole|migrate-foundation-state|import-foundation-state|runLiveAdapterTest|verifyEfsSource/);
 });
