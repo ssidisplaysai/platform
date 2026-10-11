@@ -9,6 +9,7 @@ import { Client, Pool } from "pg";
 import { FOUNDATION_STATE_COLLECTIONS } from "./foundation-state-envelope.mjs";
 import { postgresClientConfig } from "./postgres-connection.mjs";
 import { validateRdsCaCertificate } from "./postgres-ca-preflight.mjs";
+import { diagnosePostgresSchemaReadOnly } from "./postgres-schema-diagnostic.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedHost = "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com";
@@ -23,8 +24,8 @@ function fail(message) {
   throw new Error(message);
 }
 
-function safeConfig() {
-  const config = postgresClientConfig();
+function safeConfig(environment = process.env) {
+  const config = postgresClientConfig(environment);
   if (
     config.host.toLowerCase() !== expectedHost
     || config.port !== 5432
@@ -292,6 +293,22 @@ async function verifySchema(config) {
   }
 }
 
+async function diagnoseSchema(config) {
+  const pool = new Pool({
+    ...config,
+    max: 1,
+    application_name: "genesis-staging-postgres-schema-diagnostic",
+  });
+  try {
+    const diagnostic = await diagnosePostgresSchemaReadOnly(pool);
+    console.log(`POSTGRES_SCHEMA_DIAGNOSTIC=${JSON.stringify(diagnostic.metadata)}`);
+    console.log(`POSTGRES_SCHEMA_VERIFIER_PROJECTION=${JSON.stringify(diagnostic.verifierProjection)}`);
+    console.log(`POSTGRES_SCHEMA_MISMATCHES=${JSON.stringify(diagnostic.mismatches)}`);
+  } finally {
+    await pool.end();
+  }
+}
+
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
   if (value && typeof value === "object") {
@@ -336,6 +353,26 @@ async function main() {
   currentStep = "RDS CA certificate preflight";
   validateRdsCaCertificate(process.env);
   console.log("RDS_CA_CERTIFICATE=READY");
+
+  if (process.argv[2] === "--diagnose-schema") {
+    const diagnosticUsername = process.env.DB_ADMIN_USERNAME?.trim();
+    const diagnosticPassword = process.env.DB_ADMIN_PASSWORD;
+    if (diagnosticUsername !== expectedAdminUser || !diagnosticPassword) {
+      fail("read-only schema diagnostic requires the approved RDS master credential");
+    }
+    const config = safeConfig({
+      ...process.env,
+      DB_USERNAME: diagnosticUsername,
+      DB_PASSWORD: diagnosticPassword,
+    });
+    currentStep = "private endpoint";
+    await verifyEndpoint();
+    console.log("DATABASE_ENDPOINT_PRIVATE=PASS");
+    currentStep = "read-only schema diagnostic";
+    await diagnoseSchema(config);
+    console.log("POSTGRES_SCHEMA_DIAGNOSTIC=PASS");
+    return;
+  }
 
   const sourcePath = process.env.POSTGRES_CERTIFICATION_SOURCE;
   if (sourcePath !== expectedSource) fail("certification source path differs from the approved EFS foundation path");
