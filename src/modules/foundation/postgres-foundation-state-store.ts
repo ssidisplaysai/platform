@@ -50,7 +50,7 @@ function sslConfig(): PoolConfig["ssl"] {
   return { ca, rejectUnauthorized: true };
 }
 
-function createPool(): Pool {
+function createPool(applicationName = "genesis-share-to-grow"): Pool {
   const host = process.env.DB_HOST?.trim();
   const database = process.env.DB_NAME?.trim();
   const user = process.env.DB_USERNAME?.trim();
@@ -75,16 +75,9 @@ function createPool(): Pool {
     idleTimeoutMillis: 30_000,
     statement_timeout: STATEMENT_TIMEOUT_MS,
     query_timeout: STATEMENT_TIMEOUT_MS + CONNECTION_TIMEOUT_MS,
-    application_name: "genesis-share-to-grow",
+    application_name: applicationName,
     ssl: sslConfig(),
   });
-}
-
-let pool: Pool | undefined;
-
-function getPool(): Pool {
-  pool ??= createPool();
-  return pool;
 }
 
 function databaseErrorCode(error: unknown): string {
@@ -137,9 +130,9 @@ function deserializeEnvelope<T>(row: StateRow<T>, namespace: string): StateEnvel
 async function load<T>(input: {
   namespace: string;
   seedFactory: () => T;
-}): Promise<FoundationStateLoad<T>> {
+}, pool: Pool): Promise<FoundationStateLoad<T>> {
   try {
-    const result = await getPool().query<StateRow<T>>(
+    const result = await pool.query<StateRow<T>>(
       `SELECT schema_version, revision, updated_at, data
        FROM ${STATE_TABLE}
        WHERE namespace = $1`,
@@ -173,7 +166,7 @@ async function save<T>(input: {
   namespace: string;
   state: T;
   expectedRevision: number;
-}): Promise<{ revision: number }> {
+}, pool: Pool): Promise<{ revision: number }> {
   if (!Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0) {
     throw new FoundationPersistenceConflictError(
       `Invalid expected persistence revision for ${input.namespace}.`,
@@ -181,7 +174,7 @@ async function save<T>(input: {
   }
 
   const data = JSON.stringify(input.state);
-  const client = getPool();
+  const client = pool;
   try {
     if (input.expectedRevision === 0) {
       const inserted = await client.query<{ revision: string }>(
@@ -234,14 +227,14 @@ async function save<T>(input: {
 async function reset<T>(input: {
   namespace: string;
   seedFactory: () => T;
-}): Promise<{ state: T; revision: number }> {
+}, pool: Pool): Promise<{ state: T; revision: number }> {
   if (process.env.NODE_ENV !== "test") {
     throw new FoundationPersistenceError(
       "Resetting PostgreSQL persistence is only supported in tests.",
       "PERSISTENCE_RESET_NOT_ALLOWED",
     );
   }
-  const client = await getPool().connect();
+  const client = await pool.connect();
   try {
     await client.query("BEGIN");
     await client.query(`DELETE FROM ${STATE_TABLE} WHERE namespace = $1`, [input.namespace]);
@@ -260,9 +253,9 @@ async function reset<T>(input: {
   return { state, revision: 0 };
 }
 
-async function check(): Promise<void> {
+async function check(pool: Pool): Promise<void> {
   try {
-    await getPool().query(
+    await pool.query(
       `SELECT schema_version, revision, updated_at, data
        FROM ${STATE_TABLE}
        LIMIT 0`,
@@ -300,19 +293,22 @@ async function check(): Promise<void> {
   }
 }
 
-async function close(): Promise<void> {
-  if (!pool) return;
-  await pool.end();
-  pool = undefined;
-}
+export function createPostgresFoundationStateStore(options: {
+  applicationName?: string;
+} = {}): FoundationStateStore {
+  const pool = createPool(options.applicationName);
+  let closed = false;
 
-export function createPostgresFoundationStateStore(): FoundationStateStore {
   return {
     backend: "postgres",
-    load,
-    save,
-    reset,
-    check,
-    close,
+    load: (input) => load(input, pool),
+    save: (input) => save(input, pool),
+    reset: (input) => reset(input, pool),
+    check: () => check(pool),
+    async close() {
+      if (closed) return;
+      closed = true;
+      await pool.end();
+    },
   };
 }

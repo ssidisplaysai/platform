@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
+import { validateFoundationStateEnvelope } from "./foundation-state-envelope.mjs";
 import { postgresClientConfig } from "./postgres-connection.mjs";
 
 const options = new Set(process.argv.slice(2));
@@ -47,38 +48,7 @@ try {
 } catch {
   throw new Error("Source state envelope is not valid JSON.");
 }
-if (
-  envelope === null
-  || typeof envelope !== "object"
-  || envelope.schemaVersion !== 1
-  || !Number.isSafeInteger(envelope.revision)
-  || envelope.revision < 0
-  || typeof envelope.updatedAt !== "string"
-  || Number.isNaN(Date.parse(envelope.updatedAt))
-  || envelope.data === null
-  || typeof envelope.data !== "object"
-  || Array.isArray(envelope.data)
-) {
-  throw new Error("Source state envelope has an unsupported schema or invalid metadata.");
-}
-
-const collectionNames = [
-  "participants",
-  "trackingIdentities",
-  "ruleVersions",
-  "ledgerEntries",
-  "sourceEventReceipts",
-  "processedCommerceLines",
-  "payoutEntitlements",
-  "commerceAdjustments",
-];
-const counts = Object.fromEntries(collectionNames.map((key) => [
-  key,
-  Array.isArray(envelope.data[key]) ? envelope.data[key].length : 0,
-]));
-if (collectionNames.some((key) => !Array.isArray(envelope.data[key]))) {
-  throw new Error("Source Share-to-Grow state is missing one or more required collections.");
-}
+const counts = validateFoundationStateEnvelope(envelope);
 
 const pool = new Pool({ ...config, max: 1, idleTimeoutMillis: 5_000 });
 try {

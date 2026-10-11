@@ -270,7 +270,7 @@ test("IAM managed-policy inspection is limited to Genesis policy resources", () 
 
 test("administrator refresh mode changes only the existing inspection policy version", () => {
   const start = adminHelper.indexOf("refresh_production_inspection_policy() {");
-  const end = adminHelper.indexOf('if [[ "${1:-}" == "--refresh-production-inspection-policy" ]]');
+  const end = adminHelper.indexOf("refresh_staging_data_policy() {");
   assert.ok(start >= 0 && end > start);
   const refreshMode = adminHelper.slice(start, end);
   assert.match(refreshMode, /policy_arn "01-read-only-production-inspection"/);

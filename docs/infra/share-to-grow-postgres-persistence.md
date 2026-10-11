@@ -105,6 +105,48 @@ Share-to-Grow deployment are deliberately deferred to a separately approved
 phase. EFS remains the active staging persistence path until certification.
 No database resources are created by `postgres-plan`.
 
+### Pre-cutover in-VPC certification task
+
+The workstation cannot reach the private RDS endpoint, so live migration,
+integration, concurrency, and import checks must run from an isolated one-off
+Fargate task inside the staging VPC. The dedicated
+`Dockerfile.postgres-certification` and
+`infra/staging/postgres-certification-task-definition.template.json` describe
+that task; they do not change the application image or staging service. The
+task has no ports or public IP, mounts only the existing foundation EFS path
+read-only, and does not set `GENESIS_STATE_BACKEND`.
+
+Before the task can be registered or started, review
+`infra/staging/postgres-certification-permissions.plan.json` and approve only
+the listed grants: `ecs:RunTask` for the certification task family in the
+existing staging cluster, and `secretsmanager:GetSecretValue` for the exact
+staging application and RDS-managed master secret ARNs on the staging
+execution role. The existing staging provisioning path creates the application
+secret but not the PostgreSQL `genesis_app` role. The certification task only
+creates that role when absent; if it already exists, its supplied credentials
+must authenticate successfully and the task never resets its password.
+`kms:Decrypt`, ECS service or task-stop access, ECS Exec, EFS mutation access,
+and task-role permissions are not required by this design.
+After the approved IAM additions are ready to be applied, the dedicated
+administrator refresh mode is:
+
+```text
+bash infra/staging/admin-bootstrap-iam.sh --refresh-staging-postgres-certification-permissions
+```
+
+It updates only the existing staging compute policy version and the named
+inline secret-read policy on the staging execution role. It refuses to replace
+a differing inline policy and verifies both policy documents after refresh.
+
+The task validates the private database endpoint and EFS source, applies the
+foundation migration as the application role, verifies schema and migration
+metadata, runs opt-in real-database adapter/reconnect/concurrency tests, then
+validates, imports, compares, and safely rejects replay of the EFS envelope.
+It emits counts and hashes rather than source records and does not print
+secret values. This is a pre-cutover certification only: do not start the task
+until the permission plan is approved, and do not deploy or switch the staging
+runtime to PostgreSQL as part of this phase.
+
 The planning estimate is approximately **$15/month** for `db.t4g.micro`, 20 GiB
 of gp3 storage, and Secrets Manager. This is approximate only; review the
 current AWS plan and pricing before applying chargeable resources, including

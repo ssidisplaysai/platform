@@ -199,7 +199,7 @@ test("PostgreSQL policy simulation covers scoped staging allows and production d
     item.expect === "deny" &&
     item.context["rds:DatabaseEngine"] === "mysql",
   ));
-  assert.equal(cases.length, 112);
+  assert.equal(cases.length, 123);
   const keyCases = cases.filter((item) => item.action.startsWith("kms:"));
   assert.equal(keyCases.length, 7);
   assert.ok(keyCases.some((item) =>

@@ -110,6 +110,29 @@ test("admin IAM helper adds policy 05 without detaching the existing guardrail",
   assert.match(postgresValidator, /kms:DescribeKey/);
 });
 
+test("admin IAM helper refreshes only the approved PostgreSQL certification permissions", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const helper = await readFile(new URL("../admin-bootstrap-iam.sh", import.meta.url), "utf8");
+  const validator = await readFile(
+    new URL("../iam/validate-postgres-certification-execution-policy.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(helper, /--refresh-staging-postgres-certification-permissions/);
+  assert.match(helper, /staging-postgres-certification-secret-read/);
+  assert.match(helper, /genesis-staging-execution-role/);
+  assert.match(helper, /refusing to overwrite it/);
+  assert.match(helper, /STAGING_POSTGRES_CERTIFICATION_IAM=PASS/);
+  assert.match(validator, /secretsmanager:GetSecretValue/);
+  assert.match(validator, /genesis\/staging\/postgres-JFaw1C/);
+  assert.match(validator, /rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP/);
+  assert.doesNotMatch(validator, /genesis\/staging\/postgres-\*|rds!db-\*/);
+  const start = helper.indexOf("refresh_staging_postgres_certification_permissions() {");
+  const end = helper.indexOf('if [[ "${1:-}" == "--refresh-production-inspection-policy" ]]');
+  assert.ok(start >= 0 && end > start);
+  const refresh = helper.slice(start, end);
+  assert.doesNotMatch(refresh, /ecs:CreateService|ecs:UpdateService|ecs:DeleteService|ecs:ExecuteCommand|ecs:StopTask|kms:Decrypt/);
+});
+
 function runScopedStateValidator(policyNames, name = "attached.json") {
   const directory = mkdtemp(`${tmpdir()}\\genesis-scoped-iam-`);
   return directory.then(async (path) => {

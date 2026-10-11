@@ -76,6 +76,17 @@
       "Resource": "*"
     },
     {
+      "Sid": "EcsRunStagingPostgresCertificationTask",
+      "Effect": "Allow",
+      "Action": "ecs:RunTask",
+      "Resource": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-postgres-certification:*",
+      "Condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+        }
+      }
+    },
+    {
       "Sid": "EcsStagingServiceOnly",
       "Effect": "Allow",
       "Action": [

@@ -529,6 +529,128 @@ refresh_staging_postgres_policy() {
   printf 'STAGING_POSTGRES_POLICY=PASS\n'
 }
 
+refresh_staging_postgres_certification_permissions() {
+  local deploy_policy_file="$POLICY_DIR/02-staging-compute-network-auth.json"
+  local secret_policy_file="$POLICY_DIR/postgres-certification-execution-secrets.json"
+  local policy_arn_value
+  policy_arn_value="$(policy_arn "02-staging-compute-network-auth")"
+  local inline_policy_name="staging-postgres-certification-secret-read"
+  local account_id
+  account_id="$(aws sts get-caller-identity --query Account --output text)" ||
+    fail "unable to verify the active AWS account"
+  [[ "$account_id" == "$EXPECTED_ACCOUNT" ]] ||
+    fail "expected account $EXPECTED_ACCOUNT; refusing to continue"
+
+  node "$POLICY_DIR/validate-postgres-certification-execution-policy.mjs" "$secret_policy_file" ||
+    fail "the proposed certification execution-role secret policy is unsafe"
+  python3 - "$deploy_policy_file" <<'PY' || fail "the proposed ECS RunTask permission is unsafe"
+import json
+import sys
+from pathlib import Path
+
+document = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
+expected = {
+    "Sid": "EcsRunStagingPostgresCertificationTask",
+    "Effect": "Allow",
+    "Action": "ecs:RunTask",
+    "Resource": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-postgres-certification:*",
+    "Condition": {"ArnEquals": {
+        "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+    }},
+}
+matches = [statement for statement in document.get("Statement", []) if statement.get("Sid") == expected["Sid"]]
+if len(matches) != 1 or matches[0] != expected:
+    raise SystemExit("RunTask statement does not match the exact approved family and cluster")
+PY
+
+  aws iam get-role --role-name "$ROLE_NAME" >/dev/null ||
+    fail "unable to read $ROLE_NAME"
+  aws iam list-attached-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/deploy-attached.json" ||
+    fail "unable to list managed policies on $ROLE_NAME"
+  jq -e --arg arn "$policy_arn_value" '.AttachedPolicies | any(.PolicyArn == $arn)' \
+    "$WORK_DIR/deploy-attached.json" >/dev/null ||
+    fail "the staging compute policy is not attached to $ROLE_NAME; refusing to attach it"
+
+  local execution_role_arn
+  execution_role_arn="$(aws iam get-role --role-name genesis-staging-execution-role --query Role.Arn --output text)" ||
+    fail "unable to read the staging certification execution role"
+  [[ "$execution_role_arn" == "arn:aws:iam::${EXPECTED_ACCOUNT}:role/genesis-staging-execution-role" ]] ||
+    fail "staging certification execution role ARN did not match the approved role"
+  aws iam list-role-policies --role-name genesis-staging-execution-role --output json > "$WORK_DIR/execution-role-inline.json" ||
+    fail "unable to list inline policies on the staging certification execution role"
+  local has_secret_policy
+  has_secret_policy="$(jq -r --arg name "$inline_policy_name" \
+    '.PolicyNames | any(. == $name)' "$WORK_DIR/execution-role-inline.json")" ||
+    fail "inline-policy inventory for the staging certification execution role is invalid"
+  if [[ "$has_secret_policy" == "true" ]]; then
+    aws iam get-role-policy \
+      --role-name genesis-staging-execution-role \
+      --policy-name "$inline_policy_name" \
+      --query PolicyDocument \
+      --output json > "$WORK_DIR/execution-role-secret-policy.json" ||
+      fail "unable to read the existing certification secret policy"
+    compare_policy_documents "$secret_policy_file" "$WORK_DIR/execution-role-secret-policy.json" ||
+      fail "the existing certification secret policy differs; refusing to overwrite it"
+  fi
+
+  local managed_metadata="$WORK_DIR/staging-compute-policy-metadata.json"
+  local managed_document="$WORK_DIR/staging-compute-policy-document.json"
+  aws iam get-policy --policy-arn "$policy_arn_value" --output json > "$managed_metadata" ||
+    fail "unable to read the existing staging compute policy"
+  local version_id
+  version_id="$(jq -er '.Policy.DefaultVersionId' "$managed_metadata")" ||
+    fail "staging compute policy has no readable default version"
+  aws iam get-policy-version --policy-arn "$policy_arn_value" --version-id "$version_id" \
+    --query PolicyVersion.Document --output json > "$managed_document" ||
+    fail "unable to read the current staging compute policy document"
+
+  if ! compare_policy_documents "$deploy_policy_file" "$managed_document"; then
+    local versions_file="$WORK_DIR/staging-compute-policy-versions.json"
+    aws iam list-policy-versions --policy-arn "$policy_arn_value" --output json > "$versions_file" ||
+      fail "unable to count staging compute policy versions; refusing to update"
+    local version_count
+    version_count="$(jq -er '.Versions | length' "$versions_file")" ||
+      fail "staging compute policy-version response was invalid"
+    [[ "$version_count" -lt 5 ]] ||
+      fail "the staging compute policy already has five versions; refusing to delete a version or change its history"
+    aws iam create-policy-version \
+      --policy-arn "$policy_arn_value" \
+      --policy-document "$(aws_cli_file_uri "$deploy_policy_file")" \
+      --set-as-default >/dev/null ||
+      fail "unable to create the approved staging compute policy version"
+    printf 'STAGING_COMPUTE_POLICY_UPDATED=%s\n' "$policy_arn_value"
+  fi
+
+  if [[ "$has_secret_policy" != "true" ]]; then
+    aws iam put-role-policy \
+      --role-name genesis-staging-execution-role \
+      --policy-name "$inline_policy_name" \
+      --policy-document "$(aws_cli_file_uri "$secret_policy_file")" >/dev/null ||
+      fail "unable to add the approved exact-secret policy to the staging certification execution role"
+    printf 'STAGING_CERTIFICATION_SECRET_POLICY_ADDED=%s\n' "$inline_policy_name"
+  fi
+
+  aws iam get-policy --policy-arn "$policy_arn_value" --output json > "$managed_metadata" ||
+    fail "unable to verify the updated staging compute policy"
+  version_id="$(jq -er '.Policy.DefaultVersionId' "$managed_metadata")" ||
+    fail "updated staging compute policy has no readable default version"
+  aws iam get-policy-version --policy-arn "$policy_arn_value" --version-id "$version_id" \
+    --query PolicyVersion.Document --output json > "$managed_document" ||
+    fail "unable to verify the updated staging compute policy document"
+  compare_policy_documents "$deploy_policy_file" "$managed_document" ||
+    fail "active staging compute policy does not match the approved repository document"
+
+  aws iam get-role-policy \
+    --role-name genesis-staging-execution-role \
+    --policy-name "$inline_policy_name" \
+    --query PolicyDocument \
+    --output json > "$WORK_DIR/execution-role-secret-policy.json" ||
+    fail "unable to verify the exact-secret execution-role policy"
+  compare_policy_documents "$secret_policy_file" "$WORK_DIR/execution-role-secret-policy.json" ||
+    fail "active execution-role secret policy does not match the approved exact-secret document"
+  printf 'STAGING_POSTGRES_CERTIFICATION_IAM=PASS\n'
+}
+
 if [[ "${1:-}" == "--refresh-production-inspection-policy" ]]; then
   [[ "$#" == "1" ]] || fail "the inspection-policy refresh mode does not accept extra arguments"
   refresh_production_inspection_policy
@@ -540,6 +662,10 @@ elif [[ "${1:-}" == "--refresh-staging-data-policy" ]]; then
 elif [[ "${1:-}" == "--refresh-staging-postgres-policy" ]]; then
   [[ "$#" == "1" ]] || fail "the staging PostgreSQL-policy refresh mode does not accept extra arguments"
   refresh_staging_postgres_policy
+  exit 0
+elif [[ "${1:-}" == "--refresh-staging-postgres-certification-permissions" ]]; then
+  [[ "$#" == "1" ]] || fail "the staging PostgreSQL certification refresh mode does not accept extra arguments"
+  refresh_staging_postgres_certification_permissions
   exit 0
 elif [[ "${1:-}" == "--refresh-production-guardrails-policy" ]]; then
   [[ "$#" == "1" ]] || fail "the production guardrails-policy refresh mode does not accept extra arguments"

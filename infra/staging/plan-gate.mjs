@@ -15,7 +15,7 @@ const PRODUCTION_ECR_REPOSITORY = "genesis-production-runtime";
 const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-task-role`;
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
-const SIMULATION_CASE_COUNT = 112;
+const SIMULATION_CASE_COUNT = 123;
 export const SIMULATION_CONTEXT_TYPES = Object.freeze([
   "string",
   "stringList",
@@ -252,6 +252,8 @@ function caseSignature(testCase) {
     testCase.action,
     testCase.resource,
     testCase.expect,
+    testCase.policySet ?? "",
+    testCase.principalArn ?? "",
     testCase.verificationMode ?? "",
     contextSignature(testCase.context),
     contextSignature(testCase.contextTypes),
@@ -742,7 +744,15 @@ export async function runPlanGate({
     assert(document.Version && Array.isArray(document.Statement), `${fileName} is not a valid IAM policy document`);
     policyDocuments.push(document);
   }
-  const conditionKeys = policyConditionKeys(policyDocuments);
+  const certificationExecutionPolicy = JSON.parse(await readFile(
+    resolve(repoRoot, "infra/staging/iam/postgres-certification-execution-secrets.json"),
+    "utf8",
+  ));
+  assert(
+    certificationExecutionPolicy.Version && Array.isArray(certificationExecutionPolicy.Statement),
+    "postgres-certification-execution-secrets.json is not a valid IAM policy document",
+  );
+  const conditionKeys = policyConditionKeys([...policyDocuments, certificationExecutionPolicy]);
   effectiveSimulationContext({}, conditionKeys);
   assert(
     !policyAllowsProductionPassRole(policyDocuments, productionTaskRoleArn),
@@ -758,6 +768,8 @@ export async function runPlanGate({
     assert(
       testCase && typeof testCase.action === "string" && testCase.action &&
       typeof testCase.resource === "string" && testCase.resource &&
+      [undefined, "postgres-certification-execution"].includes(testCase.policySet) &&
+      [undefined, DEPLOY_ROLE_ARN, STAGING_EXECUTION_ROLE_ARN].includes(testCase.principalArn) &&
       ["allow", "deny"].includes(testCase.expect) &&
       testCase.context && typeof testCase.context === "object" && !Array.isArray(testCase.context),
       "Simulation case is incomplete or ambiguous",
@@ -788,9 +800,12 @@ export async function runPlanGate({
       report(`SIMULATION_CONTEXT_VALUES ${contextKeys
         .filter((key) => SAFE_SIMULATION_DIAGNOSTIC_KEYS.has(key))
         .map((key) => `${key}=${JSON.stringify(effectiveContext.context[key])}`).join(",")}`);
+      const inputPolicies = testCase.policySet === "postgres-certification-execution"
+        ? [certificationExecutionPolicy]
+        : policyDocuments;
       const args = [
         "--policy-input-list",
-        ...policyDocuments.map((document) => JSON.stringify(document)),
+        ...inputPolicies.map((document) => JSON.stringify(document)),
         "--action-names", testCase.action,
         "--resource-arns", testCase.resource,
         ...contextArguments(effectiveContext.context, effectiveContext.contextTypes),
@@ -837,7 +852,7 @@ export async function runPlanGate({
     )) {
       const effectiveContext = effectiveSimulationContext(testCase, conditionKeys);
       const response = await call("iam", "simulate-principal-policy", [
-        "--policy-source-arn", DEPLOY_ROLE_ARN,
+        "--policy-source-arn", testCase.principalArn ?? DEPLOY_ROLE_ARN,
         "--action-names", testCase.action,
         "--resource-arns", testCase.resource,
         ...contextArguments(effectiveContext.context, effectiveContext.contextTypes),

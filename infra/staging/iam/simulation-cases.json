@@ -131,6 +131,103 @@
     },
     {
         "expect":  "allow",
+        "action":  "ecs:RunTask",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-postgres-certification:1",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RunTask",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-postgres-certification:1",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/other-cluster"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RunTask",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-web:4",
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ecs:RunTask",
+        "resource":  "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:1",
+        "requireExplicitDeny":  true,
+        "context":  {
+                        "ecs:cluster":  "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-JFaw1C",
+        "policySet":  "postgres-certification-execution",
+        "principalArn":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+        "policySet":  "postgres-certification-execution",
+        "principalArn":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-*",
+        "policySet":  "postgres-certification-execution",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-*",
+        "policySet":  "postgres-certification-execution",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/openai-secret",
+        "policySet":  "postgres-certification-execution",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/other-secret-AbCdEf",
+        "policySet":  "postgres-certification-execution",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "secretsmanager:GetSecretValue",
+        "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-JFaw1C",
+        "context":  {
+
+                    }
+    },
+    {
+        "expect":  "allow",
         "action":  "ecs:UpdateService",
         "resource":  "arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-staging-web",
         "context":  {

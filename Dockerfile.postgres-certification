@@ -1,0 +1,16 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+ENV NODE_ENV=test \
+    HOME=/tmp \
+    TMPDIR=/tmp \
+    CI=true
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY . .
+RUN chown -R node:node /app
+
+USER node
+ENTRYPOINT ["timeout", "--signal=TERM", "--kill-after=30s", "30m", "node", "scripts/staging-postgres-certification.mjs"]

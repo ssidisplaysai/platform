@@ -1,0 +1,79 @@
+{
+  "status": "approved-not-applied",
+  "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+  "subnets": [
+    "subnet-0f303dea5f645e42d",
+    "subnet-00a0b287895a3b18c"
+  ],
+  "securityGroup": "sg-0687242229bc3a80e",
+  "assignPublicIp": "DISABLED",
+  "fargatePlatformVersion": "1.4.0",
+  "efsFileSystem": "fs-0f71cea9a21267d64",
+  "efsAccessPoint": "fsap-0063c7342f4496332",
+  "efsReadOnlyPath": "/mnt/genesis-persistence/foundation",
+  "logGroup": "/genesis/staging/web",
+  "deployPrincipal": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+  "executionRole": "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+  "taskRole": "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+  "newPermissions": [
+    {
+      "principal": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+      "action": "ecs:RunTask",
+      "resource": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-postgres-certification:*",
+      "condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+        }
+      },
+      "whyRequired": "Start exactly one one-off Fargate certification task in the existing staging ECS cluster; no service or ALB registration is created."
+    },
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+      "action": "secretsmanager:GetSecretValue",
+      "resource": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/postgres-JFaw1C",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP"
+      ],
+      "policyFile": "infra/staging/iam/postgres-certification-execution-secrets.json",
+      "inlinePolicyName": "staging-postgres-certification-secret-read",
+      "whyRequired": "ECS injects only the staging app login and RDS master login JSON keys into the ephemeral task; the app role must be initialized because provisioning created its secret but did not create the PostgreSQL role."
+    }
+  ],
+  "existingPermissionsSufficient": [
+    {
+      "principal": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+      "actions": [
+        "ecs:RegisterTaskDefinition",
+        "ecs:DescribeTaskDefinition",
+        "ecs:DescribeTasks",
+        "iam:PassRole"
+      ],
+      "scope": "RegisterTaskDefinition is already allowed; DescribeTaskDefinition and DescribeTasks are already allowed; PassRole is limited to the two named staging roles."
+    },
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+      "actions": [
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "scope": "Existing AmazonECSTaskExecutionRolePolicy attachment."
+    },
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+      "actions": [],
+      "scope": "Task does not call AWS APIs; EFS authorizationConfig.iam is DISABLED and network access uses the existing staging task security group."
+    }
+  ],
+  "notRequired": [
+    "ecs:CreateService",
+    "ecs:UpdateService",
+    "ecs:StopTask",
+    "ecs:ExecuteCommand",
+    "iam:CreateRole",
+    "iam:PutRolePolicy",
+    "elasticfilesystem:*",
+    "kms:Decrypt"
+  ]
+}

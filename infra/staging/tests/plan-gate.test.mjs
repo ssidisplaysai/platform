@@ -292,8 +292,12 @@ function createMockAws(options = {}) {
       const policiesIndex = args.indexOf("--policy-input-list");
       const action = option(args, "--action-names");
       const resource = option(args, "--resource-arns");
-      assert.equal(args.slice(policiesIndex + 1, args.indexOf("--action-names")).length, 5);
       const policyArray = args.slice(policiesIndex + 1, args.indexOf("--action-names")).map((policy) => JSON.parse(policy));
+      const policySet = policyArray.some((policy) =>
+        policy.Statement.some(({ Sid }) => Sid === "ReadExactPostgresCertificationSecrets"))
+        ? "postgres-certification-execution"
+        : undefined;
+      assert.equal(policyArray.length, policySet ? 1 : 5);
       const cases = parseJson(await readFile(resolve(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
       const { context, contextTypes } = contextFromArgs(args);
       const conditionKeys = policyConditionKeys(policyArray);
@@ -301,6 +305,7 @@ function createMockAws(options = {}) {
         const effective = effectiveSimulationContext(candidate, conditionKeys);
         return candidate.action === action &&
           candidate.resource === resource &&
+          candidate.policySet === policySet &&
           JSON.stringify(Object.entries(effective.context).sort()) === JSON.stringify(Object.entries(context).sort()) &&
           JSON.stringify(Object.entries(effective.contextTypes).sort()) === JSON.stringify(Object.entries(contextTypes).sort());
       });
@@ -326,7 +331,6 @@ function createMockAws(options = {}) {
           }],
         };
       }
-      assert.equal(policyArray.length, 5);
       assert.ok(policyArray.every((policy) => Array.isArray(policy.Statement)));
       return { EvaluationResults: [{ EvalActionName: action, EvalResourceName: resource, EvalDecision: decision }] };
     }
@@ -334,9 +338,20 @@ function createMockAws(options = {}) {
       if (options.principalSimulationUnavailable) throw new Error("mock unavailable");
       const action = option(args, "--action-names");
       const resource = option(args, "--resource-arns");
-      assert.equal(option(args, "--policy-source-arn"), deployRoleArn);
       const { context } = contextFromArgs(args);
       assert.ok(Object.keys(DEFAULT_SIMULATION_CONTEXT).every((key) => Object.hasOwn(context, key)));
+      const cases = parseJson(await readFile(resolve(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+      const matched = cases.find((candidate) =>
+        candidate.expect === "allow" &&
+        candidate.action === action &&
+        candidate.resource === resource &&
+        JSON.stringify(Object.entries(effectiveSimulationContext(candidate, []).context).sort()) ===
+          JSON.stringify(Object.entries(context).sort()));
+      assert.ok(matched, `mock has no principal simulation case for ${action} ${resource}`);
+      assert.equal(
+        option(args, "--policy-source-arn"),
+        matched.principalArn ?? deployRoleArn,
+      );
       return { EvaluationResults: [{
         EvalActionName: action,
         EvalResourceName: resource,
@@ -388,7 +403,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=112 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=123 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
@@ -509,7 +524,7 @@ test("all conditioned policy statements matched by simulation cases have complet
     "04-production-guardrails-deny.json",
     "05-staging-postgres-provisioning.json",
   ];
-  assert.equal(cases.length, 112);
+  assert.equal(cases.length, 123);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -739,7 +754,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=112 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=123 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -897,7 +912,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=112 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=123 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   const createRuleCall = result.calls.find(({ service, operation, args }) =>
     service === "iam" &&
