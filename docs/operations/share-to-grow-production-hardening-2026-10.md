@@ -394,3 +394,83 @@ All were `OK` during this remediation window.
 - No schema migration during this phase
 - No secrets/IAM/network/ALB configuration changes during this phase
 - No payout enablement and no Woo production webhook enablement
+
+## Production Share-to-Grow Dedicated DB Principal and Secret (Completed)
+
+- Caller identity: `arn:aws:sts::452630323448:assumed-role/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f/Robert`
+- Safety baseline before mutation:
+  - ECS service remained stable on `genesis-production-web:95` (`1/1/0`, rollout `COMPLETED`)
+  - RDS remained `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+  - Pre-existing role check: `genesis_share_to_grow_app` absent (`ROLE_EXISTS=0`)
+  - Canonical namespace baseline: `schema_version=1`, `revision=1`, `md5(data::text)=6a296406fc8beea3bd60e37b073fc53a`
+
+### Applied SQL Mutations (Bounded)
+
+- One-off task definition: `genesis-production-db-admin-psql:1`
+- Mutation task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/5b33ffe0119d4096b4b3f1f6d952081c` (exit `0`)
+- Statements applied:
+  - `CREATE ROLE genesis_share_to_grow_app LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '<generated>'`
+  - `GRANT CONNECT ON DATABASE genesis TO genesis_share_to_grow_app`
+  - `GRANT USAGE ON SCHEMA public TO genesis_share_to_grow_app`
+  - `GRANT SELECT, INSERT, UPDATE ON TABLE public.genesis_foundation_state TO genesis_share_to_grow_app`
+
+### Principal Verification
+
+- Role attributes validated:
+  - `rolsuper=false`
+  - `rolcreatedb=false`
+  - `rolcreaterole=false`
+  - `rolreplication=false`
+  - `rolbypassrls=false`
+  - `rolcanlogin=true`
+  - `rolinherit=false`
+- Privilege matrix validated:
+  - `CONNECT=true`
+  - schema `USAGE=true`
+  - table `SELECT=true`
+  - table `INSERT=true`
+  - table `UPDATE=true`
+  - table `DELETE=false`
+  - schema `CREATE=false`
+
+### Dedicated Secret Creation
+
+- Name: `genesis/production/share-to-grow/postgres-app`
+- ARN: `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/postgres-app-q3bH9z`
+- VersionId: `73ec0245-90d6-481c-afc9-0fc682e15dd7`
+- Tags:
+  - `Environment=production`
+  - `Application=Genesis`
+  - `Purpose=ShareToGrowPostgresApplicationRuntime`
+- Payload keyset verification: `username`, `password`, `host`, `port`, `dbname`
+
+### Strict TLS + Functional Certification as New Principal
+
+- Probe task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/959570845dec44be99719466cddad2e3` (exit `0`)
+- TLS mode: `sslmode=verify-full` with in-task OpenSSL-derived RDS certificate chain.
+- Identity verification:
+  - `current_user=genesis_share_to_grow_app`
+  - `current_database=genesis`
+- Transactional positive probe:
+  - `BEGIN -> INSERT -> UPDATE(revision predicate) -> SELECT verify -> ROLLBACK`
+  - Probe namespace: `stg-principal-cert-6d380633c705416185d0d1ad75116bf9`
+  - Post-rollback probe namespace row count: `0`
+- Negative privilege probes:
+  - `DELETE`: denied as expected
+  - `TRUNCATE`: denied as expected
+  - `CREATE TABLE`: denied as expected
+  - `ALTER OWNER`: denied as expected
+
+### Post-Mutation Invariants
+
+- Postcheck task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/866da9b034c94123939f944c61a36bbc` (exit `0`)
+- Canonical namespace remained unchanged:
+  - `schema_version=1`, `revision=1`, `md5(data::text)=6a296406fc8beea3bd60e37b073fc53a`
+- Service unchanged:
+  - task definition remained `genesis-production-web:95`
+  - desired/running/pending remained `1/1/0`
+  - rollout remained `COMPLETED`
+- RDS unchanged:
+  - status `available`
+  - `MultiAZ=true`
+  - `PendingModifiedValues={}`
