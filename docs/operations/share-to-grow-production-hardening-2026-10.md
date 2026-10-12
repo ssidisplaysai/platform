@@ -47,3 +47,34 @@
 
 - A short-lived non-service ECS task (`genesis-private-migration-runtime:5`) was observed during this window with `MIGRATION_MODE=verify-only`; it exited and no non-service running tasks remained after scheduling.
 - No secret values are recorded in this artifact.
+
+## Production Foundation Schema/Grant Phase Attempt (Blocked)
+
+- Timestamp (local): `2026-10-11T20:09:45-07:00`
+- Target DB: `genesis-production-postgres` / `genesis`
+- RDS status during gate: `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+- Alarms during gate: `15 OK`, `0 ALARM`
+
+### Precheck Findings
+
+- `public.genesis_foundation_state`: absent
+- `public.genesis_schema_migrations`: absent
+- Foundation row count: `0`
+- Business namespace rows (`share-to-grow-repository`): `0`
+
+### Migration Execution Attempt
+
+- Mechanism: bounded one-off ECS task in private subnets (no public IP), task definition `genesis-private-migration-runtime:5`
+- Attempted canonical command: `node scripts/migrate-foundation-state.mjs up`
+- Result: failed (`MODULE_NOT_FOUND`) because `/workspace/scripts/migrate-foundation-state.mjs` is not present in the current production runtime image lineage.
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/6b9ed4ad8a194104892a7d66d91beb07`
+
+### Runtime Drift Noted During Phase
+
+- Live production service was observed at `genesis-production-web:90` (not `:88`) while remaining healthy (`1/1/0`, `COMPLETED`, target healthy).
+- No service update was performed by this phase.
+
+### Phase Classification
+
+- `PRODUCTION_FOUNDATION_SCHEMA_AND_GRANTS=BLOCKED_MIGRATION`
+- Reason: canonical migration source/framework required for approved production foundation migrations is not present in the current production runtime image path used by existing bounded migration tasks.

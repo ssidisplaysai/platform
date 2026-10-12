@@ -30,6 +30,11 @@ This record captures provisioning of a dedicated least-privilege PostgreSQL runt
 ## Granted Privileges
 
 - Granted: `CONNECT` on database `genesis`
+- Granted: `USAGE` on schema `public`
+- Granted table privileges: **pending foundation table creation**
+  - `SELECT`: pending
+  - `INSERT`: pending
+  - `UPDATE`: pending
 
 ## Explicitly Absent Privileges
 
@@ -42,6 +47,13 @@ This record captures provisioning of a dedicated least-privilege PostgreSQL runt
 - `BYPASSRLS`: denied
 
 No table-level or schema-level grants were added in this phase.
+
+## Foundation Schema/Grant Phase Status
+
+- Foundation table (`public.genesis_foundation_state`): absent at precheck time.
+- Migration metadata table (`public.genesis_schema_migrations`): absent at precheck time.
+- Business namespace rows: `0` (none present).
+- Status: `BLOCKED_MIGRATION` pending execution of canonical repository migrations in a bounded production task that has access to the required migration source/framework.
 
 ## Application Secret
 
