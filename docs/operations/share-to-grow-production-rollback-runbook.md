@@ -12,10 +12,10 @@ This runbook defines **application rollback only** for production service `genes
 
 - Service: `genesis-production-web`
 - Cluster: `genesis-production`
-- Current known-good task definition: `genesis-production-web:86`
-- Current known-good image digest: `sha256:d363b4e8e3b21dd8a57397f5177822c03a7bacb90486a3bc1af7babbff05aea6`
-- Nearest prior rollback candidate task definition: `genesis-production-web:85`
-- Nearest prior rollback candidate image digest: `sha256:b540d55a5ad8939abc6bf1bd426c362f88873f7be945abb9bf178eaf51eb3b50`
+- Current known-good task definition: `genesis-production-web:88`
+- Current known-good image digest: `sha256:236e797105c4d9f1f19a1b804449c964a041972ebc72b4973652efbff3ef5c69`
+- Nearest prior rollback candidate task definition: `genesis-production-web:87`
+- Nearest prior rollback candidate image digest: `sha256:6858d062ecb3235240b6d03653f2f94e608ac91cd6edb30cab8a266d98c601ea`
 
 ## Critical Rollback Rule (PostgreSQL Preservation)
 
