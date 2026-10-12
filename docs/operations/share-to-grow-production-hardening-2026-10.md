@@ -474,3 +474,101 @@ All were `OK` during this remediation window.
   - status `available`
   - `MultiAZ=true`
   - `PendingModifiedValues={}`
+
+## Share-to-Grow Production ECR + IAM Isolation (Completed)
+
+- Window: `2026-10-12T20:56Z` to `2026-10-12T21:09Z`
+- Caller: `arn:aws:sts::452630323448:assumed-role/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f/Robert`
+- Authorized mutation boundary observed:
+  - created dedicated STG ECR repository
+  - created dedicated STG execution/task IAM roles
+  - attached minimal execution-role policies
+  - optional immutable image push for provenance
+  - no ECS service/task-definition/network/ALB/DNS/Woo/payout mutation
+
+### Pre-Gate and Preexistence
+
+- ECR `genesis-share-to-grow-production`: absent before phase
+- Execution role `GenesisShareToGrowProductionExecutionRole`: absent before phase
+- Task role `GenesisShareToGrowProductionTaskRole`: absent before phase
+- Canonical STG state before phase:
+  - `schema_version=1`
+  - `revision=1`
+  - canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - secondary DB hash `md5(data::text)=6a296406fc8beea3bd60e37b073fc53a`
+
+### ECR Resource
+
+- ARN: `arn:aws:ecr:us-west-2:452630323448:repository/genesis-share-to-grow-production`
+- URI: `452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-share-to-grow-production`
+- Config:
+  - `scanOnPush=true`
+  - `encryptionType=AES256`
+  - `imageTagMutability=IMMUTABLE`
+
+### Execution Role Resource
+
+- ARN: `arn:aws:iam::452630323448:role/GenesisShareToGrowProductionExecutionRole`
+- Trust: `ecs-tasks.amazonaws.com` only
+- Managed policies:
+  - `AmazonECSTaskExecutionRolePolicy`
+- Inline policies:
+  - `ShareToGrowDbSecretReadOnly`:
+    - `Action`: `secretsmanager:GetSecretValue`
+    - `Resource`: `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/postgres-app-q3bH9z`
+
+### Execution Role Secret Simulation
+
+- STG DB secret: `allowed`
+- PF production postgres-app: `implicitDeny`
+- PF OpenAI: `implicitDeny`
+- PF WordPress: `implicitDeny`
+- production admin/foundation DB secret: `implicitDeny`
+- staging postgres: `implicitDeny`
+- staging Woo: `implicitDeny`
+- future STG Woo (hypothetical): `implicitDeny`
+- wildcard resource check `genesis/production/share-to-grow/*`: `implicitDeny`
+
+### Task Role Resource
+
+- ARN: `arn:aws:iam::452630323448:role/GenesisShareToGrowProductionTaskRole`
+- Trust: `ecs-tasks.amazonaws.com` only
+- Managed policies: none
+- Inline policies: none
+
+Task role negative boundary simulation:
+
+- `secretsmanager:GetSecretValue` on all tested secret targets: `implicitDeny`
+- `s3:ListAllMyBuckets`: `implicitDeny`
+- `ecs:UpdateService`: `implicitDeny`
+- `iam:PassRole`: `implicitDeny`
+- `rds:ModifyDBInstance`: `implicitDeny`
+- `secretsmanager:ListSecrets`: `implicitDeny`
+
+### Optional Immutable Provenance Image Push
+
+- Source SHA: `33719ae2efb2e8dca098648e945ae265edd92e5d`
+- Dockerfile: repo root `Dockerfile`
+- Build arg: `GIT_COMMIT=33719ae2efb2e8dca098648e945ae265edd92e5d`
+- Repository: `genesis-share-to-grow-production`
+- Tag: `s2g-prod-33719ae2-20261012T210232Z`
+- Digest: `sha256:647cd0557ab9d4e18ff3ec422badde60697c435282583ba8fcab1ed27a0abe2a`
+
+Image reconfirmation:
+
+- STG compiled webhook route present
+- health route present
+- RDS CA bundle present (`/app/certs/rds-global-bundle.pem`)
+- Page Factory monorepo markers absent
+- no embedded runtime secret env markers
+
+### Post-Gate / No-Drift
+
+- Canonical STG state remained unchanged:
+  - `schema_version=1`
+  - `revision=1`
+  - canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- Web service remained unchanged by this phase:
+  - `genesis-production-web:95`
+  - `1/1/0`
+  - rollout `COMPLETED`
