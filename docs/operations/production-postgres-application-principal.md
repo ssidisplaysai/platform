@@ -35,6 +35,10 @@ This record captures provisioning of a dedicated least-privilege PostgreSQL runt
   - `SELECT` on `public.genesis_foundation_state`
   - `INSERT` on `public.genesis_foundation_state`
   - `UPDATE` on `public.genesis_foundation_state`
+  - `SELECT`, `INSERT`, `DELETE` on `public.operator_state_pages`
+  - `SELECT`, `INSERT`, `DELETE` on `public.operator_state_jobs`
+  - `SELECT`, `INSERT`, `DELETE` on `public.operator_state_approvals`
+  - `SELECT`, `INSERT`, `UPDATE`, `DELETE` on `public.media_registry_assets`
 
 ## Explicitly Absent Privileges
 
@@ -121,3 +125,14 @@ Validation by IAM simulation confirmed:
 - staging app secret read: `implicitDeny`
 
 Production web runtime moved from `genesis-production-web:90` to `genesis-production-web:91` with credential-only DB secret rebinding.
+
+## Post-Rebind Remediation Notes
+
+- Root cause for runtime fault was missing `genesis_app` privileges on operator/media runtime tables used by the live page-factory postgres repositories.
+- Temporary inline IAM policy `MigrationSecretAccessPatch20261012` on web execution role was removed.
+- Final web execution-role DB-secret scope is app-secret only; admin DB secret is no longer readable (`implicitDeny` by simulation).
+- `genesis_app` role posture remains least-privilege:
+  - `LOGIN=true`
+  - `SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS=false`
+  - `public` schema `CREATE=false`
+  - no unexpected role memberships

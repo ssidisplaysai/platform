@@ -230,3 +230,100 @@
 - Alarms remained: `15 OK`, `0 ALARM`, `0 INSUFFICIENT_DATA`
 - No ECS restart loops, no additional deployments, and no schema/import execution occurred.
 - No production business data imports/seeds were executed.
+
+## Production Post-Rebind Remediation (Completed)
+
+- Remediation window: `2026-10-12T13:18:11Z` to `2026-10-12T13:35:10Z` (17m)
+- Live runtime remained `genesis-production-web:91` (`1/1/0`, `COMPLETED`, target healthy) throughout.
+
+### Root Cause: `operator_state_pages` Permission Error
+
+- Error observed: `permission denied for table operator_state_pages` (`aclcheck_error`, SQLSTATE `42501`)
+- Runtime stack evidence: repository `read()` path in SSR chunk, then `getDashboard`.
+- Source in live image confirms PostgreSQL operator-state repository access:
+  - `apps/web/src/lib/page-factory-client/persistence/operator-state-postgres-repository.ts`
+  - `apps/web/src/lib/page-factory-client/persistence/media-registry-postgres-repository.ts`
+  - Wiring via `apps/web/src/lib/page-factory-client/persistence/repositories.ts` with `GENESIS_STATE_BACKEND=postgres`
+  - Dashboard route calls `client.getDashboard()` from `apps/web/src/app/dashboard/page.tsx`
+
+### Proven Runtime Table Access Surface
+
+- Runtime tables used by web image (`:91`) postgres repositories:
+  - `public.operator_state_pages` (`SELECT`, `INSERT`, `DELETE`)
+  - `public.operator_state_jobs` (`SELECT`, `INSERT`, `DELETE`)
+  - `public.operator_state_approvals` (`SELECT`, `INSERT`, `DELETE`)
+  - `public.media_registry_assets` (`SELECT`, `INSERT`, `UPDATE` via upsert, `DELETE`)
+- `public.genesis_foundation_state` is present and still granted as before (`SELECT/INSERT/UPDATE`), but no direct reference was found in live web-image source search for `genesis_foundation_state`.
+- Migration/admin table `public.genesis_schema_migrations` remains admin-owned and was not granted to app runtime.
+
+### DB Privilege Remediation Applied
+
+Grants added to `genesis_app` (no ownership or schema changes):
+
+- `GRANT SELECT,INSERT,DELETE ON public.operator_state_pages TO genesis_app`
+- `GRANT SELECT,INSERT,DELETE ON public.operator_state_jobs TO genesis_app`
+- `GRANT SELECT,INSERT,DELETE ON public.operator_state_approvals TO genesis_app`
+- `GRANT SELECT,INSERT,UPDATE,DELETE ON public.media_registry_assets TO genesis_app`
+
+Post-remediation non-mutating app-principal checks:
+
+- `current_user=genesis_app`
+- `has_table_privilege` passed for all required table privilege sets
+- Foundation remains restricted: `DELETE` on `genesis_foundation_state` remains `false`
+
+### IAM Remediation Applied
+
+- Removed inline policy `MigrationSecretAccessPatch20261012` from:
+  - `GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H`
+- Final inline policy set on execution role:
+  - `RuntimeTaskExecutionRoleDefaultPolicy1AEEA0C1` only
+- Simulation after removal:
+  - app secret (`genesis/production/postgres-app-*`) `GetSecretValue`: `allowed`
+  - production admin DB secret (`GenesisFoundationStackGenes-*`) `GetSecretValue`: `implicitDeny`
+  - staging app DB secret: `implicitDeny`
+- OpenAI/WordPress wildcard-style suffix patterns remained unchanged and do not match the admin DB secret ARN pattern.
+
+### Persistence Alarm Name Reconciliation
+
+The previous “missing persistence alarms” result was a naming mismatch. Actual alarms are:
+
+- `genesis-prod-app-persistence-backend-unsupported`
+- `genesis-prod-app-persistence-config-failed`
+- `genesis-prod-app-persistence-connection-failed`
+- `genesis-prod-app-persistence-read-failed`
+- `genesis-prod-app-persistence-write-failed`
+- `genesis-prod-app-persistence-schema-mismatch`
+- `genesis-prod-app-persistence-revision-conflict`
+
+All were `OK` during this remediation window.
+
+### Post-Fix Monitoring Evidence
+
+- Window: `2026-10-12T13:18:11Z` → `2026-10-12T13:35:10Z`
+- ECS remained stable: `:91`, `1/1/0`, `COMPLETED`, target healthy (`10.42.2.206`)
+- Alarms final: `15 OK`, `0 ALARM`, `0 INSUFFICIENT_DATA`
+- No new alarm state transitions in window
+- App log scan in window:
+  - no DB permission errors
+  - no DB authentication errors
+  - no secret-access errors
+  - no persistence failure markers
+- ALB metrics:
+  - no target/ELB 5xx datapoints
+  - healthy host count remained `1`
+  - unhealthy host count remained `0`
+- RDS remained stable:
+  - `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+  - backups retained `7`, latest restorable time continued advancing
+- Foundation state remained unchanged:
+  - row count `0`
+  - namespaces none
+  - migration records: both expected entries remained exactly once
+
+### Safety Boundary Confirmation
+
+- No `UpdateService` call
+- No new web task-definition registration
+- No DB schema changes
+- No persistent production business-data writes/imports
+- Woo production webhook configuration remains out of scope and unchanged
