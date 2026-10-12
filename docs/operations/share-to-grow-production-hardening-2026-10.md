@@ -572,3 +572,117 @@ Image reconfirmation:
   - `genesis-production-web:95`
   - `1/1/0`
   - rollout `COMPLETED`
+
+## Share-to-Grow Production Runtime Foundation Scaffolding (Completed)
+
+- Caller: `arn:aws:sts::452630323448:assumed-role/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f/Robert`
+- Scope: SG + RDS ingress + TG + log/metrics/alarms/dashboard + task definition + bounded one-off tasks
+- Out of scope preserved: no ECS service creation, no ALB rule/listener attachment, no DNS, no Woo ingress/secret binding, no payout enablement.
+
+### Infrastructure Created
+
+- Security group:
+  - `genesis-share-to-grow-production-sg` (`sg-0e76412b38ac2f535`)
+  - ingress TCP `3000` from ALB SG `sg-08117e5cf7cef2d09` only
+  - egress: TCP `443` to `0.0.0.0/0`, TCP `5432` to RDS SG `sg-0ef556836f34707ee`, UDP/TCP `53` to `10.42.0.0/16`
+- RDS SG ingress:
+  - added TCP `5432` source `sg-0e76412b38ac2f535` with description `Genesis Share-to-Grow production PostgreSQL access`
+  - existing Page Factory ingress source (`sg-02f456f2dea97f1be`) preserved
+- Target group:
+  - `genesis-s2g-production`
+  - ARN `arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-s2g-production/55f036c68e053f00`
+  - `HTTP:3000`, target type `ip`, health path `/api/health`, matcher `200`
+  - deregistration delay `30`
+  - not attached to listeners; no registered targets
+- Log group:
+  - `/genesis/share-to-grow/production`
+  - retention `30 days`
+
+### Metrics / Alarms / Dashboard
+
+- Metric namespace: `Genesis/ShareToGrow/Production`
+- Metric filters created (`9` total):
+  - config/connection/read/write/schema/revision conflict failure markers
+  - backend-required and tls-required production guard markers
+  - DB auth/permission marker (`databaseErrorCode` `28P01|42501`)
+- Alarms created (`11`, prefix `genesis-s2g-prod-`):
+  - `ecs-livetaskcount-low`
+  - `alb-unhealthy-hosts`
+  - `alb-target-5xx`
+  - `alb-elb-5xx`
+  - app persistence config/connection/read/write/schema/revision alarms
+  - app db auth/permission alarm
+- All alarms configured with `treatMissingData=notBreaching`; pre-service classification: `PRECREATED_NOT_ACTIVE`
+- Dashboard:
+  - name `genesis-share-to-grow-production`
+  - widgets `5`
+  - includes ECS/TG/ALB/STG custom metrics + shared RDS contextual metrics
+
+### Task Definition Registered
+
+- `genesis-share-to-grow-production:1`
+- ARN `arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-share-to-grow-production:1`
+- Container: `GenesisShareToGrowRuntime`
+- Image digest pinned:
+  - `452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-share-to-grow-production@sha256:647cd0557ab9d4e18ff3ec422badde60697c435282583ba8fcab1ed27a0abe2a`
+- Task role: `GenesisShareToGrowProductionTaskRole`
+- Execution role: `GenesisShareToGrowProductionExecutionRole`
+- Task size: `cpu=512`, `memory=1024`
+- Runtime platform: `X86_64`, `LINUX`, `FARGATE`
+- Env:
+  - `NODE_ENV=production`
+  - `GENESIS_ENVIRONMENT=production`
+  - `GENESIS_STATE_BACKEND=postgres`
+  - `GENESIS_RDS_CA_CERT=/app/certs/rds-global-bundle.pem`
+  - `PORT=3000`
+  - `HOSTNAME=0.0.0.0`
+- Secret bindings (key selectors from STG DB secret):
+  - `DB_HOST:host`
+  - `DB_PORT:port`
+  - `DB_NAME:dbname`
+  - `DB_USERNAME:username`
+  - `DB_PASSWORD:password`
+- Woo secret binding: none
+
+`GENESIS_STONER_GYM_RECRUITED_CREATORS` source audit result:
+
+- runtime reads with `?? ""` default
+- classified optional (safe default), not bound in task definition.
+
+### Secret Payload Correctness Fix (Coupled Remediation)
+
+- Initial one-off task secret injection failed because existing secret payload used non-JSON object syntax.
+- Corrected by writing valid JSON payload to the same secret (no ARN/name change).
+- Result: ECS JSON key selectors resolved correctly for DB env injection.
+
+### One-off Runtime Certification
+
+- DB connectivity probe task:
+  - ARN `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/1f99cf05aaa84e579d0accb93c0a6cca`
+  - `current_user=genesis_share_to_grow_app`
+  - `current_database=genesis`
+  - strict TLS pass
+  - `SELECT 1` pass
+  - no writes
+- App boot probe task:
+  - ARN `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/81b39672bb2144a79db43945ce3a11f7`
+  - Next.js reached ready state
+  - no persistence guard failures
+  - no DB auth/permission errors
+  - no secret retrieval failures
+  - Woo secret not required for process boot
+- Health endpoint proof:
+  - deferred (no public ingress introduced in this scaffolding phase)
+
+### Canonical State and Isolation Postchecks
+
+- Canonical namespace remained unchanged:
+  - `schema_version=1`
+  - `revision=1`
+  - canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- Dedicated STG target group isolation:
+  - listener attachments `0`
+  - registered targets `0`
+  - `PUBLIC_STG_INGRESS=NONE`
+- Page Factory no-drift validation:
+  - PF service, target group, alarms, and dashboard remained intact and unmodified by this phase.

@@ -169,3 +169,191 @@ Image content reconfirmation:
   - `genesis-production-web:95`
   - desired/running/pending `1/1/0`
   - rollout `COMPLETED`
+
+## Runtime Foundation Scaffolding Phase (Completed)
+
+- Phase status: `SHARE_TO_GROW_RUNTIME_FOUNDATION=PASS`
+- Scope executed:
+  - dedicated STG ECS SG
+  - RDS ingress for STG SG
+  - dedicated STG target group
+  - dedicated STG log group + metric filters + alarms + dashboard
+  - dedicated STG task definition registration
+  - bounded one-off DB probe + bounded one-off app boot
+  - canonical state recheck and ingress isolation proof
+
+### Pre-Gate
+
+- Caller: `arn:aws:sts::452630323448:assumed-role/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f/Robert`
+- Account/region: `452630323448` / `us-west-2`
+- RDS gate: `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+- Canonical gate:
+  - `schema_version=1`
+  - `revision=1`
+  - canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- Certified dedicated resources confirmed present at gate:
+  - ECR `genesis-share-to-grow-production`
+  - execution role `GenesisShareToGrowProductionExecutionRole`
+  - task role `GenesisShareToGrowProductionTaskRole`
+  - DB secret `genesis/production/share-to-grow/postgres-app`
+
+### Dedicated Security Group
+
+- Name: `genesis-share-to-grow-production-sg`
+- ID: `sg-0e76412b38ac2f535`
+- VPC: `vpc-05035503df7e142d6`
+- Ingress:
+  - TCP `3000` from ALB SG `sg-08117e5cf7cef2d09` only
+- Egress:
+  - TCP `443` to `0.0.0.0/0` (runtime AWS dependency path)
+  - TCP `5432` to RDS SG `sg-0ef556836f34707ee`
+  - UDP/TCP `53` to VPC CIDR `10.42.0.0/16` (VPC DNS)
+
+### RDS SG Ingress
+
+- RDS SG: `sg-0ef556836f34707ee`
+- Added ingress:
+  - TCP `5432` source `sg-0e76412b38ac2f535`
+  - description: `Genesis Share-to-Grow production PostgreSQL access`
+- Existing Page Factory ingress preserved:
+  - source `sg-02f456f2dea97f1be` remained present
+
+### Dedicated Target Group
+
+- Name: `genesis-s2g-production`
+- ARN: `arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-s2g-production/55f036c68e053f00`
+- Type: `ip`
+- Protocol/port: `HTTP:3000`
+- Health check:
+  - protocol `HTTP`
+  - path `/api/health`
+  - matcher `200`
+  - healthy threshold `2`
+  - unhealthy threshold `3`
+  - interval `30`
+  - timeout `5`
+- Deregistration delay: `30s`
+- Attachment status:
+  - registered targets `0`
+  - listener attachments `0`
+  - public ingress: none
+
+### Logging + Metrics + Monitoring
+
+- Log group: `/genesis/share-to-grow/production`
+- Retention: `30 days`
+- Metric filters (namespace `Genesis/ShareToGrow/Production`):
+  - `genesis-s2g-prod-persistence-config-failed` -> `AppPersistenceConfigFailed`
+  - `genesis-s2g-prod-persistence-connection-failed` -> `AppPersistenceConnectionFailed`
+  - `genesis-s2g-prod-persistence-read-failed` -> `AppPersistenceReadFailed`
+  - `genesis-s2g-prod-persistence-write-failed` -> `AppPersistenceWriteFailed`
+  - `genesis-s2g-prod-persistence-schema-mismatch` -> `AppPersistenceSchemaMismatch`
+  - `genesis-s2g-prod-persistence-revision-conflict` -> `AppPersistenceRevisionConflict`
+  - `genesis-s2g-prod-persistence-backend-required` -> `AppPersistenceBackendRequiredInProduction`
+  - `genesis-s2g-prod-persistence-tls-required` -> `AppPersistenceTlsConfigurationRequiredInProduction`
+  - `genesis-s2g-prod-db-auth-permission-failed` -> `AppDbAuthOrPermissionFailed`
+- Alarms created (prefix `genesis-s2g-prod-`, all with `treatMissingData=notBreaching`):
+  - `genesis-s2g-prod-ecs-livetaskcount-low`
+  - `genesis-s2g-prod-alb-unhealthy-hosts`
+  - `genesis-s2g-prod-alb-target-5xx`
+  - `genesis-s2g-prod-alb-elb-5xx`
+  - `genesis-s2g-prod-app-persistence-config-failed`
+  - `genesis-s2g-prod-app-persistence-connection-failed`
+  - `genesis-s2g-prod-app-persistence-read-failed`
+  - `genesis-s2g-prod-app-persistence-write-failed`
+  - `genesis-s2g-prod-app-persistence-schema-mismatch`
+  - `genesis-s2g-prod-app-persistence-revision-conflict`
+  - `genesis-s2g-prod-app-db-auth-or-permission-failed`
+- Alarm state classification:
+  - pre-service scaffolding alarms currently `OK` due no-data + `notBreaching`
+  - classification: `PRECREATED_NOT_ACTIVE`
+- Dashboard:
+  - name `genesis-share-to-grow-production`
+  - widgets `5`
+  - includes ECS/TG/ALB custom metrics plus shared RDS context widgets
+
+### Dedicated Task Definition
+
+- ARN: `arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-share-to-grow-production:1`
+- Family/revision: `genesis-share-to-grow-production:1`
+- Container: `GenesisShareToGrowRuntime`
+- Image: `452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-share-to-grow-production@sha256:647cd0557ab9d4e18ff3ec422badde60697c435282583ba8fcab1ed27a0abe2a`
+- Roles:
+  - task: `arn:aws:iam::452630323448:role/GenesisShareToGrowProductionTaskRole`
+  - execution: `arn:aws:iam::452630323448:role/GenesisShareToGrowProductionExecutionRole`
+- Size/platform:
+  - cpu `512`
+  - memory `1024`
+  - `X86_64` / `LINUX` / Fargate
+- Environment:
+  - `NODE_ENV=production`
+  - `GENESIS_ENVIRONMENT=production`
+  - `GENESIS_STATE_BACKEND=postgres`
+  - `GENESIS_RDS_CA_CERT=/app/certs/rds-global-bundle.pem`
+  - `PORT=3000`
+  - `HOSTNAME=0.0.0.0`
+- Secret bindings (`genesis/production/share-to-grow/postgres-app-q3bH9z`):
+  - `DB_HOST <- host`
+  - `DB_PORT <- port`
+  - `DB_NAME <- dbname`
+  - `DB_USERNAME <- username`
+  - `DB_PASSWORD <- password`
+- Woo secret binding: absent (intentional)
+- `GENESIS_STONER_GYM_RECRUITED_CREATORS` source audit:
+  - read from env with `?? ""` default
+  - classification: optional, safe default -> not bound
+
+### Secret Payload Correctness Remediation
+
+- During first one-off run, ECS secret injection failed due legacy non-JSON secret payload format.
+- Secret value was normalized to valid JSON (same credential fields/values), enabling ECS key selectors (`:host::`, `:port::`, etc.).
+- Secret ARN unchanged: `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/postgres-app-q3bH9z`
+
+### One-off Certification Tasks
+
+DB connectivity probe (no writes):
+
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/1f99cf05aaa84e579d0accb93c0a6cca`
+- Results:
+  - `current_user=genesis_share_to_grow_app`
+  - `current_database=genesis`
+  - strict TLS: pass
+  - `SELECT 1`: pass
+  - writes: none
+
+Application boot probe (bounded startup):
+
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/81b39672bb2144a79db43945ce3a11f7`
+- Task was stopped after startup evidence capture (`UserInitiated` bounded stop reason)
+- Logs confirmed Next.js startup (`Ready`)
+- Not observed in logs:
+  - `PERSISTENCE_BACKEND_REQUIRED_IN_PRODUCTION`
+  - `PERSISTENCE_TLS_CONFIGURATION_REQUIRED_IN_PRODUCTION`
+  - DB auth failure markers
+  - DB permission failure markers
+  - secret retrieval failure markers
+  - Page Factory dependency markers
+- Woo secret required at boot: no
+
+Health proof:
+
+- Public-ingress-free `GET /api/health` probe not safely executed in this phase.
+- Status: `DEFERRED` to service phase (task boots and runtime readiness already proven).
+
+### Post-Task Canonical Invariant Recheck
+
+- Namespace: `share-to-grow-repository`
+- `schema_version=1`
+- `revision=1`
+- `md5(data::text)=6a296406fc8beea3bd60e37b073fc53a`
+- canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- all eight collection counts remained `0`
+
+### Page Factory No-Drift Confirmation
+
+- No STG-caused mutation was made to Page Factory ECS service/family/ECR/IAM/secrets/ALB routes/DB grants/monitoring/source.
+- Observed PF signals during and after phase:
+  - service task definition stayed `genesis-production-web:97`
+  - PF target group remained `Genesi-Runti-KLFP6LAXADYR`
+  - PF alarms remained `15`
+  - PF dashboard `genesis-production-operations-baseline` remained present
