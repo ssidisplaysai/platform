@@ -799,3 +799,47 @@ Before/after values remained identical:
 
 - STG-caused changes to PF ECS/task/ECR/IAM/secrets/ALB/DB/monitoring/source: none
 - `PAGE_FACTORY_DRIFT_RISK=NO`
+
+## Share-to-Grow Production Health-Only Ingress (AWS-Side Complete; External DNS/Cert Pending)
+
+- Phase objective: expose only `https://share-to-grow.glwplatform.com/api/health` while hard-blocking all other STG hostname paths (especially Woo webhook).
+- Outcome: `SHARE_TO_GROW_HEALTH_ONLY_INGRESS=BLOCKED_HEALTH` (public DNS+strict TLS pending external DNS + ACM validation).
+
+### Implemented Mutations
+
+1. Requested dedicated ACM cert for `share-to-grow.glwplatform.com`:
+   - `arn:aws:acm:us-west-2:452630323448:certificate/3218d97a-c585-47ab-bbe9-3633e5d44252` (`PENDING_VALIDATION`)
+2. Created HTTPS listener rules:
+   - priority `13` catch-all host block (created first), fixed `404 Not Found`
+   - priority `12` host+path health forward to TG `genesis-s2g-production`
+3. Performed exactly one ECS `UpdateService` LB attachment:
+   - added mapping `GenesisShareToGrowRuntime:3000` -> `genesis-s2g-production`
+4. No PF default action/target changes and no Woo enablement changes.
+
+### Evidence Summary
+
+- DNS authority: no Route53 `glwplatform.com` zone in-account (`external DNS`)
+- Current public resolution for `share-to-grow.glwplatform.com`: `NXDOMAIN`
+- Existing listener certs cover only `app.glwplatform.com` and `staging.glwplatform.com` (no wildcard)
+- New cert attach attempt while pending returned `UnsupportedCertificate` (expected until issuance)
+- Service converged to `1/1/0` and rollout `COMPLETED`
+- Target group now has exactly one healthy STG target (`10.42.2.136:3000`, `us-west-2a`)
+- Host-preserving ALB-routed checks proved isolation behavior:
+  - `/api/health` => `200` `{"status":"ok"}`
+  - `/`, `/does-not-exist`, Woo GET/POST path => fixed `404` (`Not Found`)
+  - webhook requests did not reach STG application logs
+- Canonical state remained unchanged:
+  - `schema_version=1`, `revision=1`, `updated_at=2026-10-12 14:46:21.214147+00`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - all collection counts remained `0`
+- Alarm state at close: all 11 `genesis-s2g-prod-*` alarms `OK`, `0 ALARM`
+- Stability window (16.47m, four samples): service/target/health/blocking behavior stable, no task restarts, no runtime DB/persistence/secret failures, RDS `available` and `MultiAZ=true`.
+
+### External Handoff Required to Reach PASS
+
+- Create DNS hostname record externally:
+  - `share-to-grow.glwplatform.com` -> `Genesi-Runti-8hL31AGbz6rt-743202067.us-west-2.elb.amazonaws.com`
+- Create ACM validation CNAME externally:
+  - `_fea44451dbc7bacd728a8edcad25cf94.share-to-grow.glwplatform.com.`
+  - `_1d854ad3551f80165b012391846d30e7.wzccmgtwzk.acm-validations.aws.`
+- After ACM status becomes `ISSUED`, attach cert to ALB listener as additional SNI cert, then rerun strict public HTTPS validation for `/api/health`.

@@ -507,3 +507,140 @@ Sample summary (4 samples, every ~5 minutes):
 - STG-caused PF changes: none
 - PF signals remained independently managed (observed task revision advanced independently to `:98` during this period)
 - `PAGE_FACTORY_DRIFT_RISK=NO`
+
+## Share-to-Grow Production Health-Only Ingress Phase (AWS-Side Complete; External DNS/Cert Pending)
+
+- Window (UTC): `2026-10-12T23:01:00Z` → `2026-10-12T23:43:00Z`
+- Operator direction: proceed with AWS-side setup even though `glwplatform.com` is externally managed DNS
+- Result classification: `SHARE_TO_GROW_HEALTH_ONLY_INGRESS=BLOCKED_HEALTH`
+
+### Pre-Gate
+
+- Caller account/region: `452630323448` / `us-west-2`
+- Service pre-state: `1/1/0`, rollout `COMPLETED`
+- Running task pre-state: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/a953ff13d95c4812b7ef9b25053df999`
+- Target group pre-state: registered targets `0`
+- Listener priorities pre-state: `10`, `11`, `default` (free: `12`, `13`)
+- Woo secret binding in task definition: absent (`DB_*` only)
+- Canonical pre-state: `schema_version=1`, `revision=1`, SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+
+### Certificate Audit + Provisioning
+
+- HTTPS listener existing certificates:
+  - `arn:aws:acm:us-west-2:452630323448:certificate/a2ebdf17-9f32-49a9-aee4-48daa1853ab1` (`app.glwplatform.com`) `ISSUED`
+  - `arn:aws:acm:us-west-2:452630323448:certificate/db2e32c3-5c3e-43ff-a3fd-e169d615b7a7` (`staging.glwplatform.com`) `ISSUED`
+- Coverage for `share-to-grow.glwplatform.com`: none
+- New certificate requested:
+  - ARN: `arn:aws:acm:us-west-2:452630323448:certificate/3218d97a-c585-47ab-bbe9-3633e5d44252`
+  - Domain: `share-to-grow.glwplatform.com`
+  - Status: `PENDING_VALIDATION` (DNS)
+  - Validation CNAME name: `_fea44451dbc7bacd728a8edcad25cf94.share-to-grow.glwplatform.com.`
+  - Validation CNAME value: `_1d854ad3551f80165b012391846d30e7.wzccmgtwzk.acm-validations.aws.`
+- SNI attach attempt while pending returned `UnsupportedCertificate`; attach deferred until cert issuance.
+
+### DNS Authority Findings
+
+- Route53 hosted zone for `glwplatform.com`: none in this account (`external DNS authority`)
+- Current public resolution for `share-to-grow.glwplatform.com`: `NXDOMAIN`
+- Required external DNS record:
+  - type: `CNAME` (or provider-equivalent ALIAS)
+  - name: `share-to-grow.glwplatform.com`
+  - target: `Genesi-Runti-8hL31AGbz6rt-743202067.us-west-2.elb.amazonaws.com`
+
+### Listener Rule Changes (Health-Only + Catch-All Block)
+
+- Health rule created:
+  - ARN: `arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/b46054f01c92042c`
+  - priority: `12`
+  - conditions: host `share-to-grow.glwplatform.com` AND path `/api/health`
+  - action: forward to `genesis-s2g-production`
+- Catch-all block rule created first:
+  - ARN: `arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/1f8975691236a581`
+  - priority: `13`
+  - conditions: host `share-to-grow.glwplatform.com`
+  - action: fixed response `404`, body `Not Found`
+- Page Factory default action remained unchanged:
+  - authenticate-cognito + forward to `Genesi-Runti-KLFP6LAXADYR`
+
+### ECS Service Attachment to Dedicated Target Group
+
+- Exactly one `UpdateService` performed to add LB mapping:
+  - target group `genesis-s2g-production`
+  - container `GenesisShareToGrowRuntime:3000`
+- No changes to task definition, desired count, network, SGs, image, env, or secrets
+- Running task replacement occurred during deployment (expected on LB attachment):
+  - old task: `.../a953ff13d95c4812b7ef9b25053df999`
+  - current task: `.../4b9cdd13448749cd942a864867ef5991`
+- Target registration post-attach:
+  - target IP `10.42.2.136`
+  - AZ `us-west-2a`
+  - health `healthy`
+
+### Health and Route Isolation Evidence
+
+Public DNS+TLS gate status:
+
+- DNS resolution for `share-to-grow.glwplatform.com`: failed (`NXDOMAIN`)
+- strict TLS validation for hostname: failed (cert not yet issued/attached)
+
+ALB-host routed verification (`--resolve`, host preserved):
+
+- `GET /api/health` -> `200` with `{"status":"ok"}`
+- `GET /` -> fixed `404` (`Not Found`)
+- `GET /api/share-to-grow/woocommerce/webhook` -> fixed `404` (`Not Found`)
+- `POST /api/share-to-grow/woocommerce/webhook` -> fixed `404` (`Not Found`)
+- `GET /does-not-exist` -> fixed `404` (`Not Found`)
+- webhook traffic reached STG application: `NO`
+
+### Application Log Proof
+
+- Active stream during verification: `runtime/GenesisShareToGrowRuntime/4b9cdd13448749cd942a864867ef5991`
+- Since ingress test start:
+  - `webhook` log matches: `0`
+  - `WOOCOMMERCE_WEBHOOK_SECRET_NOT_CONFIGURED` matches: `0`
+  - persistence/db/secret failure markers during stability window: `0`
+
+### Canonical State Immutability (Post-Ingress)
+
+- Verified after ingress tests via bounded same-image probe task:
+  - `schema_version=1`
+  - `revision=1`
+  - `updated_at=2026-10-12 14:46:21.214147+00`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - all 8 collection counts remained `0`
+- `sourceEventReceipts=0`, `processedCommerceLines=0`, `payoutEntitlements=0`
+
+### Alarm and Stability Certification
+
+- Alarms (`genesis-s2g-prod-*`): `11 OK`, `0 ALARM` at certification close
+- 15-minute stability window:
+  - start `2026-10-12T23:25:25.7210076Z`
+  - end `2026-10-12T23:41:53.7255569Z`
+  - duration `16.47 minutes`
+  - four samples at ~5-minute cadence all showed:
+    - service `1/1/0`, rollout `COMPLETED`
+    - same running task ARN (no restarts)
+    - target `healthy`
+    - health endpoint `200`
+    - host catch-all/webhook block `404`
+    - no persistence/db/secret errors
+    - RDS `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+
+### Woo / Payout Safety and PF Boundary
+
+- `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` still unbound
+- public Woo path remains ALB-blocked
+- `WOO_PRODUCTION_ENABLED=NO`
+- payout automation unchanged/disabled
+- Page Factory ECS/task/ECR/IAM/secrets/TG/default action/DNS/DB/monitoring/source: unchanged
+- `PAGE_FACTORY_DRIFT_RISK=NO`
+
+### Exit Condition for PASS
+
+To move from `BLOCKED_HEALTH` to `PASS`, external operations must complete:
+
+1. create external DNS record for `share-to-grow.glwplatform.com` to ALB DNS target
+2. create ACM validation CNAME for the pending certificate
+3. wait for ACM certificate status `ISSUED`
+4. attach issued cert to HTTPS listener as additional SNI certificate
+5. rerun strict public HTTPS checks against `https://share-to-grow.glwplatform.com/api/health`
