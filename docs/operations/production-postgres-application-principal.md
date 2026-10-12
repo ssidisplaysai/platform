@@ -31,10 +31,10 @@ This record captures provisioning of a dedicated least-privilege PostgreSQL runt
 
 - Granted: `CONNECT` on database `genesis`
 - Granted: `USAGE` on schema `public`
-- Granted table privileges: **pending foundation table creation**
-  - `SELECT`: pending
-  - `INSERT`: pending
-  - `UPDATE`: pending
+- Granted table privileges:
+  - `SELECT` on `public.genesis_foundation_state`
+  - `INSERT` on `public.genesis_foundation_state`
+  - `UPDATE` on `public.genesis_foundation_state`
 
 ## Explicitly Absent Privileges
 
@@ -46,14 +46,30 @@ This record captures provisioning of a dedicated least-privilege PostgreSQL runt
 - `REPLICATION`: denied
 - `BYPASSRLS`: denied
 
-No table-level or schema-level grants were added in this phase.
+No destructive table privileges were granted.
 
 ## Foundation Schema/Grant Phase Status
 
-- Foundation table (`public.genesis_foundation_state`): absent at precheck time.
-- Migration metadata table (`public.genesis_schema_migrations`): absent at precheck time.
+- Foundation table (`public.genesis_foundation_state`): present.
+- Migration metadata table (`public.genesis_schema_migrations`): present.
 - Business namespace rows: `0` (none present).
-- Status: `BLOCKED_MIGRATION` pending execution of canonical repository migrations in a bounded production task that has access to the required migration source/framework.
+- Status: `PASS` after bounded production migration runner execution and grant verification.
+
+## Functional Certification (Rolled Back)
+
+One bounded certification transaction was executed as `genesis_app` using strict TLS and the dedicated app secret:
+
+- `BEGIN`
+- `SELECT` baseline row count
+- `INSERT` unique certification namespace
+- `UPDATE` same row using revision predicate (`revision = 0`)
+- `SELECT` row verification (`revision=1`, `schema_version=1`, JSON object payload)
+- `ROLLBACK`
+
+Post-rollback checks confirmed:
+
+- certification namespace rows remaining: `0`
+- total foundation rows: `0`
 
 ## Application Secret
 

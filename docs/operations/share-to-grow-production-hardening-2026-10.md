@@ -78,3 +78,82 @@
 
 - `PRODUCTION_FOUNDATION_SCHEMA_AND_GRANTS=BLOCKED_MIGRATION`
 - Reason: canonical migration source/framework required for approved production foundation migrations is not present in the current production runtime image path used by existing bounded migration tasks.
+
+## Production Foundation Schema/Grant Phase (Completed)
+
+- Timestamp (local): `2026-10-11T20:27:34-07:00`
+- Live service during phase: `genesis-production-web:90` (`1/1/0`, `COMPLETED`, target healthy)
+- Alarms during phase: `15 OK`, `0 ALARM`
+- RDS during phase: `available`, `MultiAZ=true`, `PendingModifiedValues={}`, deletion protection enabled, backups active
+
+### Runtime Provenance Reconciliation
+
+- Revision transitions observed:
+  - `:88 -> :89`: image digest and `GIT_COMMIT` changed only
+  - `:89 -> :90`: image digest and `GIT_COMMIT` changed only
+- No material runtime config drift across `:88/:89/:90` for backend, DB bindings, secret bindings, CA path, roles, cpu/memory, command/entrypoint, volumes/mounts, logging, or health config.
+- CloudTrail actors for both `RegisterTaskDefinition` and `UpdateService` events were CLI invocations by:
+  - `arn:aws:sts::452630323448:assumed-role/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f/Robert`
+
+### Dedicated Production Migration Path
+
+- Runner script: `scripts/migrate-foundation-state-production.mjs`
+- Dedicated image tag: `foundation-migration-20261011-2027`
+- Dedicated image digest: `sha256:14b21cda4e1d9d303ffa50ac66ccba6f763670af9946e184b84831e985c980bb`
+- Image entrypoint: `node scripts/migrate-foundation-state-production.mjs`
+- Approved migration allowlist:
+  - `20261009000000_foundation_state.js`
+  - `20261010204600_add_foundation_state_constraints.js`
+- CA bundle checksum in image:
+  - `fe45bbebf92ad3e27a583bbb2ddd1553c521ed4d49af5514dc0a40372ea5395c`
+
+### Migration Execution
+
+- Task definition: `genesis-production-foundation-migration:1`
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/967a21dad7bc429eb2b908f4a024c1c7`
+- Result: exit code `0`
+- Applied migrations:
+  - `20261009000000_foundation_state`
+  - `20261010204600_add_foundation_state_constraints`
+- No Share-to-Grow import/seed executed.
+
+### Post-Migration Schema Verification
+
+- Table: `public.genesis_foundation_state`
+- Owner: `genesis_admin` (application role is not owner)
+- Columns:
+  - `namespace text not null primary key`
+  - `schema_version integer not null`
+  - `revision bigint not null default 0`
+  - `updated_at timestamptz not null`
+  - `data jsonb not null`
+- Constraints:
+  - `genesis_foundation_state_pkey`
+  - `genesis_foundation_state_revision_nonnegative`
+  - `genesis_foundation_state_data_object`
+- Migration records:
+  - `20261009000000_foundation_state:1`
+  - `20261010204600_add_foundation_state_constraints:1`
+- Business rows: `0`
+- Namespaces: none
+
+### Genesis App Grants and Certification
+
+- Granted to `genesis_app`:
+  - `USAGE` on schema `public`
+  - `SELECT`, `INSERT`, `UPDATE` on `public.genesis_foundation_state`
+- Explicitly not granted:
+  - `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`, schema `CREATE`
+- Rolled-back functional certification executed with namespace:
+  - `production-app-principal-certification-e33f780cc89c4543a857c3104f3d6b4d`
+- Transaction sequence: `BEGIN -> SELECT -> INSERT -> UPDATE(revision predicate) -> SELECT verify -> ROLLBACK`
+- Post-rollback verification:
+  - certification rows remaining: `0`
+  - total foundation rows: `0`
+
+### Live Runtime Safety
+
+- No production web task-definition registration performed.
+- No `UpdateService` call performed.
+- Runtime credentials remain unchanged (not rebound to app secret yet).
+- No production business data created or imported.
