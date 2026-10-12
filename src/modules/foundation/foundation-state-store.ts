@@ -5,6 +5,7 @@ import {
   savePersistedState,
 } from "./foundation-persistence";
 import { createPostgresFoundationStateStore } from "./postgres-foundation-state-store";
+import { resolveFoundationPersistenceBackend } from "./production-persistence-guards";
 
 export interface FoundationStateLoad<T> {
   state: T;
@@ -50,17 +51,26 @@ let postgresStore: FoundationStateStore | undefined;
 let loggedBackend: FoundationStateStore["backend"] | undefined;
 
 export function getFoundationStateStore(): FoundationStateStore {
-  const configured = process.env.GENESIS_STATE_BACKEND?.trim();
-  const backend = configured || "filesystem";
-  if (backend !== "filesystem" && backend !== "postgres") {
-    console.error(JSON.stringify({
-      event: "GENESIS_PERSISTENCE_BACKEND_UNSUPPORTED",
-      backend,
-    }));
-    throw new FoundationPersistenceError(
-      `Unsupported GENESIS_STATE_BACKEND value: ${backend}.`,
-      "PERSISTENCE_BACKEND_UNSUPPORTED",
-    );
+  const configured = process.env.GENESIS_STATE_BACKEND?.trim() ?? "<unset>";
+  let backend: FoundationStateStore["backend"];
+  try {
+    backend = resolveFoundationPersistenceBackend();
+  } catch (error) {
+    if (error instanceof FoundationPersistenceError) {
+      if (error.code === "PERSISTENCE_BACKEND_UNSUPPORTED") {
+        console.error(JSON.stringify({
+          event: "GENESIS_PERSISTENCE_BACKEND_UNSUPPORTED",
+          backend: configured,
+        }));
+      } else if (error.code === "PERSISTENCE_BACKEND_REQUIRED_IN_PRODUCTION") {
+        console.error(JSON.stringify({
+          event: "GENESIS_PERSISTENCE_BACKEND_REQUIRED_IN_PRODUCTION",
+          environment: process.env.GENESIS_ENVIRONMENT?.trim() ?? "<unset>",
+          backend: configured,
+        }));
+      }
+    }
+    throw error;
   }
 
   if (backend === "filesystem") {

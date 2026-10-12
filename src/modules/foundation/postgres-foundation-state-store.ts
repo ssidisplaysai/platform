@@ -6,6 +6,7 @@ import {
   FoundationPersistenceSerializationError,
 } from "./foundation-persistence";
 import type { FoundationStateLoad, FoundationStateStore } from "./foundation-state-store";
+import { assertProductionPostgresRuntimeConfiguration } from "./production-persistence-guards";
 
 const SCHEMA_VERSION = 1;
 const STATE_TABLE = "public.genesis_foundation_state";
@@ -47,10 +48,25 @@ function sslConfig(): PoolConfig["ssl"] {
       "PERSISTENCE_TLS_CONFIGURATION_INVALID",
     );
   }
+  if (!ca.includes("-----BEGIN CERTIFICATE-----") || !ca.includes("-----END CERTIFICATE-----")) {
+    throw configurationError(
+      "GENESIS_RDS_CA_CERT must resolve to a PEM certificate bundle.",
+      "PERSISTENCE_TLS_CONFIGURATION_INVALID",
+    );
+  }
   return { ca, rejectUnauthorized: true };
 }
 
 function createPool(applicationName = "genesis-share-to-grow"): Pool {
+  try {
+    assertProductionPostgresRuntimeConfiguration();
+  } catch (error) {
+    if (error instanceof FoundationPersistenceError) {
+      console.error(JSON.stringify({ event: "GENESIS_PERSISTENCE_CONFIGURATION_FAILED", code: error.code }));
+    }
+    throw error;
+  }
+
   const host = process.env.DB_HOST?.trim();
   const database = process.env.DB_NAME?.trim();
   const user = process.env.DB_USERNAME?.trim();

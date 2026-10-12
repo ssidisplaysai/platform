@@ -1,11 +1,16 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 const mockQuery = jest.fn();
 const mockEnd = jest.fn();
+const mockPool = jest.fn().mockImplementation(() => ({
+  query: mockQuery,
+  end: mockEnd,
+}));
 
 jest.mock("pg", () => ({
-  Pool: jest.fn().mockImplementation(() => ({
-    query: mockQuery,
-    end: mockEnd,
-  })),
+  Pool: mockPool,
 }));
 
 import {
@@ -15,12 +20,25 @@ import {
 import { createPostgresFoundationStateStore } from "../postgres-foundation-state-store";
 
 describe("PostgreSQL foundation state store", () => {
+  function expectErrorCode(input: () => unknown, code: string) {
+    try {
+      input();
+      throw new Error("EXPECTED_ERROR_NOT_THROWN");
+    } catch (error) {
+      expect(error).toBeInstanceOf(FoundationPersistenceError);
+      expect((error as FoundationPersistenceError).code).toBe(code);
+    }
+  }
+
   const originalEnvironment = {
     DB_HOST: process.env.DB_HOST,
     DB_NAME: process.env.DB_NAME,
     DB_USERNAME: process.env.DB_USERNAME,
     DB_PASSWORD: process.env.DB_PASSWORD,
     DB_PORT: process.env.DB_PORT,
+    GENESIS_ENVIRONMENT: process.env.GENESIS_ENVIRONMENT,
+    GENESIS_STATE_BACKEND: process.env.GENESIS_STATE_BACKEND,
+    GENESIS_RDS_CA_CERT: process.env.GENESIS_RDS_CA_CERT,
   };
 
   beforeEach(() => {
@@ -32,10 +50,13 @@ describe("PostgreSQL foundation state store", () => {
     mockQuery.mockReset();
     mockEnd.mockReset().mockResolvedValue(undefined);
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    mockPool.mockClear();
+    delete process.env.GENESIS_ENVIRONMENT;
+    delete process.env.GENESIS_STATE_BACKEND;
+    delete process.env.GENESIS_RDS_CA_CERT;
   });
 
-  afterEach(async () => {
-    await createPostgresFoundationStateStore().close();
+  afterEach(() => {
     for (const [name, value] of Object.entries(originalEnvironment)) {
       if (value === undefined) delete process.env[name];
       else process.env[name] = value;
@@ -82,5 +103,50 @@ describe("PostgreSQL foundation state store", () => {
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining("SELECT schema_version, revision, updated_at, data"),
     );
+  });
+
+  test("production postgres requires explicit GENESIS_RDS_CA_CERT", () => {
+    process.env.GENESIS_ENVIRONMENT = "production";
+    process.env.GENESIS_STATE_BACKEND = "postgres";
+    delete process.env.GENESIS_RDS_CA_CERT;
+
+    expectErrorCode(() => createPostgresFoundationStateStore(), "PERSISTENCE_TLS_CONFIGURATION_REQUIRED_IN_PRODUCTION");
+    expect(mockPool).not.toHaveBeenCalled();
+  });
+
+  test("production postgres rejects unreadable CA path", () => {
+    process.env.GENESIS_ENVIRONMENT = "production";
+    process.env.GENESIS_STATE_BACKEND = "postgres";
+    process.env.GENESIS_RDS_CA_CERT = join(tmpdir(), "missing-rds-ca.pem");
+
+    expectErrorCode(() => createPostgresFoundationStateStore(), "PERSISTENCE_TLS_CONFIGURATION_INVALID");
+    expect(mockPool).not.toHaveBeenCalled();
+  });
+
+  test("production postgres accepts valid DB configuration and resolvable CA path", async () => {
+    const caDir = mkdtempSync(join(tmpdir(), "s2g-ca-"));
+    const caPath = join(caDir, "rds-ca.pem");
+    writeFileSync(
+      caPath,
+      "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n",
+      "utf8",
+    );
+
+    process.env.GENESIS_ENVIRONMENT = "production";
+    process.env.GENESIS_STATE_BACKEND = "postgres";
+    process.env.GENESIS_RDS_CA_CERT = caPath;
+
+    try {
+      const store = createPostgresFoundationStateStore();
+      await expect(store.close()).resolves.toBeUndefined();
+      expect(mockPool).toHaveBeenCalledWith(expect.objectContaining({
+        host: "staging.example.internal",
+        database: "genesis_staging",
+        user: "staging",
+        ssl: expect.objectContaining({ rejectUnauthorized: true }),
+      }));
+    } finally {
+      rmSync(caDir, { recursive: true, force: true });
+    }
   });
 });

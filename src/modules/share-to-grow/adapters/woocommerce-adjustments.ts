@@ -347,9 +347,7 @@ async function reverseLines(input: {
 
   const recordDisposition: CommerceAdjustmentRecord["disposition"] = disposition === "already_reversed"
     ? "no_economic_effect"
-    : disposition === "replay" || disposition === "ignored_no_economics" || disposition === "manual_review_required"
-      ? "manual_review_required"
-      : disposition;
+    : disposition;
   await commitCommerceAdjustment({
     record: {
       ...input.baseRecord,
