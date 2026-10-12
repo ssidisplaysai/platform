@@ -327,3 +327,70 @@ All were `OK` during this remediation window.
 - No DB schema changes
 - No persistent production business-data writes/imports
 - Woo production webhook configuration remains out of scope and unchanged
+
+## Production Share-to-Grow Canonical Initialization (Completed)
+
+- Execution window (UTC): `2026-10-12T14:39:59Z` → `2026-10-12T14:51:35Z`
+- Canonical namespace: `share-to-grow-repository`
+- Source-of-truth classification: `A` (approved empty canonical production state)
+
+### Initialization Artifact (Deterministic)
+
+- Artifact path: `artifacts/production/share-to-grow-initial-state.json`
+- Envelope: `schemaVersion=1`, `revision=0` (pre-write artifact), canonical empty arrays for all required collections
+- File byte length: `330`
+- File SHA-256: `f566f6090b0b51ebd847d77ebaed134f5d9631c67bc5c42e9d5354f05c58d3a8`
+- Canonical data SHA-256 (`stableJson(data)`): `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- Determinism check: pass (repeat serialization/hash matched)
+- Synthetic/staging identifier scan: pass
+
+### Final Pre-Write Gate
+
+- ECS: `genesis-production-web:91`, desired/running/pending `1/1/0`, rollout `COMPLETED`, deployments `1`
+- Target health: single healthy target observed at gate time
+- Alarms `genesis-prod-*`: `15 OK`, `0 ALARM`
+- RDS: `available`, `MultiAZ=true`, `PendingModifiedValues={}`, pending maintenance `0`, deletion protection `true`
+- App-principal DB checks:
+  - `public.genesis_foundation_state` visible
+  - `share-to-grow-repository` namespace absent before write
+
+### Authorized Initialization Write (One Call)
+
+- Mechanism: one-off ECS task (`genesis-production-db-app-probe:1`) using production **app** DB secret bindings
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/149a77cf630c4c669bebccdbb2c1b5b3`
+- Container exit code: `0`
+- Write form: `INSERT ... ON CONFLICT(namespace) DO NOTHING` into `public.genesis_foundation_state`
+- Materialized persisted state verified post-write as:
+  - namespace row count `1`
+  - `schema_version=1`
+  - `revision=1`
+  - all eight top-level Share-to-Grow collections present and empty
+
+### Idempotency / Replay Verification
+
+- Replay #1 task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/161ff5790b584c0f90546ce2b867b080` (exit `0`)
+- Post-replay verification task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/92c76de186bf475ab5796337fb161c3f` (exit `0`)
+- Controlled restart:
+  - `UpdateService --force-new-deployment` once
+  - task definition unchanged: `genesis-production-web:91`
+  - task ARN rotated:
+    - before: `.../154f4c8b5e8745b0bbe116299804be7c`
+    - after: `.../b79fca6336a641d392e123117e87805a`
+- Replay #2 task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/14cdc57b98b441128f08833352b19e92` (exit `0`)
+- Post-restart verification task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/72f4fd0f44b0411692122ea08fbc16aa` (exit `0`)
+
+### Application/Platform Postchecks
+
+- ECS remained `1/1/0`, rollout `COMPLETED`
+- Target group converged to a single healthy production target
+- Alarms remained `15 OK`, `0 ALARM`
+- RDS remained `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+- Latest restorable time continued advancing
+
+### Safety Boundary Confirmation
+
+- No task-definition image/config change for production web service (remained `:91`)
+- No RDS setting mutation
+- No schema migration during this phase
+- No secrets/IAM/network/ALB configuration changes during this phase
+- No payout enablement and no Woo production webhook enablement
