@@ -686,3 +686,116 @@ Image reconfirmation:
   - `PUBLIC_STG_INGRESS=NONE`
 - Page Factory no-drift validation:
   - PF service, target group, alarms, and dashboard remained intact and unmodified by this phase.
+
+## Share-to-Grow Production Isolated ECS Service Certification (Completed)
+
+- Caller: `arn:aws:sts::452630323448:assumed-role/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f/Robert`
+- Service: `genesis-share-to-grow-production`
+- Cluster: `genesis-production`
+- Task definition: `genesis-share-to-grow-production:1`
+
+### Constraint + Approved Override
+
+- AWS ECS `CreateService` with target group failed while TG had no ALB association:
+  - `InvalidParameterException` (`target group ... does not have an associated load balancer`)
+- With explicit operator approval, phase continued by creating service without LB attachment and deferring TG health certification to ingress phase.
+
+### Service Convergence
+
+- Service ARN: `arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-share-to-grow-production`
+- Convergence duration: `50s`
+- End state: desired/running/pending `1/1/0`
+- Deployment: `COMPLETED`, single deployment
+- Running task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/a953ff13d95c4812b7ef9b25053df999`
+- Task ENI/IP/AZ:
+  - `eni-01b6153493a7820c2`
+  - `10.42.2.86`
+  - `us-west-2a`
+
+### Startup and Runtime Error Review
+
+- Log group: `/genesis/share-to-grow/production`
+- Stream: `runtime/GenesisShareToGrowRuntime/a953ff13d95c4812b7ef9b25053df999`
+- Startup marker observed: `✓ Ready in 423ms`
+- No persistence guard/config/schema/conflict failures observed
+- No DB auth/permission failures observed
+- No secret retrieval failures observed
+
+### Runtime Identity Proof
+
+Bounded one-off identity probe:
+
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/23facbf882944db5be4ad900b293b0ff`
+- Verified:
+  - backend `postgres`
+  - strict CA path `/app/certs/rds-global-bundle.pem`
+  - DB principal `genesis_share_to_grow_app`
+  - database `genesis`
+
+### Live Canonical Application Read (Adapter-Level)
+
+- Read mechanism: same-image runtime module invocation of foundation store adapter (`/app/probe-dist/src/modules/foundation/foundation-state-store.js`)
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/0e99da18ec5948b7b394df051eb6e6e5`
+- Result:
+  - namespace `share-to-grow-repository`
+  - `schemaVersion=1`
+  - `revision=1`
+  - all 8 collection counts `0`
+  - canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- Raw SQL was not the only proof.
+
+### State Immutability
+
+Before/after values remained identical:
+
+- `schema_version=1`
+- `revision=1`
+- `updated_at=2026-10-12 14:46:21.214147+00`
+- canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- all counts remained zero
+
+### Target Group / Ingress Isolation
+
+- Service load balancer attachments: none
+- TG `genesis-s2g-production` registered targets: `0`
+- Listener rule attachments to TG: `0`
+- DNS created: none
+- `PUBLIC_STG_INGRESS=NONE`
+
+### Alarm State Classification (11 STG alarms)
+
+- All `genesis-s2g-prod-*` alarms in `OK`, with `treatMissingData=notBreaching`
+- Classification:
+  - ECS livetascount: `ACTIVE`
+  - ALB/TG request and 5xx alarms: `PRECREATED_NOT_ACTIVE` (no ingress/listener yet)
+  - persistence and DB-auth metrics: `ACTIVE` (service + log source active)
+- Actual alarm count due service defect: `0`
+
+### 15-Minute Stability Certification
+
+- Window:
+  - start `2026-10-12T22:23:45.5413961Z`
+  - end `2026-10-12T22:39:03.5720822Z`
+  - duration `15m`
+- Across four samples:
+  - service stayed `1/1/0`
+  - rollout stayed `COMPLETED`
+  - task ARN unchanged (no restart/replacement)
+  - no deployment replacement
+  - no persistence/auth/secret errors
+  - RDS stayed `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+  - canonical state remained unchanged
+
+### Woo / Payout Safety
+
+- Woo secret bound to service task: no
+- Woo ingress: none
+- `sourceEventReceipts=0`
+- `WOO_PRODUCTION_ENABLED=NO`
+- payout automation remains disabled
+- `payoutEntitlements=0`
+
+### Page Factory Drift Check (Service Phase)
+
+- STG-caused changes to PF ECS/task/ECR/IAM/secrets/ALB/DB/monitoring/source: none
+- `PAGE_FACTORY_DRIFT_RISK=NO`

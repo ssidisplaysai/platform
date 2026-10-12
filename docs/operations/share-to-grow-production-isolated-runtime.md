@@ -357,3 +357,153 @@ Health proof:
   - PF target group remained `Genesi-Runti-KLFP6LAXADYR`
   - PF alarms remained `15`
   - PF dashboard `genesis-production-operations-baseline` remained present
+
+## Isolated ECS Service Certification Phase (Completed)
+
+- Phase status: `SHARE_TO_GROW_PRODUCTION_SERVICE=PASS`
+- Service: `genesis-share-to-grow-production`
+- Cluster: `genesis-production`
+- Task definition: `genesis-share-to-grow-production:1`
+- Security group: `sg-0e76412b38ac2f535`
+- Subnets: `subnet-00a0b287895a3b18c`, `subnet-0f303dea5f645e42d`
+
+### Important Service-Creation Constraint and Approved Override
+
+- ECS rejected load-balanced service creation while target group had no ALB association:
+  - `InvalidParameterException: target group ... does not have an associated load balancer`
+- This phase proceeded under explicit override to:
+  - create the service **without** LB attachment
+  - defer target-group health certification until ingress association phase
+
+### Service Convergence
+
+- Service ARN: `arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-share-to-grow-production`
+- Convergence to `desired/running/pending=1/1/0`: `50s`
+- Deployment reached `COMPLETED`
+- Active running task ARN:
+  - `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/a953ff13d95c4812b7ef9b25053df999`
+- Task ENI/IP/AZ:
+  - ENI `eni-01b6153493a7820c2`
+  - private IP `10.42.2.86`
+  - AZ `us-west-2a`
+
+### Application Startup and Error Review
+
+Log stream: `runtime/GenesisShareToGrowRuntime/a953ff13d95c4812b7ef9b25053df999`
+
+- Startup evidence:
+  - `▲ Next.js 16.2.10`
+  - `✓ Ready in 423ms`
+- Not observed:
+  - `PERSISTENCE_BACKEND_REQUIRED_IN_PRODUCTION`
+  - `PERSISTENCE_TLS_CONFIGURATION_REQUIRED_IN_PRODUCTION`
+  - `PERSISTENCE_DATABASE_CONFIGURATION_INVALID`
+  - `PERSISTENCE_TLS_CONFIGURATION_INVALID`
+  - `GENESIS_PERSISTENCE_CONFIGURATION_FAILED`
+  - `GENESIS_PERSISTENCE_CONNECTION_FAILED`
+  - `GENESIS_PERSISTENCE_READ_FAILED`
+  - `GENESIS_PERSISTENCE_WRITE_FAILED`
+  - `GENESIS_PERSISTENCE_SCHEMA_MISMATCH`
+  - `GENESIS_PERSISTENCE_REVISION_CONFLICT`
+  - DB auth/permission failures
+  - secret retrieval failures
+
+### Runtime Identity Certification
+
+Bounded runtime identity probe task:
+
+- Task ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/23facbf882944db5be4ad900b293b0ff`
+- Output proved:
+  - backend `postgres`
+  - strict CA path `/app/certs/rds-global-bundle.pem`
+  - DB principal `genesis_share_to_grow_app`
+  - DB `genesis`
+
+### Live Canonical Application Read (Non-SQL-Only)
+
+Mechanism:
+
+- bounded one-off same-image runtime module invocation:
+  - `/app/probe-dist/src/modules/foundation/foundation-state-store.js`
+- this reads canonical namespace through application persistence adapter (not raw SQL-only proof)
+
+Evidence task:
+
+- ARN: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/0e99da18ec5948b7b394df051eb6e6e5`
+- Result:
+  - `namespace=share-to-grow-repository`
+  - `schemaVersion=1`
+  - `revision=1`
+  - counts all `0`
+  - canonical SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+
+### State Immutability (Before/After Service Read)
+
+- Before:
+  - `schema_version=1`, `revision=1`
+  - `updated_at=2026-10-12 14:46:21.214147+00`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- After:
+  - `schema_version=1`, `revision=1`
+  - `updated_at=2026-10-12 14:46:21.214147+00`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- All eight collection counts unchanged at `0`
+
+### Target Group Isolation in This Phase
+
+- Target group ARN: `arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-s2g-production/55f036c68e053f00`
+- Service LB attachments: none
+- TG registered targets: `0`
+- Listener attachments/rules to TG: `0`
+- DNS: none
+- `PUBLIC_STG_INGRESS=NONE`
+
+### STG Alarm Classification (11 Alarms)
+
+- Alarm prefix: `genesis-s2g-prod-`
+- States observed: all `OK`, no `ALARM`
+- Classification:
+  - `genesis-s2g-prod-ecs-livetaskcount-low`: `ACTIVE`
+  - `genesis-s2g-prod-alb-unhealthy-hosts`: `PRECREATED_NOT_ACTIVE` (no listener/TG routing yet)
+  - `genesis-s2g-prod-alb-target-5xx`: `PRECREATED_NOT_ACTIVE`
+  - `genesis-s2g-prod-alb-elb-5xx`: `PRECREATED_NOT_ACTIVE`
+  - `genesis-s2g-prod-app-persistence-config-failed`: `ACTIVE` (service/log source active)
+  - `genesis-s2g-prod-app-persistence-connection-failed`: `ACTIVE`
+  - `genesis-s2g-prod-app-persistence-read-failed`: `ACTIVE`
+  - `genesis-s2g-prod-app-persistence-write-failed`: `ACTIVE`
+  - `genesis-s2g-prod-app-persistence-schema-mismatch`: `ACTIVE`
+  - `genesis-s2g-prod-app-persistence-revision-conflict`: `ACTIVE`
+  - `genesis-s2g-prod-app-db-auth-or-permission-failed`: `ACTIVE`
+
+### 15-Minute Stability Window
+
+Window:
+
+- start `2026-10-12T22:23:45.5413961Z`
+- end `2026-10-12T22:39:03.5720822Z`
+- duration `15 minutes`
+
+Sample summary (4 samples, every ~5 minutes):
+
+- service stayed `1/1/0`
+- rollout remained `COMPLETED`
+- deployment count remained `1`
+- running task ARN unchanged (no restart/replacement)
+- RDS remained `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+- canonical state hash/revision unchanged after window
+- no persistence/auth/secret failure markers observed
+
+### Woo and Payout Safety
+
+- `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` not bound in service task definition
+- no Woo ingress/listener rule created
+- `sourceEventReceipts=0`
+- `WOO_PRODUCTION_ENABLED=NO`
+- `payoutEntitlements=0`
+- no payout executor introduced
+
+### Page Factory No-Drift (Service Phase)
+
+- STG-caused PF changes: none
+- PF signals remained independently managed (observed task revision advanced independently to `:98` during this period)
+- `PAGE_FACTORY_DRIFT_RISK=NO`
