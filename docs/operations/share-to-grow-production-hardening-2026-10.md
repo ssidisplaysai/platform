@@ -157,3 +157,76 @@
 - No `UpdateService` call performed.
 - Runtime credentials remain unchanged (not rebound to app secret yet).
 - No production business data created or imported.
+
+## Production Runtime DB Credential Rebind (Completed)
+
+- Change window start (UTC): `2026-10-12T03:55:20Z`
+- Service: `genesis-production-web`
+- Cluster: `genesis-production`
+- Baseline revision before change: `genesis-production-web:90`
+- Deployed revision after change: `genesis-production-web:91`
+
+### Scope and Guardrails
+
+- Exactly one production service update was executed.
+- No image change, code change, role change, cpu/memory change, network mode change, or command/entrypoint change was introduced.
+- Only DB credential secret bindings were changed (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`) from admin secret to app secret.
+
+### Execution Role Secret Scope Tightening
+
+- Execution role: `GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H`
+- Inline policy updated to allow:
+  - `secretsmanager:GetSecretValue` on `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-app-Hpm0Rc`
+- Admin DB secret access was removed from this execution role.
+- IAM simulation results:
+  - app secret read: `allowed`
+  - production admin secret read: `implicitDeny`
+  - staging app secret read: `implicitDeny`
+
+### Pre-Deploy Gate (Immediately Before UpdateService)
+
+- RDS: `available`
+- RDS MultiAZ: `true`
+- RDS pending modifications: `{}`
+- Pending maintenance actions: `0`
+- ECS service: `1/1/0`, rollout `COMPLETED`, deployment count `1`
+- Target health: `healthy` (single target)
+- Alarms `genesis-prod-*`: `15 OK`, `0 ALARM`, `0 INSUFFICIENT_DATA`
+- No running schema/import jobs in production cluster.
+
+### Authorized Mutation
+
+- Task definition registered: `genesis-production-web:91`
+- Exact material diff from `:90` to `:91`:
+  - `DB_HOST` secret ARN changed to app secret path
+  - `DB_PORT` secret ARN changed to app secret path
+  - `DB_NAME` secret ARN changed to app secret path
+  - `DB_USERNAME` secret ARN changed to app secret path
+  - `DB_PASSWORD` secret ARN changed to app secret path
+- Single service update executed:
+  - `aws ecs update-service --cluster genesis-production --service genesis-production-web --task-definition genesis-production-web:91`
+
+### Convergence Evidence
+
+- New task started: `154f4c8b5e8745b0bbe116299804be7c`
+- Prior task stopped: `7c6cdbc758c04486bf90589dca0e2a81`
+- Drain/replace completed successfully.
+- Time to stable: `185` seconds
+- Final state: `1/1/0`, rollout `COMPLETED`, target `healthy`
+
+### Runtime Principal and Privilege Proof
+
+- One-off app-secret probe (bounded ECS task) returned:
+  - `current_user=genesis_app`
+  - `current_database=genesis`
+- Rolled-back functional transaction as `genesis_app`:
+  - `BEGIN -> INSERT -> UPDATE -> SELECT verify -> ROLLBACK`
+  - post-rollback verification rows: `0`
+- No residual rows remained in `public.genesis_foundation_state`.
+
+### Post-Change Safety Checks
+
+- RDS remained: `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+- Alarms remained: `15 OK`, `0 ALARM`, `0 INSUFFICIENT_DATA`
+- No ECS restart loops, no additional deployments, and no schema/import execution occurred.
+- No production business data imports/seeds were executed.

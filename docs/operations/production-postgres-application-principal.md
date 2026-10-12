@@ -8,7 +8,7 @@ This record captures provisioning of a dedicated least-privilege PostgreSQL runt
 - DB instance: `genesis-production-postgres`
 - DB endpoint: `genesis-production-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com`
 - DB name: `genesis`
-- Runtime rebinding status: **not yet rebound**
+- Runtime rebinding status: **rebound to app secret (`genesis-production-web:91`)**
 
 ## Principal
 
@@ -107,11 +107,17 @@ Two dedicated execution roles were used:
 
 Neither role was attached to the production web service.
 
-## Future ECS Binding Requirement (Not Applied Yet)
+## ECS Runtime Binding (Applied)
 
-For eventual runtime rebinding, production web execution role needs:
+The production runtime execution role now includes:
 
 - `Action`: `secretsmanager:GetSecretValue`
 - `Resource`: `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/postgres-app-Hpm0Rc`
 
-No ECS service/task-definition rebinding was performed in this phase.
+Validation by IAM simulation confirmed:
+
+- app secret read: `allowed`
+- production admin DB secret read: `implicitDeny`
+- staging app secret read: `implicitDeny`
+
+Production web runtime moved from `genesis-production-web:90` to `genesis-production-web:91` with credential-only DB secret rebinding.
