@@ -4,11 +4,20 @@ import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
   getGlwN8nMcpConfigurationStatus,
+  preflightGlwN8nMcpExecution,
   GLW_N8N_MCP_ENGINE_WORKFLOW_ID,
   GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
 } from "../n8n-mcp-adapter";
 import { GLW_N8N_WORKFLOW_ID } from "../n8n-draft-adapter";
 import { validateGlwN8nMcpDraftRequest } from "../n8n-mcp-recovery-contract";
+import {
+  GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+  GLW_REFERENCE_GENERATION_CLAIM_CONTRACT,
+  GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+  GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+} from "../reference-generation-claim-contract";
+import { GLW_REFERENCE_QA_POLICY_VERSION } from "../reference-claim-authority";
+import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "../n8n-workflow-identity";
 import {
   createGlwDraftExecutionService,
   createInMemoryGlwPageExecutionRepository,
@@ -33,7 +42,7 @@ const mappedRequest = mapGenerationRequestToN8nDraft("glw-job-mcp", request);
 
 const LIVE_EXECUTE_WORKFLOW_SCHEMA = {
   required: ["workflowId", "executionMode"],
-  allowed: ["workflowId", "executionMode", "inputs"],
+  allowed: ["workflowId", "executionMode", "triggerNodeName", "inputs"],
   executionModes: ["manual", "production"],
   webhookMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
 } as const;
@@ -43,10 +52,11 @@ function validateLiveExecuteArguments(value: unknown): boolean {
   const input = value as Record<string, unknown>;
   if (Object.keys(input).some((key) => !LIVE_EXECUTE_WORKFLOW_SCHEMA.allowed.includes(key as never))) return false;
   if (typeof input.workflowId !== "string" || !LIVE_EXECUTE_WORKFLOW_SCHEMA.executionModes.includes(input.executionMode as never)) return false;
+  if (input.triggerNodeName !== "GLW MCP Recovery Webhook") return false;
   if (!input.inputs || typeof input.inputs !== "object" || Array.isArray(input.inputs)) return false;
   const inputs = input.inputs as Record<string, unknown>;
-  if (Object.keys(inputs).some((key) => !["type", "webhookData"].includes(key))) return false;
-  if (inputs.type !== "webhook" || !inputs.webhookData || typeof inputs.webhookData !== "object" || Array.isArray(inputs.webhookData)) return false;
+  if (Object.keys(inputs).some((key) => key !== "webhookData")) return false;
+  if (!inputs.webhookData || typeof inputs.webhookData !== "object" || Array.isArray(inputs.webhookData)) return false;
   const webhookData = inputs.webhookData as Record<string, unknown>;
   if (Object.keys(webhookData).some((key) => !["method", "query", "body", "headers"].includes(key))) return false;
   return LIVE_EXECUTE_WORKFLOW_SCHEMA.webhookMethods.includes(webhookData.method as never)
@@ -117,7 +127,7 @@ describe("GLW n8n MCP recovery adapter", () => {
       site: { ...mappedRequest.site, id: "site-led-display-warehouse-production" },
     });
 
-    expect(normalized.site.id).toBe("led-display-warehouse");
+    expect(normalized.site.id).toBe("site-led-display-warehouse-production");
     expect(normalized.jobId).toBe("12a099f9-0f42-4f01-a707-30b3b8f3a29c");
     expect(normalized.page).toMatchObject({ state: "Texas", city: "Austin", status: "draft" });
     expect(normalized.callbackUrl).toBe("");
@@ -175,6 +185,35 @@ describe("GLW n8n MCP recovery adapter", () => {
       .toMatchObject({ configured: false, tokenConfigured: false });
   });
 
+  test("preflight requires authenticated execution and read tools", async () => {
+    await expect(preflightGlwN8nMcpExecution({
+      environment: environment(),
+      listTools: async () => ["execute_workflow", "get_workflow_execution"],
+    })).resolves.toMatchObject({ ready: true, configured: true, reason: null });
+
+    await expect(preflightGlwN8nMcpExecution({
+      environment: environment(),
+      listTools: async () => ["execute_workflow"],
+    })).resolves.toMatchObject({ ready: false, configured: true, reason: "GLW n8n MCP tools unavailable: get_workflow_execution." });
+  });
+
+  test("preflight fails closed without configuration and redacts connection failures", async () => {
+    const listTools = jest.fn();
+    await expect(preflightGlwN8nMcpExecution({
+      environment: environment({ GLW_N8N_MCP_TOKEN: "" }),
+      listTools,
+    })).resolves.toMatchObject({ ready: false, configured: false });
+    expect(listTools).not.toHaveBeenCalled();
+
+    const failed = await preflightGlwN8nMcpExecution({
+      environment: environment(),
+      listTools: async () => { throw new Error("token=top-secret denied"); },
+    });
+    expect(failed.ready).toBe(false);
+    expect(failed.reason).toContain("[REDACTED]");
+    expect(failed.reason).not.toContain("top-secret");
+  });
+
   test("missing MCP token prevents dispatch before a tool call", async () => {
     const callTool = jest.fn();
     const dispatcher = createGlwN8nMcpDispatcher({
@@ -182,6 +221,31 @@ describe("GLW n8n MCP recovery adapter", () => {
       callTool,
     });
     await expect(dispatcher.dispatch(mappedRequest)).rejects.toThrow("not configured");
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
+  test.each(["claim contract", "authority binding"] as const)("rejects production missing %s before MCP dispatch", async (missing) => {
+    const governedRequest = structuredClone(mappedRequest);
+    governedRequest.workflowContext.additionalInstructions = "CAMPAIGN PRODUCTION PAGE — APPROVED INSTRUCTIONS:";
+    governedRequest.workflowContext.referenceGenerationClaimContract = GLW_REFERENCE_GENERATION_CLAIM_CONTRACT;
+    governedRequest.workflowContext.referenceGenerationAuthority = {
+      references: [], authoritativeFactReferenceIds: [], visualOrContentReferenceIds: [], supportedClaimMappings: [],
+      productAuthority: { known: true, path: "/outdoor-digital-sphere/", anchorText: "Outdoor Digital Sphere", authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY" },
+      localizationPolicy: { version: "GLW_STATE_LOCALIZATION_CONTAMINATION_V1", expectedStateCode: "AZ", authorizedComparisonStateCodes: [] },
+    };
+    governedRequest.workflowContext.referenceAuthorityBinding = {
+      campaignInstructionFingerprint: "a".repeat(64), referenceFingerprint: "b".repeat(64), productAuthorityFingerprint: "c".repeat(64),
+      claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+      generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+      localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+      n8nWorkflowFingerprint: GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT,
+      qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
+    };
+    if (missing === "claim contract") delete governedRequest.workflowContext.referenceGenerationClaimContract;
+    else delete governedRequest.workflowContext.referenceAuthorityBinding;
+    const callTool = jest.fn();
+    const dispatcher = createGlwN8nMcpDispatcher({ environment: environment(), callTool });
+    await expect(dispatcher.dispatch(governedRequest)).rejects.toThrow();
     expect(callTool).not.toHaveBeenCalled();
   });
 
@@ -194,8 +258,8 @@ describe("GLW n8n MCP recovery adapter", () => {
     expect(callTool).toHaveBeenCalledWith("execute_workflow", {
       workflowId: "9WTjTDXX0QNgF6Mw",
       executionMode: "production",
+      triggerNodeName: "GLW MCP Recovery Webhook",
       inputs: {
-        type: "webhook",
         webhookData: {
           method: "POST",
           body: expect.objectContaining({
@@ -212,10 +276,10 @@ describe("GLW n8n MCP recovery adapter", () => {
       },
     });
     expect(validateLiveExecuteArguments(callTool.mock.calls[0][1])).toBe(true);
-    expect(Object.keys(callTool.mock.calls[0][1])).toEqual(["workflowId", "executionMode", "inputs"]);
+    expect(Object.keys(callTool.mock.calls[0][1])).toEqual(["workflowId", "executionMode", "triggerNodeName", "inputs"]);
   });
 
-  test("live schema fixture rejects a missing webhook discriminator", () => {
+  test("live schema fixture rejects a missing webhook trigger name", () => {
     expect(validateLiveExecuteArguments({
       workflowId: "9WTjTDXX0QNgF6Mw",
       executionMode: "production",
@@ -223,11 +287,11 @@ describe("GLW n8n MCP recovery adapter", () => {
     })).toBe(false);
   });
 
-  test("live schema fixture rejects unsupported top-level arguments", () => {
+  test("live schema fixture rejects unsupported webhook input keys", () => {
     expect(validateLiveExecuteArguments({
       workflowId: "9WTjTDXX0QNgF6Mw",
       executionMode: "production",
-      triggerNodeName: "GLW Page Webhook",
+      triggerNodeName: "GLW MCP Recovery Webhook",
       inputs: { type: "webhook", webhookData: { method: "POST", body: {} } },
     })).toBe(false);
   });

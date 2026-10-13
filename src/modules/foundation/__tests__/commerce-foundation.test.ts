@@ -48,18 +48,30 @@ describe("GCP-0002B commerce foundation", () => {
 
   test("applies permission-aware navigation visibility", () => {
     const viewerPermissions = resolvePermissions(["viewer"]);
+    const operatorPermissions = resolvePermissions(["platform_admin"]);
 
     const visibleNavigationItems = getVisibleNavigationItems(
       FOUNDATION_NAVIGATION_ITEMS,
       viewerPermissions,
     );
+    const operatorLabels = getVisibleNavigationItems(
+      FOUNDATION_NAVIGATION_ITEMS,
+      operatorPermissions,
+    ).map((item) => item.label);
 
     const labels = visibleNavigationItems.map((item) => item.label);
 
-    expect(labels).toContain("Mission Control");
+    expect(labels[0]).toBe("Dashboard");
+    expect(operatorLabels).toEqual(expect.arrayContaining([
+      "Campaigns", "Targets", "Generated Pages", "Sites", "WordPress",
+      "Research", "Media", "Products", "Executions", "Scheduler",
+      "Settings", "Notifications", "Audit", "Help & Documentation",
+    ]));
     expect(labels).toContain("Companies");
     expect(labels).toContain("Settings");
     expect(labels).toContain("Notifications");
+    expect(labels).not.toContain("Mission Control");
+    expect(labels).not.toContain("LED Display Warehouse");
     expect(labels).not.toContain("Audit");
     expect(labels).not.toContain("Enterprise Search");
   });

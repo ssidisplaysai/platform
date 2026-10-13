@@ -1,0 +1,104 @@
+{
+  "family": "genesis-staging-postgres-certification",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "1024",
+  "memory": "2048",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "taskRoleArn": "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+  "executionRoleArn": "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+  "volumes": [
+    {
+      "name": "genesis-persistence",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "${EFS_FILE_SYSTEM_ID}",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "${EFS_ACCESS_POINT_ID}",
+          "iam": "DISABLED"
+        }
+      }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "name": "PostgresCertification",
+      "image": "${CERTIFICATION_IMAGE_URI}",
+      "essential": true,
+      "user": "1000:1000",
+      "readonlyRootFilesystem": true,
+      "environment": [
+        {
+          "name": "GENESIS_ENVIRONMENT",
+          "value": "staging"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "genesis_staging"
+        },
+        {
+          "name": "GENESIS_RDS_CA_CERT",
+          "value": "/app/certs/rds-global-bundle.pem"
+        },
+        {
+          "name": "POSTGRES_CERTIFICATION_SOURCE",
+          "value": "/mnt/genesis-persistence/foundation/share-to-grow-repository.json"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_USERNAME",
+          "valueFrom": "${APP_SECRET_ARN}:username::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "${APP_SECRET_ARN}:password::"
+        },
+        {
+          "name": "DB_ADMIN_USERNAME",
+          "valueFrom": "${RDS_MASTER_SECRET_ARN}:username::"
+        },
+        {
+          "name": "DB_ADMIN_PASSWORD",
+          "valueFrom": "${RDS_MASTER_SECRET_ARN}:password::"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "genesis-persistence",
+          "containerPath": "/mnt/genesis-persistence",
+          "readOnly": true
+        }
+      ],
+      "linuxParameters": {
+        "initProcessEnabled": true,
+        "tmpfs": [
+          {
+            "containerPath": "/tmp",
+            "size": 256,
+            "mountOptions": ["rw", "noexec", "nosuid", "nodev"]
+          }
+        ]
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/genesis/staging/web",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "postgres-certification"
+        }
+      }
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import type {
   UpdateSiteInput,
 } from "./types";
 import { validateNewSiteInput, validateUpdateSiteInput } from "./site-validation";
+import { createSiteId } from "./site-identity";
 
 const PERSISTENCE_NAMESPACE = "site-repository";
 
@@ -68,22 +69,23 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function createSiteId(organizationId: string, slug: string): string {
-  return `site-${organizationId}-${slug}`;
-}
-
 export function listSites(): readonly SiteConfiguration[] {
-  return Array.from(siteStore.values());
+  loadStateFromPersistence();
+  return Array.from(siteStore.values()).map((site) => deepClone(site));
 }
 
 export function getSiteById(siteId: string): SiteConfiguration | null {
-  return siteStore.get(siteId) ?? null;
+  loadStateFromPersistence();
+  const site = siteStore.get(siteId);
+  return site ? deepClone(site) : null;
 }
 
 export function createSite(input: NewSiteInput): {
   validation: SiteValidationResult;
   site: SiteConfiguration | null;
 } {
+  loadStateFromPersistence();
+
   const validation = validateNewSiteInput(input);
   if (!validation.valid) {
     return { validation, site: null };
@@ -108,12 +110,22 @@ export function createSite(input: NewSiteInput): {
     displayName: input.displayName,
     slug: input.slug,
     domain: input.domain,
+    primaryAddress: input.primaryAddress,
+    onboarding: {
+      status: "not_started",
+      wordpressConnectionVerifiedAt: null,
+      certificationStatus: "not_started",
+      certificationPageId: null,
+      certificationUrl: null,
+      certifiedAt: null,
+    },
     canonicalUrl: input.canonicalUrl,
     environment: input.environment,
     lifecycleState: "draft",
     enabled: false,
     healthStatus: "unknown",
     publishingStatus: "disabled",
+    publicationPolicy: input.publicationPolicy ?? "draft_only",
     defaultContentType: input.defaultContentType,
     defaultPublicationStatus: input.defaultPublicationStatus,
     defaultAuthorReference: input.defaultAuthorReference,
@@ -140,6 +152,8 @@ export function updateSite(
   validation: SiteValidationResult;
   site: SiteConfiguration | null;
 } {
+  loadStateFromPersistence();
+
   const existing = siteStore.get(siteId);
   if (!existing) {
     return {

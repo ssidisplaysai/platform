@@ -22,4 +22,5 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^server-only$': '<rootDir>/tests/mocks/server-only.js',
   },
+  setupFiles: ['<rootDir>/tests/setup-persistence-env.js'],
 };

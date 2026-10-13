@@ -1,0 +1,36 @@
+import "server-only";
+
+import { captureGovernedRenderedPage } from "@/modules/foundation/governed-render-capture-browser";
+import { getLocalPageThemingBundle } from "@/modules/foundation/local-context-page-theming-repository";
+import { evaluateLocalThemeVisuals, LOCAL_THEME_VISUAL_CERTIFICATION_CONTRACT, type LocalThemeVisualCapture, type LocalThemeViewport } from "@/modules/foundation/local-theme-visual-certification";
+import { getLocalThemeVisualCertification, saveLocalThemeVisualCertification, storeLocalThemeVisualArtifact } from "@/modules/foundation/local-theme-visual-certification-repository";
+import { HOUSTON_BUNDLE_ID, HOUSTON_RENDERER_VERSION } from "./houston-reference-preview";
+
+const VIEWPORTS: readonly { label: LocalThemeViewport; width: number; height: number; viewportClass: "DESKTOP" | "MOBILE" }[] = [
+  { label: "DESKTOP_1440", width: 1440, height: 1024, viewportClass: "DESKTOP" },
+  { label: "DESKTOP_1024", width: 1024, height: 900, viewportClass: "DESKTOP" },
+  { label: "TABLET_768", width: 768, height: 1024, viewportClass: "DESKTOP" },
+  { label: "MOBILE_375", width: 375, height: 812, viewportClass: "MOBILE" },
+];
+
+export async function captureHoustonReferencePreview() {
+  const existing = getLocalThemeVisualCertification(HOUSTON_BUNDLE_ID, HOUSTON_RENDERER_VERSION);
+  if (existing) return { certification: existing, reused: true };
+  const bundle = getLocalPageThemingBundle({ organizationId: "ssi", siteId: "site-ssi-projectorenclosure", jobId: null, bundleId: HOUSTON_BUNDLE_ID });
+  if (!bundle || bundle.composition.validationState !== "READY_FOR_OWNER_REVIEW") throw new Error("HOUSTON_PREVIEW_AUTHORITY_REQUIRED");
+  const origin = new URL(process.env.GENESIS_RENDER_CAPTURE_INTERNAL_ORIGIN?.trim() || "http://localhost:3003").origin;
+  if (!/^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(origin)) throw new Error("HOUSTON_PREVIEW_CAPTURE_ORIGIN_INVALID");
+  const targetUrl = `${origin}/glw/houston-reference-preview?organizationId=ssi&siteId=site-ssi-projectorenclosure&capture=1`;
+  const captures: LocalThemeVisualCapture[] = [];
+  for (const viewport of VIEWPORTS) {
+    const captureId = `${HOUSTON_BUNDLE_ID}-${HOUSTON_RENDERER_VERSION}-${viewport.label.toLowerCase()}`;
+    const result = await captureGovernedRenderedPage({ targetUrl, allowedOrigins: [origin, "https://projectorenclosure.com"], internalGenesisOrigin: origin, viewportClass: viewport.viewportClass, viewport: { width: viewport.width, height: viewport.height }, captureId, mediaAssignments: bundle.media.map((item) => ({ assignmentId: item.mediaId, semanticRole: item.role, mediaId: item.mediaId, sourceUrl: item.url.startsWith("/") ? `${origin}${item.url}` : item.url, contextId: item.claimClass })) });
+    const screenshotArtifact = storeLocalThemeVisualArtifact({ bundleId: bundle.bundleId, captureId, bytes: result.bytes, width: result.imageWidth, height: result.imageHeight });
+    captures.push({ captureId, viewport: viewport.label, viewportWidth: viewport.width, viewportHeight: viewport.height, documentWidth: result.evidence.documentWidth, documentHeight: result.evidence.documentHeight, horizontalOverflow: result.evidence.horizontalOverflow, primaryContentBounds: result.evidence.primaryContentBounds, hero: result.evidence.hero, media: result.evidence.media, sections: result.evidence.sections, screenshotArtifact, renderedContentHash: result.renderedContentHash, capturedAt: result.evidence.capturedAt });
+  }
+  const findings = evaluateLocalThemeVisuals({ captures, expectedMediaRoles: bundle.media.map((item) => item.role), localizationLevel: bundle.theme.localizationLevel });
+  const blocked = findings.some((item) => item.state === "FAIL");
+  const createdAt = new Date().toISOString();
+  const certification = saveLocalThemeVisualCertification({ contract: LOCAL_THEME_VISUAL_CERTIFICATION_CONTRACT, schemaVersion: 1, certificationId: `local-theme-certification-${HOUSTON_BUNDLE_ID}-${HOUSTON_RENDERER_VERSION}`, bundleId: HOUSTON_BUNDLE_ID, rendererVersion: HOUSTON_RENDERER_VERSION, pageRevisionIdentity: bundle.context.identity.pageRevisionIdentity, localThemeProfileId: bundle.theme.profileId, captures, findings, state: blocked ? "BLOCKED" : "READY_FOR_OWNER_REVIEW", ownerReviewRequired: true, countsAsWordPressRenderCertification: false, wordpressMutationPerformed: false, campaignMutationPerformed: false, publicationPerformed: false, dispatchPerformed: false, createdAt });
+  return { certification, reused: false };
+}

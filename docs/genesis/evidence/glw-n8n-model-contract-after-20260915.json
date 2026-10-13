@@ -1,0 +1,41 @@
+{
+  "capturedAt": "2026-09-15T15:45:00.000Z",
+  "workflowExecuted": false,
+  "parentWorkflow": {
+    "workflowId": "9WTjTDXX0QNgF6Mw",
+    "name": "GLW MCP Page Generation Recovery v1",
+    "versionId": "ce4f9923-eb38-4334-8e87-09fab7c56ec7",
+    "fingerprint": "6b5067bd97635380b7eae9187ced7b27cbae37d692866c533133462d2b957a71",
+    "mutationPerformed": false
+  },
+  "childWorkflow": {
+    "workflowId": "bIDXxyWnY22G8zJC",
+    "name": "Master SEO Page Engine v1.0 - PRODUCTION",
+    "beforeVersionId": "515d8389-f901-4e5c-a203-4d52026d71d1",
+    "activeVersionId": "c8852903-fb4d-4e3c-87e1-e228b850adb0",
+    "beforeFingerprint": "027a4f1fe01eec8ae0428248139c122f652ad59f5b92d044eddb1e87d10071d4",
+    "afterFingerprint": "e42c598bd0a8e358da74edeb7063d398e992ecc83dca679508a94a3ef406fb10",
+    "mutatedNodes": [
+      "Get row(s) in sheet",
+      "Message a model",
+      "Expand GLW Content"
+    ],
+    "normalizedFields": [
+      "generation_claim_contract_version",
+      "generation_claim_contract_json",
+      "classified_source_inventory_json",
+      "product_authority_json",
+      "claim_authority_json",
+      "reference_authority_classification_json"
+    ],
+    "primaryModelReceivesAllFields": true,
+    "expansionModelReceivesAllFields": true,
+    "freeFormOnlyFallbackPossible": false
+  },
+  "rollback": {
+    "tool": "restore_workflow_version",
+    "workflowId": "bIDXxyWnY22G8zJC",
+    "versionId": "515d8389-f901-4e5c-a203-4d52026d71d1",
+    "verifyFingerprint": "027a4f1fe01eec8ae0428248139c122f652ad59f5b92d044eddb1e87d10071d4"
+  }
+}

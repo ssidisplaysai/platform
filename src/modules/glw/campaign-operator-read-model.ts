@@ -1,0 +1,349 @@
+import "server-only";
+
+import type { GlwCampaign } from "./campaign-types";
+import type { GlwCampaignTarget } from "./campaign-target-repository";
+import type { GlwPageExecutionRecord } from "./page-execution";
+import type { GlwCampaignActivationGrant } from "./campaign-activation-authorization";
+import type { GlwCampaignActivationReleaseCapabilityState } from "./campaign-release-capability";
+import type { GlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
+import { listGlwCampaigns } from "./campaign-repository";
+import { listGlwCampaignTargets } from "./campaign-target-repository";
+import { glwPageExecutionRepository } from "./page-execution-repository";
+import { listGlwCampaignActivationGrants } from "./campaign-activation-authorization";
+import { resolveGlwCampaignActivationReleaseCapability } from "./campaign-release-capability";
+import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
+import { getGlwLocalReferenceDraft } from "./campaign-local-reference-repository";
+import { getLatestGlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
+import { getGlwCampaignReferenceApproval } from "./campaign-reference-approval-repository";
+import { getRenderedVisualCertificationState, listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
+import { getGlwReferenceStateSelection } from "./reference-state-selection-repository";
+import { referenceApprovalMatchesTargetIdentity } from "./campaign-activation-reference-authority";
+import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-page-projection";
+
+export type OperatorStageState = "COMPLETE" | "CURRENT" | "PARTIAL" | "BLOCKED" | "UPCOMING" | "NOT_REQUIRED";
+export type OperatorImageState = "APPROVED" | "READY" | "GENERATING" | "MISSING" | "DEGRADED" | "NOT_WIRED";
+export type GlwQueueRecoveryClass = "POST_DRAFT_REVIEW_COMPLETION" | "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
+
+export type GlwCampaignOperatorTarget = {
+  targetId: string;
+  identity: string;
+  lifecycleState: string;
+  queueRecoveryClass: GlwQueueRecoveryClass;
+  ownerAttentionRequired: boolean;
+  continuationEligible: boolean;
+  jobId: string | null;
+  executionId: string | null;
+  executionState: string | null;
+  wordpressObjectId: string | null;
+  wordpressStatus: string | null;
+  wordpressUrl: string | null;
+  canonicalPath: string | null;
+  applicationPath: string | null;
+  canonicalParentId: string | null;
+  visualCertificationCurrentPass: boolean;
+  productAuthorityImage: { state: OperatorImageState; detail: string };
+  contextualInUseImage: { state: OperatorImageState; detail: string };
+  lastActivity: string;
+  issue: string | null;
+};
+
+export type GlwCampaignOperatorReadModel = {
+  campaign: GlwCampaign;
+  counts: { referenceComplete: number; queued: number; running: number; contentReady: number; draftReady: number; published: number; failed: number };
+  lifecycle: readonly { key: string; label: string; state: OperatorStageState; detail: string }[];
+  currentStage: string;
+  nextStage: string;
+  canonicalAction: { kind: "AUTHORIZE" | "ACTIVATE" | "DISPATCH" | "RECONCILE" | "CONTINUE_DRAFT" | "REVIEW_DRAFT" | "PUBLISH" | "NONE"; label: string; href: string; enabled: boolean; reason: string | null };
+  capabilities: {
+    release: { state: "READY" | "BLOCKED" | "NOT_REQUIRED"; detail: string };
+    mcp: { state: "READY" | "BLOCKED" | "NOT_REQUIRED"; detail: string };
+    scheduler: { state: "READY" | "BLOCKED" | "NOT_REQUIRED"; detail: string };
+    publication: { state: "READY" | "BLOCKED" | "DRAFT_ONLY"; detail: string };
+  };
+  targets: readonly GlwCampaignOperatorTarget[];
+};
+
+function targetIdentity(target: GlwCampaignTarget): string {
+  return target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode;
+}
+
+function latestTimestamp(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): string {
+  return [target.updatedAt, job?.updatedAt, job?.completedAt].filter((value): value is string => Boolean(value)).sort().at(-1) ?? target.createdAt;
+}
+
+function referenceImageState(candidate: GlwReferenceImageCandidate | null): GlwCampaignOperatorTarget["contextualInUseImage"] {
+  if (!candidate) return { state: "MISSING", detail: "No contextual image evidence is attached." };
+  if (candidate.status === "APPROVED") return { state: "APPROVED", detail: `Approved campaign application visual, revision ${candidate.revision}.` };
+  if (candidate.status === "READY_FOR_OWNER_REVIEW") return { state: "READY", detail: `Campaign application visual revision ${candidate.revision} awaits review.` };
+  return { state: "DEGRADED", detail: `Latest campaign application visual is ${candidate.status.toLowerCase().replaceAll("_", " ")}.` };
+}
+
+function isOwnerRetryRequiredZeroAuthorityTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+  return target.status === "failed"
+    && Boolean(job)
+    && job!.status === "FAILED"
+    && job!.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"
+    && Boolean(job!.generatedDraft)
+    && !target.wordpressObjectId
+    && !job!.wordpressObjectId;
+}
+
+function isRecoverableOutdoorSphereRichCompositionTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+  return target.status === "failed"
+    && target.status !== "published"
+    && Boolean(job)
+    && job!.status === "CONTENT_READY"
+    && job!.errorCode === "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED"
+    && Boolean(job!.generatedDraft)
+    && Boolean(job!.wordpressObjectId)
+    && job!.wordpressStatus === "draft";
+}
+
+function isActiveRunningExecutionTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+  if (target.status !== "running") return false;
+  if (!job) return true;
+  if (job.status === "CONTENT_READY" || job.status === "COMPLETE") return false;
+  if (job.status === "FAILED") return false;
+  return true;
+}
+
+export function deriveGlwCampaignOperatorReadModel(input: {
+  campaign: GlwCampaign;
+  targets: readonly GlwCampaignTarget[];
+  jobs: readonly GlwPageExecutionRecord[];
+  latestGrant: GlwCampaignActivationGrant | null;
+  releaseCapability: GlwCampaignActivationReleaseCapabilityState;
+  mcpConfigured: boolean;
+  referenceImage: GlwReferenceImageCandidate | null;
+  selectedStateReferenceApproved?: boolean;
+  projectionTruthByTargetId?: Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
+  visualCertificationPassByTargetId?: Readonly<Record<string, boolean>>;
+}): GlwCampaignOperatorReadModel {
+  const jobs = new Map(input.jobs.map((job) => [job.jobId, job]));
+  const lifecycleReferenceComplete = input.targets.filter((target) => target.status === "reference_complete").length;
+  const referenceComplete = Math.max(lifecycleReferenceComplete, input.selectedStateReferenceApproved ? 1 : 0);
+  const queued = input.targets.filter((target) => target.status === "queued").length;
+  const running = input.targets.filter((target) => {
+    const job = target.jobId ? jobs.get(target.jobId) : null;
+    return isActiveRunningExecutionTarget(target, job ?? null);
+  }).length;
+  const draftReady = input.targets.filter((target) => target.status === "draft_ready").length;
+  const published = input.targets.filter((target) => target.status === "published").length;
+  const failed = input.targets.filter((target) => target.status === "failed").length;
+  const contentReady = input.targets.filter((target) => {
+    const job = target.jobId ? jobs.get(target.jobId) : null;
+    return target.status === "content_ready"
+      || (target.status === "running" && job?.status === "CONTENT_READY")
+      || isRecoverableOutdoorSphereRichCompositionTarget(target, job);
+  }).length;
+  const authorized = Boolean(input.latestGrant?.consumedAt || input.latestGrant?.claimedAt || (input.latestGrant && !input.latestGrant.consumedAt && new Date(input.latestGrant.expiresAt) > new Date()));
+  const active = input.campaign.status === "active" || input.campaign.status === "complete";
+  const dispatched = input.targets.some((target) => Boolean(target.dispatchDate));
+  const executionStarted = input.targets.some((target) => Boolean(target.jobId));
+  const reconciliationComplete = draftReady + published > 0;
+  const draftOnly = input.campaign.publicationPolicy === "draft_only";
+  const reconcilable = input.targets.some((target) => {
+    const job = target.jobId ? jobs.get(target.jobId) : null;
+    return Boolean(job && (target.status === "content_ready" || target.status === "running" || target.status === "failed") && ["CONTENT_READY", "COMPLETE", "FAILED"].includes(job.status));
+  });
+  const staleRecoverable = input.targets.some((target) => {
+    const job = target.jobId ? jobs.get(target.jobId) : null;
+    return Boolean(target.status === "running" && job && ["POLL_TIMEOUT", "EXECUTION_DISCOVERY_TIMEOUT"].includes(job.errorCode ?? ""));
+  });
+
+  let currentStage = "Reference";
+  let nextStage = "Reference approval";
+  let canonicalAction: GlwCampaignOperatorReadModel["canonicalAction"] = { kind: "NONE", label: "No safe owner action", href: "#campaign-actions", enabled: false, reason: "Campaign state is not ready for an owner mutation." };
+  if (!active) {
+    if (!referenceComplete) {
+      currentStage = "Reference";
+      nextStage = "Approve the canonical reference";
+    } else if (!authorized) {
+      currentStage = "Authorization";
+      nextStage = "Authorize campaign activation";
+      canonicalAction = { kind: "AUTHORIZE", label: "Authorize Campaign", href: "/glw/campaigns", enabled: true, reason: null };
+    } else {
+      currentStage = "Activation";
+      nextStage = "Activate campaign";
+      canonicalAction = { kind: "ACTIVATE", label: "Activate Campaign", href: "/glw/campaigns", enabled: input.releaseCapability.ready, reason: input.releaseCapability.reason };
+    }
+  } else if (reconcilable || staleRecoverable) {
+    currentStage = "Reconciliation";
+    if (contentReady > 0) {
+      nextStage = "Continue exact content-ready job to a governed WordPress draft";
+      canonicalAction = { kind: "CONTINUE_DRAFT", label: "Continue to WordPress Draft", href: "#campaign-actions", enabled: true, reason: null };
+    } else {
+      nextStage = staleRecoverable ? "Recover stale execution and release blocked slot" : "Reconcile the exact execution";
+      canonicalAction = { kind: "RECONCILE", label: "Reconcile Campaign", href: "#campaign-actions", enabled: true, reason: null };
+    }
+  } else if (running > 0) {
+    currentStage = "Execution";
+    nextStage = "Wait for the running execution, then reconcile";
+    canonicalAction = { kind: "NONE", label: "Execution In Progress", href: "#campaign-actions", enabled: false, reason: "A target is running. Refresh until the exact execution reaches a reconcilable state." };
+  } else if (queued > 0) {
+    currentStage = "Dispatch";
+    nextStage = "Dispatch the next deterministic target";
+    const ready = input.mcpConfigured;
+    canonicalAction = { kind: "DISPATCH", label: "Run Next Draft Batch", href: "#campaign-actions", enabled: ready, reason: ready ? null : "MCP execution capability is unavailable." };
+  } else if (draftReady > 0) {
+    currentStage = "Draft Ready";
+    nextStage = draftOnly ? "Review the persisted WordPress drafts" : "Review publication eligibility";
+    canonicalAction = { kind: draftOnly ? "REVIEW_DRAFT" : "PUBLISH", label: draftOnly ? "Review Draft" : "Publish Approved Pages", href: "#target-workspace", enabled: true, reason: null };
+  } else {
+    currentStage = "Complete";
+    nextStage = "No further owner action required";
+    canonicalAction = { kind: "NONE", label: "No Further Owner Action Required", href: "#target-workspace", enabled: false, reason: null };
+  }
+
+  const lifecycle: GlwCampaignOperatorReadModel["lifecycle"] = [
+    { key: "reference", label: "Reference", state: referenceComplete ? "COMPLETE" : currentStage === "Reference" ? "CURRENT" : "UPCOMING", detail: referenceComplete ? `${referenceComplete} reference target complete` : "Canonical reference required" },
+    { key: "authorization", label: "Authorized", state: authorized ? "COMPLETE" : currentStage === "Authorization" ? "CURRENT" : active ? "COMPLETE" : "UPCOMING", detail: input.latestGrant?.consumedAt ? "Single-use grant consumed" : authorized ? "Activation grant ready" : "Owner grant required" },
+    { key: "activation", label: "Activated", state: active ? "COMPLETE" : currentStage === "Activation" ? "CURRENT" : "UPCOMING", detail: active ? "Campaign active" : "Activation remains explicit" },
+    { key: "dispatch", label: "Dispatch", state: currentStage === "Dispatch" ? "CURRENT" : queued > 0 || dispatched ? "PARTIAL" : active ? "COMPLETE" : "UPCOMING", detail: queued > 0 ? `${queued} queued` : dispatched ? "All eligible targets dispatched" : "Not started" },
+    { key: "execution", label: "Execution", state: currentStage === "Execution" ? "CURRENT" : running > 0 || executionStarted ? "PARTIAL" : queued > 0 ? "UPCOMING" : "COMPLETE", detail: running > 0 ? `${running} running` : executionStarted ? "Execution evidence recorded" : "Not started" },
+    { key: "reconciliation", label: "Reconciliation", state: currentStage === "Reconciliation" ? "CURRENT" : reconciliationComplete ? "PARTIAL" : executionStarted ? "UPCOMING" : "UPCOMING", detail: reconciliationComplete ? `${draftReady + published} reconciled` : "Exact job readback required" },
+    { key: "draft", label: "Draft Ready", state: currentStage === "Draft Ready" ? "CURRENT" : draftReady > 0 ? "PARTIAL" : published > 0 ? "COMPLETE" : "UPCOMING", detail: `${draftReady} WordPress draft${draftReady === 1 ? "" : "s"}` },
+    { key: "publication", label: "Publication", state: draftOnly ? "BLOCKED" : published > 0 ? "PARTIAL" : "UPCOMING", detail: draftOnly ? "Blocked by campaign policy" : `${published} published` },
+  ];
+
+  const targets = [...input.targets]
+    .sort((left, right) => targetIdentity(left).localeCompare(targetIdentity(right)))
+    .map((target): GlwCampaignOperatorTarget => {
+      const job = target.jobId ? jobs.get(target.jobId) ?? null : null;
+      const ownerRetryRequired = isOwnerRetryRequiredZeroAuthorityTarget(target, job);
+      const effectiveLifecycleState = (target.status === "running" && job?.status === "CONTENT_READY")
+        || isRecoverableOutdoorSphereRichCompositionTarget(target, job)
+        ? "content_ready"
+        : target.status;
+      const visualCertificationCurrentPass = input.visualCertificationPassByTargetId?.[target.targetId] ?? false;
+      const resolvedWordpressObjectId = target.wordpressObjectId ?? job?.wordpressObjectId ?? null;
+      const postDraftReviewCompletionEligible = effectiveLifecycleState === "draft_ready"
+        && !ownerRetryRequired
+        && Boolean(resolvedWordpressObjectId)
+        && !visualCertificationCurrentPass;
+      const continuationEligible = effectiveLifecycleState === "content_ready"
+        && !ownerRetryRequired
+        && Boolean(target.jobId)
+        && Boolean(job?.externalExecutionId)
+        && (!target.wordpressObjectId || isRecoverableOutdoorSphereRichCompositionTarget(target, job));
+      const queueRecoveryClass: GlwQueueRecoveryClass = ownerRetryRequired
+        ? "OWNER_RETRY_REQUIRED"
+        : postDraftReviewCompletionEligible
+          ? "POST_DRAFT_REVIEW_COMPLETION"
+          : continuationEligible
+          ? "RESUMABLE_CONTINUATION"
+          : (target.status === "queued" && !target.jobId && !target.wordpressObjectId)
+            ? "QUEUED_NEW_DISPATCH"
+            : "NONE";
+      const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];
+      const isReference = target.status === "reference_complete";
+      const contextual = isReference
+        ? referenceImageState(input.referenceImage)
+        : projectionTruth?.contextualRendered
+          ? { state: "APPROVED" as const, detail: "Current governed rendered visual certification verifies contextual media rendering." }
+        : job?.featuredImagePresent === true
+          ? { state: "READY" as const, detail: "Execution verified a featured image; certified contextual role assignment is not yet wired." }
+          : job?.status === "RUNNING" || job?.status === "DISPATCHED"
+            ? { state: "GENERATING" as const, detail: "Image evidence is pending with the execution." }
+            : { state: "MISSING" as const, detail: "No contextual in-use image evidence is available yet." };
+      return {
+        targetId: target.targetId,
+        identity: targetIdentity(target),
+        lifecycleState: effectiveLifecycleState,
+        queueRecoveryClass,
+        ownerAttentionRequired: queueRecoveryClass === "OWNER_RETRY_REQUIRED",
+        continuationEligible,
+        jobId: target.jobId,
+        executionId: job?.externalExecutionId ?? null,
+        executionState: job?.status ?? null,
+        wordpressObjectId: resolvedWordpressObjectId,
+        wordpressStatus: job?.wordpressStatus ?? (target.status === "published" ? "publish" : target.status === "draft_ready" ? "draft" : null),
+        wordpressUrl: job?.wordpressUrl ?? null,
+        canonicalPath: target.canonicalPath ?? null,
+        applicationPath: target.applicationPath ?? null,
+        canonicalParentId: target.canonicalParentId ?? null,
+        visualCertificationCurrentPass,
+        productAuthorityImage: projectionTruth?.productAuthorityRendered
+          ? { state: "READY", detail: "Current governed rendered visual certification verifies PRODUCT_AUTHORITY media rendering." }
+          : { state: "NOT_WIRED", detail: "Target-level PRODUCT_AUTHORITY assignment is not exposed by the campaign backend." },
+        contextualInUseImage: contextual,
+        lastActivity: latestTimestamp(target, job),
+        issue: target.lastError ?? job?.errorMessage ?? null,
+      };
+    });
+
+  return {
+    campaign: input.campaign,
+    counts: { referenceComplete, queued, running, contentReady, draftReady, published, failed },
+    lifecycle,
+    currentStage,
+    nextStage,
+    canonicalAction,
+    capabilities: {
+      release: active ? { state: input.releaseCapability.ready ? "READY" : "BLOCKED", detail: input.releaseCapability.reason ?? `Exact release ${input.releaseCapability.capability?.releaseSha.slice(0, 8) ?? "unknown"}` } : { state: input.releaseCapability.ready ? "READY" : "BLOCKED", detail: input.releaseCapability.reason ?? "Exact-release activation capability available" },
+      mcp: active ? { state: input.mcpConfigured ? "READY" : "BLOCKED", detail: input.mcpConfigured ? "Configured; live tool preflight runs before every lease" : "Execution configuration unavailable" } : { state: "NOT_REQUIRED", detail: "Required only for dispatch" },
+      scheduler: active ? { state: input.mcpConfigured && running === 0 && queued > 0 ? "READY" : queued === 0 ? "NOT_REQUIRED" : "BLOCKED", detail: running > 0 ? "Running target occupies the execution slot" : queued > 0 ? `${queued} queued; one target per invocation` : "No queued targets" } : { state: "NOT_REQUIRED", detail: "Campaign must be active" },
+      publication: { state: draftOnly ? "DRAFT_ONLY" : "READY", detail: draftOnly ? "Publication blocked by campaign policy" : "Publication still requires exact eligible drafts and owner confirmation" },
+    },
+    targets,
+  };
+}
+
+export async function buildGlwCampaignOperatorReadModel(campaignId: string): Promise<GlwCampaignOperatorReadModel | null> {
+  const campaign = listGlwCampaigns().find((entry) => entry.campaignId === campaignId) ?? null;
+  if (!campaign) return null;
+  const targets = listGlwCampaignTargets(campaignId);
+  const allJobs = await glwPageExecutionRepository.list();
+  const targetJobIds = new Set(targets.map((target) => target.jobId).filter((jobId): jobId is string => Boolean(jobId)));
+  const jobs = allJobs.filter((job) => targetJobIds.has(job.jobId));
+  const jobMap = new Map(jobs.map((job) => [job.jobId, job]));
+  const certifications = listRenderedVisualCertifications({ organizationId: campaign.organizationId, siteId: campaign.siteId });
+  const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
+  const projectedTargets = targets.map((target) => {
+    const job = target.jobId ? jobMap.get(target.jobId) : null;
+    return job ? projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions }).target : target;
+  });
+  const projectionTruthByTargetId = Object.fromEntries(
+    targets.map((target) => {
+      const job = target.jobId ? jobMap.get(target.jobId) : null;
+      if (!job) return [target.targetId, { productAuthorityRendered: false, contextualRendered: false }];
+      const projection = projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions });
+      return [target.targetId, {
+        productAuthorityRendered: projection.productAuthorityRendered,
+        contextualRendered: projection.contextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered),
+      }];
+    }),
+  ) as Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
+  const visualCertificationPassByTargetId = Object.fromEntries(
+    targets.map((target) => {
+      const currentPass = certifications.some((certification) => {
+        if (certification.identity.targetId !== target.targetId) return false;
+        if (certification.identity.organizationId !== target.organizationId || certification.identity.siteId !== target.siteId) return false;
+        if (certification.overallState !== "PASS") return false;
+        return getRenderedVisualCertificationState({ currentIdentity: certification.identity }).certificationState === "CURRENT";
+      });
+      return [target.targetId, currentPass];
+    }),
+  ) as Readonly<Record<string, boolean>>;
+  const latestGrant = listGlwCampaignActivationGrants(campaignId).at(-1) ?? null;
+  const selectedStateReferenceApproved = (() => {
+    if (campaign.pageType !== "state_service") return false;
+    const selection = getGlwReferenceStateSelection(campaign.campaignId);
+    if (!selection) return false;
+    const target = targets.find((candidate) => candidate.stateCode === selection.stateCode && !candidate.citySlug) ?? null;
+    const approval = getGlwCampaignReferenceApproval(campaign.campaignId, selection.stateCode, null);
+    return referenceApprovalMatchesTargetIdentity({
+      approval,
+      stateCode: selection.stateCode,
+      citySlug: null,
+      target,
+    });
+  })();
+  const runningReleaseSha = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+  const releaseCapability = resolveGlwCampaignActivationReleaseCapability({ organizationId: campaign.organizationId, siteId: campaign.siteId, runningReleaseSha });
+  const mcpConfigured = getGlwN8nMcpConfigurationStatus().configured;
+  const referenceTarget = targets.find((target) => target.status === "reference_complete" && target.citySlug && target.cityName) ?? null;
+  const referenceDraft = referenceTarget?.citySlug ? getGlwLocalReferenceDraft(campaignId, referenceTarget.stateCode, referenceTarget.citySlug) : null;
+  const referenceImage = referenceDraft ? getLatestGlwReferenceImageCandidate({ organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId, referenceDraftId: referenceDraft.referenceDraftId }) : null;
+  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage, selectedStateReferenceApproved, projectionTruthByTargetId, visualCertificationPassByTargetId });
+}

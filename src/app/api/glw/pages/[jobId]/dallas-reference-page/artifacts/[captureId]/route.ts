@@ -1,0 +1,7 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { getDallasPublicationState } from "@/modules/glw/dallas-reference-page-publication-repository";
+import { readDallasPublicCapture } from "@/modules/glw/dallas-reference-page-publication-service";
+
+export const dynamic = "force-dynamic";
+export async function GET(request: NextRequest, context: { params: Promise<{ jobId: string; captureId: string }> }) { const { jobId, captureId } = await context.params; if (jobId !== "2ca74016-252b-4587-bf3c-ec9b7eb839c9" || request.nextUrl.searchParams.get("organizationId") !== "ssi" || request.nextUrl.searchParams.get("siteId") !== "site-ssi-projectorenclosure") return new NextResponse("Not found", { status: 404 }); const capture = getDallasPublicationState().visualCertifications.flatMap((item) => item.captures).find((item) => item.captureId === captureId); if (!capture) return new NextResponse("Not found", { status: 404 }); const bytes = readDallasPublicCapture(capture.artifact.reference); return new NextResponse(new Uint8Array(bytes), { headers: { "content-type": "image/png", "content-length": String(bytes.length), "cache-control": "private, no-store", "x-content-type-options": "nosniff", "x-robots-tag": "noindex, nofollow" } }); }

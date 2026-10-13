@@ -1,0 +1,172 @@
+import type { EconomicRuleVersion } from "./economic-rule";
+import type { LedgerEntry } from "./ledger";
+import type { AttributionDecision } from "./attribution";
+import type { PayoutEntitlement } from "./payout";
+
+export interface CollaborationParticipantRecord {
+  readonly participantId: string;
+  readonly organizationId: string;
+  readonly collaborationId: string;
+  readonly canonicalPartnerId: string;
+  readonly role: "founding_collaborator" | "creator" | "brand";
+  readonly sponsorPartnerId?: string;
+  readonly status: "active" | "inactive" | "suspended";
+  readonly createdAt: string;
+}
+
+export interface TrackingIdentityReferenceRecord {
+  readonly trackingIdentityId: string;
+  readonly organizationId: string;
+  readonly canonicalPartnerId: string;
+  readonly canonicalPartnerQrId: string;
+  readonly publicSlug: string;
+  readonly status: "active" | "inactive" | "expired";
+  readonly createdAt: string;
+}
+
+export interface PersistedEconomicRuleVersion {
+  readonly id: string;
+  readonly ruleId: string;
+  readonly version: number;
+  readonly effectiveFrom: string;
+  readonly effectiveTo?: string;
+  readonly beneficiaries: ReadonlyArray<{
+    readonly beneficiaryId: string;
+    readonly role: string;
+    readonly basisPoints: number;
+  }>;
+  readonly residualBeneficiaryId: string;
+}
+
+export interface PersistedLedgerEntry {
+  readonly id: string;
+  readonly idempotencyKey: string;
+  readonly beneficiaryId: string;
+  readonly allocationId?: string;
+  readonly entryType: LedgerEntry["entryType"];
+  readonly amountMinor: string;
+  readonly currency: string;
+  readonly sourceEntryId?: string;
+  readonly postedAt: string;
+}
+
+export interface SourceEventReceiptRecord {
+  readonly sourceEventId: string;
+  readonly source: string;
+  readonly eventType: string;
+  readonly payloadHash: string;
+  readonly receivedAt: string;
+}
+
+export interface ProcessedCommerceLineRecord {
+  readonly lineKey: string;
+  readonly sourceEventId: string;
+  readonly organizationId: string;
+  readonly attribution: AttributionDecision;
+  readonly ruleVersionId: string;
+  readonly ledgerEntryIds: readonly string[];
+  readonly processedAt: string;
+  /** Sale amount (gross - discount) in minor units; absent on records written before refund support. */
+  readonly saleMerchandiseMinor?: string;
+  /** Locked economic rule used for this sale; absent on records written before reversal support. */
+  readonly ruleSnapshot?: PersistedEconomicRuleVersion;
+}
+
+/**
+ * Append-only record of a cancellation or refund applied to a Woo order.
+ * Original processed-line and earning records are never mutated.
+ */
+export interface CommerceAdjustmentRecord {
+  readonly adjustmentId: string;
+  readonly kind: "cancellation" | "refund";
+  readonly orderId: string;
+  readonly sourceEventId: string;
+  readonly refundId?: string;
+  readonly lineRefunds: ReadonlyArray<{ readonly lineKey: string; readonly refundMinor: string }>;
+  readonly disposition:
+    | "reversed"
+    | "partially_reversed"
+    | "reversed_with_brand_loss"
+    | "no_economic_effect"
+    | "manual_review_required";
+  readonly reason?: string;
+  readonly customerRefundMinor?: string;
+  readonly economicReversalMinor?: string;
+  readonly brandLossMinor?: string;
+  readonly remainingNetDmpMinor?: string;
+  readonly currency?: string;
+  readonly lineAdjustments?: ReadonlyArray<{
+    readonly lineKey: string;
+    readonly ruleVersionId: string;
+    readonly originalDmpMinor: string;
+    readonly refundMinor: string;
+    readonly cumulativeRefundMinor: string;
+    readonly reversalMinor: string;
+    readonly cumulativeReversalMinor: string;
+    readonly remainingDmpMinor: string;
+    readonly cumulativeBrandLossMinor: string;
+  }>;
+  readonly reversalLedgerEntryIds: readonly string[];
+  readonly recordedAt: string;
+}
+
+export interface PersistedPayoutEntitlement {
+  readonly entitlementId: string;
+  readonly beneficiaryId: string;
+  readonly currency: string;
+  readonly ledgerEntryId: string;
+  readonly amountMinor: string;
+  readonly state: PayoutEntitlement["state"];
+  readonly earnedAt: string;
+  readonly clearsAt: string;
+  readonly statementId?: string;
+  readonly paidReference?: string;
+}
+
+export interface ShareToGrowRepositoryState {
+  readonly participants: CollaborationParticipantRecord[];
+  readonly trackingIdentities: TrackingIdentityReferenceRecord[];
+  readonly ruleVersions: PersistedEconomicRuleVersion[];
+  readonly ledgerEntries: PersistedLedgerEntry[];
+  readonly sourceEventReceipts: SourceEventReceiptRecord[];
+  readonly processedCommerceLines: ProcessedCommerceLineRecord[];
+  readonly payoutEntitlements: PersistedPayoutEntitlement[];
+  readonly commerceAdjustments: CommerceAdjustmentRecord[];
+}
+
+export function serializeRuleVersion(
+  rule: EconomicRuleVersion,
+): PersistedEconomicRuleVersion {
+  return {
+    id: rule.id,
+    ruleId: rule.ruleId,
+    version: rule.version,
+    effectiveFrom: rule.effectiveFrom,
+    effectiveTo: rule.effectiveTo,
+    beneficiaries: rule.beneficiaries.map((beneficiary) => ({ ...beneficiary })),
+    residualBeneficiaryId: rule.residualBeneficiaryId,
+  };
+}
+
+export function deserializeRuleVersion(
+  rule: PersistedEconomicRuleVersion,
+): EconomicRuleVersion {
+  return Object.freeze({
+    ...rule,
+    beneficiaries: Object.freeze(rule.beneficiaries.map((beneficiary) => Object.freeze({ ...beneficiary }))),
+  });
+}
+
+export function serializeLedgerEntry(entry: LedgerEntry): PersistedLedgerEntry {
+  return {
+    id: entry.id,
+    idempotencyKey: entry.idempotencyKey,
+    beneficiaryId: entry.beneficiaryId,
+    allocationId: entry.allocationId,
+    entryType: entry.entryType,
+    amountMinor: entry.amount.minor.toString(),
+    currency: entry.amount.currency,
+    sourceEntryId: entry.sourceEntryId,
+    postedAt: entry.postedAt,
+  };
+}

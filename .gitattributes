@@ -1,0 +1,2 @@
+src/components/layout/app-shell.tsx -text
+infra/staging/certificates/aws-rds-global-bundle.pem -text

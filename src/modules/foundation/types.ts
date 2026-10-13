@@ -212,6 +212,10 @@ export type NavigationItem = {
   id: string;
   label: string;
   href: string;
+  group?: "DASHBOARD" | "CAMPAIGNS" | "SITES" | "RESEARCH & CONTENT" | "OPERATIONS" | "SYSTEM" | "UTILITY" | "MORE";
+  description?: string;
+  icon?: string;
+  disabled?: boolean;
   requiredPermissions?: readonly PermissionAction[];
 };
 
@@ -721,6 +725,16 @@ export type SiteDefaultContentType =
 
 export type SiteDefaultPublicationStatus = "draft" | "review" | "scheduled";
 
+export type SitePublicationPolicy = "draft_only" | "publish_after_gates";
+
+export type SitePrimaryAddress = {
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  stateRegion: string;
+  postalCode: string;
+  countryCode: string;
+};
 export type SiteIntegrationReferences = {
   wordpressApiBaseUrl: string | null;
   wordpressCredentialReference: string | null;
@@ -735,6 +749,23 @@ export type SiteProfileReferences = {
   analyticsProfileReference: string | null;
 };
 
+export type SiteOnboardingStatus =
+  | "not_started"
+  | "connected"
+  | "certified";
+
+export type SiteCertificationStatus =
+  | "not_started"
+  | "certified";
+
+export type SiteOnboardingState = {
+  status: SiteOnboardingStatus;
+  wordpressConnectionVerifiedAt: string | null;
+  certificationStatus: SiteCertificationStatus;
+  certificationPageId: string | null;
+  certificationUrl: string | null;
+  certifiedAt: string | null;
+};
 export type SiteConfiguration = {
   siteId: string;
   organizationId: string;
@@ -742,12 +773,15 @@ export type SiteConfiguration = {
   displayName: string;
   slug: string;
   domain: string | null;
+  primaryAddress: SitePrimaryAddress | null;
+  onboarding?: SiteOnboardingState;
   canonicalUrl: string | null;
   environment: SiteEnvironment;
   lifecycleState: SiteLifecycleState;
   enabled: boolean;
   healthStatus: SiteHealthStatus;
   publishingStatus: SitePublishingStatus;
+  publicationPolicy?: SitePublicationPolicy;
   defaultContentType: SiteDefaultContentType;
   defaultPublicationStatus: SiteDefaultPublicationStatus;
   defaultAuthorReference: string | null;
@@ -814,9 +848,11 @@ export type NewSiteInput = {
   displayName: string;
   slug: string;
   domain: string | null;
+  primaryAddress: SitePrimaryAddress | null;
   canonicalUrl: string | null;
   environment: SiteEnvironment;
   enabled: boolean;
+  publicationPolicy?: SitePublicationPolicy;
   defaultContentType: SiteDefaultContentType;
   defaultPublicationStatus: SiteDefaultPublicationStatus;
   defaultAuthorReference: string | null;
@@ -951,6 +987,13 @@ export type ProductSiteAssignment = {
   lastPublicationReference: string | null;
 };
 
+export type ProductAuthorityProvenance = {
+  sourceType: "WORKBOOK_IMPORTED" | "OWNER_APPROVED_CANONICAL_PRODUCT" | "VERIFIED_FIRST_PARTY_PRODUCT_AUTHORITY";
+  authorityReference: string;
+  normalizationVersion: string;
+  normalizedAt: string;
+};
+
 export type ProductConfiguration = {
   productId: string;
   organizationId: string;
@@ -981,6 +1024,7 @@ export type ProductConfiguration = {
   promptProfileReference: string | null;
   businessGenomeObjectReference: string | null;
   sourceEvidenceReference: string | null;
+  authorityProvenance?: ProductAuthorityProvenance | null;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;

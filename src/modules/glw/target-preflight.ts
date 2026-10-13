@@ -1,15 +1,36 @@
+import type { AuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { getGlwState, type GlwGenerationRequest } from "./page-generation";
-import {
-  resolveGlwN8nEngineProduct,
-  resolveGlwN8nEngineProductSlug,
-  type GlwPageExecutionRecord,
-} from "./page-execution";
+import type { GlwPageExecutionRecord } from "./page-execution";
 
 export type GlwTargetPreflightState =
   | "ABSENT"
   | "EXISTS_DRAFT"
   | "EXISTS_PUBLISHED"
   | "UNKNOWN";
+
+export type GlwHierarchyNodeState =
+  | "ABSENT"
+  | "EXISTS_DRAFT"
+  | "EXISTS_PUBLISHED"
+  | "PARENT_ABSENT"
+  | "AMBIGUOUS"
+  | "UNSUPPORTED_STATUS"
+  | "UNVERIFIED";
+
+export type GlwHierarchyNodePreflight = {
+  slug: string;
+  parentId: string | null;
+  state: GlwHierarchyNodeState;
+  wordpressObjectId: string | null;
+  wordpressStatus: string | null;
+};
+
+export type GlwHierarchyPreflight = {
+  productParent: GlwHierarchyNodePreflight;
+  stateParent: GlwHierarchyNodePreflight;
+  leaf: GlwHierarchyNodePreflight;
+  generationAvailable: boolean;
+};
 
 export type GlwCanonicalTargetIdentity = {
   applicationPath: string;
@@ -28,6 +49,7 @@ export type GlwTargetPreflightResult = GlwCanonicalTargetIdentity & {
   wordpressUrl: string | null;
   source: "WORDPRESS_READ" | "LOCAL_EXECUTION" | "UNVERIFIED";
   confidence: "AUTHORITATIVE" | "LOCAL_DURABLE" | "UNVERIFIED";
+  hierarchy?: GlwHierarchyPreflight;
 };
 
 export type GlwTargetMutationAvailability = {
@@ -45,27 +67,35 @@ export type GlwWordPressTargetPage = {
   status?: string;
   link?: string;
   title?: { rendered?: string };
-};
-
-type FetchResponse = {
-  ok: boolean;
-  json(): Promise<unknown>;
+  modified_gmt?: string;
+  featured_media?: number;
+  author?: number;
 };
 
 export function createGlwCanonicalTargetIdentity(input: {
   productId: string;
+  productTopic: string;
   stateCode: string;
   citySlug: string;
   applicationPath: string;
   canonicalParentId?: string | null;
 }): GlwCanonicalTargetIdentity {
   const state = getGlwState(input.stateCode);
-  const canonicalProductSlug = resolveGlwN8nEngineProductSlug(input.productId);
+  const applicationPathSegments = input.applicationPath
+    .split("/")
+    .map((segment) => segment.trim().toLowerCase())
+    .filter(Boolean);
+
+  const canonicalProductSlug = applicationPathSegments[0] ?? "";
+
+  if (!canonicalProductSlug) {
+    throw new Error("Canonical product slug is required.");
+  }
   const canonicalSlug = input.citySlug.trim().toLowerCase();
   return {
     applicationPath: input.applicationPath,
     canonicalPath: [canonicalProductSlug, state?.slug, canonicalSlug].filter(Boolean).join("/"),
-    canonicalProduct: resolveGlwN8nEngineProduct(input.productId),
+    canonicalProduct: input.productTopic.trim(),
     canonicalProductSlug,
     canonicalSlug,
     canonicalParentId: input.canonicalParentId ?? null,
@@ -74,12 +104,23 @@ export function createGlwCanonicalTargetIdentity(input: {
 
 export function resolveGlwTargetMutationAvailability(
   preflight: GlwTargetPreflightResult,
+  pageType: GlwGenerationRequest["pageType"] = "city_service",
 ): GlwTargetMutationAvailability {
+  const createOperation = pageType === "general_service"
+    ? "CREATE_GENERAL"
+    : pageType === "state_service"
+      ? "CREATE_STATE"
+      : "CREATE_CITY";
+  const updateOperation = pageType === "general_service"
+    ? "UPDATE_GENERAL"
+    : pageType === "state_service"
+      ? "UPDATE_STATE"
+      : "UPDATE_CITY";
   if (preflight.state === "EXISTS_DRAFT") {
     return {
       createAvailable: false,
       updateAvailable: Boolean(preflight.wordpressObjectId),
-      plannedOperation: "UPDATE_CITY",
+      plannedOperation: updateOperation,
       wordpressObjectId: preflight.wordpressObjectId,
       message: "An existing draft is available for exact-ID update.",
     };
@@ -95,19 +136,21 @@ export function resolveGlwTargetMutationAvailability(
   }
   if (preflight.state === "ABSENT") {
     return {
-      createAvailable: true,
+      createAvailable: preflight.hierarchy?.generationAvailable ?? true,
       updateAvailable: false,
-      plannedOperation: "CREATE_CITY",
+      plannedOperation: preflight.hierarchy?.generationAvailable === false ? null : createOperation,
       wordpressObjectId: null,
-      message: "No canonical WordPress target exists. Draft creation is available.",
+      message: preflight.hierarchy?.generationAvailable === false
+        ? "The canonical target is absent, but its WordPress hierarchy is not safe for automatic generation."
+        : "No canonical WordPress target exists. Draft creation is available.",
     };
   }
   return {
-    createAvailable: true,
+    createAvailable: false,
     updateAvailable: false,
-    plannedOperation: "CREATE_CITY",
+    plannedOperation: null,
     wordpressObjectId: null,
-    message: "Target existence is unknown and will be verified authoritatively before creation.",
+    message: "Target or hierarchy identity is not authoritatively resolved. Mutation is unavailable until preflight succeeds.",
   };
 }
 
@@ -120,6 +163,7 @@ export function resolveGlwTargetPreflight(input: {
   productId: string;
   stateName: string;
   cityName: string;
+  hierarchy?: GlwHierarchyPreflight;
 }): GlwTargetPreflightResult {
   const page = input.wordpressPages?.find((candidate) =>
     String(candidate.slug ?? "") === input.identity.canonicalSlug
@@ -135,6 +179,7 @@ export function resolveGlwTargetPreflight(input: {
       wordpressUrl: page.link ?? null,
       source: "WORDPRESS_READ",
       confidence: "AUTHORITATIVE",
+      hierarchy: input.hierarchy,
     };
   }
 
@@ -156,6 +201,7 @@ export function resolveGlwTargetPreflight(input: {
       wordpressUrl: local.wordpressUrl,
       source: "LOCAL_EXECUTION",
       confidence: "LOCAL_DURABLE",
+      hierarchy: input.hierarchy,
     };
   }
 
@@ -168,18 +214,108 @@ export function resolveGlwTargetPreflight(input: {
     wordpressUrl: null,
     source: input.inventoryComplete ? "WORDPRESS_READ" : "UNVERIFIED",
     confidence: input.inventoryComplete ? "AUTHORITATIVE" : "UNVERIFIED",
+    hierarchy: input.hierarchy,
   };
+}
+
+function unresolvedNode(slug: string, parentId: string | null): GlwHierarchyNodePreflight {
+  return {
+    slug,
+    parentId,
+    state: "UNVERIFIED",
+    wordpressObjectId: null,
+    wordpressStatus: null,
+  };
+}
+
+function parentAbsentNode(slug: string): GlwHierarchyNodePreflight {
+  return {
+    slug,
+    parentId: null,
+    state: "PARENT_ABSENT",
+    wordpressObjectId: null,
+    wordpressStatus: null,
+  };
+}
+
+function classifyNode(input: {
+  slug: string;
+  parentId: string;
+  pages: readonly GlwWordPressTargetPage[] | null;
+  authoritative: boolean;
+}): GlwHierarchyNodePreflight {
+  if (!input.authoritative || !input.pages) {
+    return unresolvedNode(input.slug, input.parentId);
+  }
+
+  const exact = input.pages.filter((candidate) =>
+    String(candidate.slug ?? "").trim().toLowerCase() === input.slug
+    && String(candidate.parent ?? "") === input.parentId,
+  );
+
+  if (exact.length === 0) {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "ABSENT",
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    };
+  }
+
+  if (exact.length !== 1 || !exact[0]?.id) {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "AMBIGUOUS",
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    };
+  }
+
+  const page = exact[0];
+  const status = page.status ?? null;
+  if (status !== "draft" && status !== "publish") {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "UNSUPPORTED_STATUS",
+      wordpressObjectId: String(page.id),
+      wordpressStatus: status,
+    };
+  }
+
+  return {
+    slug: input.slug,
+    parentId: input.parentId,
+    state: status === "publish" ? "EXISTS_PUBLISHED" : "EXISTS_DRAFT",
+    wordpressObjectId: String(page.id),
+    wordpressStatus: status,
+  };
+}
+
+function hierarchyIsSafeForGeneration(hierarchy: GlwHierarchyPreflight): boolean {
+  const unsafeStates: readonly GlwHierarchyNodeState[] = [
+    "AMBIGUOUS",
+    "UNSUPPORTED_STATUS",
+    "UNVERIFIED",
+  ];
+  return ![
+    hierarchy.productParent.state,
+    hierarchy.stateParent.state,
+    hierarchy.leaf.state,
+  ].some((state) => unsafeStates.includes(state));
 }
 
 export async function readGlwTargetPreflight(input: {
   request: GlwGenerationRequest;
-  wordpressApiBaseUrl: string | null;
+  wordpressReadAuthority: AuthenticatedWordPressReadAuthority | null;
   localExecutions: readonly GlwPageExecutionRecord[];
-  fetcher?: (url: string, init: { headers: Record<string, string> }) => Promise<FetchResponse>;
 }): Promise<GlwTargetPreflightResult> {
   const state = getGlwState(input.request.stateCode);
   const initialIdentity = createGlwCanonicalTargetIdentity({
     productId: input.request.productId,
+    productTopic: input.request.productTopic,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,
     applicationPath: input.request.canonicalPath,
@@ -191,53 +327,233 @@ export async function readGlwTargetPreflight(input: {
     cityName: input.request.cityName ?? "",
     localExecutions: input.localExecutions,
   };
-  if (!input.wordpressApiBaseUrl || !state || input.request.pageType !== "city_service") {
+  if (input.request.pageType === "general_service" && input.wordpressReadAuthority) {
+    const identity = {
+      ...createGlwCanonicalTargetIdentity({
+        productId: input.request.productId,
+        productTopic: input.request.productTopic,
+        stateCode: "",
+        citySlug: input.request.canonicalPath,
+        applicationPath: input.request.canonicalPath,
+        canonicalParentId: "0",
+      }),
+      canonicalPath: input.request.canonicalPath,
+    };
+    const response = await input.wordpressReadAuthority.getJson({
+      path: "/pages",
+      query: new URLSearchParams({
+        slug: identity.canonicalSlug,
+        parent: "0",
+        context: "edit",
+        status: "publish,draft,pending,private,future",
+        per_page: "100",
+        _fields: "id,slug,parent,status,link,title",
+      }),
+    });
+    if (!response.ok || !Array.isArray(response.body)) {
+      return resolveGlwTargetPreflight({ identity, ...common });
+    }
+    const exact = (response.body as GlwWordPressTargetPage[]).filter(
+      (page) => page.slug === identity.canonicalSlug && page.parent === 0,
+    );
+    if (exact.length > 1) {
+      return resolveGlwTargetPreflight({ identity, ...common });
+    }
+    return resolveGlwTargetPreflight({
+      identity,
+      wordpressPages: exact,
+      inventoryComplete: true,
+      ...common,
+    });
+  }
+  if (!input.wordpressReadAuthority || !state || (input.request.pageType !== "city_service" && input.request.pageType !== "state_service")) {
     return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
   }
 
-  const fetcher = input.fetcher ?? fetch;
-  const readPages = async (slug: string, parent: string): Promise<readonly GlwWordPressTargetPage[] | null> => {
+  const wordpressReadAuthority = input.wordpressReadAuthority;
+
+  const readPages = async (
+    slug: string,
+    parent: string,
+  ): Promise<{
+    pages: readonly GlwWordPressTargetPage[] | null;
+    authoritative: boolean;
+  }> => {
     const query = new URLSearchParams({
       slug,
       parent,
-      context: "view",
-      per_page: "2",
+      context: "edit",
+      status: "publish,draft,pending,private,future",
+      per_page: "100",
       _fields: "id,slug,parent,status,link,title",
     });
-    try {
-      const response = await fetcher(`${input.wordpressApiBaseUrl}/pages?${query}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) return null;
-      const body = await response.json();
-      return Array.isArray(body) ? body as GlwWordPressTargetPage[] : null;
-    } catch {
-      return null;
+
+    const response = await wordpressReadAuthority.getJson({
+      path: "/pages",
+      query,
+    });
+
+    if (!response.ok || !Array.isArray(response.body)) {
+      return {
+        pages: null,
+        authoritative: false,
+      };
     }
+
+    return {
+      pages: response.body as GlwWordPressTargetPage[],
+      authoritative: true,
+    };
   };
 
-  const productPages = await readPages(initialIdentity.canonicalProductSlug, "0");
-  const productParentId = productPages?.[0]?.id;
-  if (!productParentId) {
-    return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
-  }
-  const statePages = await readPages(state.slug, String(productParentId));
-  const stateParentId = statePages?.[0]?.id;
-  if (!stateParentId) {
-    return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
+  const productRead = await readPages(initialIdentity.canonicalProductSlug, "0");
+  const productParent = classifyNode({
+    slug: initialIdentity.canonicalProductSlug,
+    parentId: "0",
+    ...productRead,
+  });
+
+  if (productParent.state === "UNVERIFIED" || productParent.state === "AMBIGUOUS" || productParent.state === "UNSUPPORTED_STATUS") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent: unresolvedNode(state.slug, null),
+      leaf: unresolvedNode(initialIdentity.canonicalSlug, null),
+      generationAvailable: false,
+    };
+    return resolveGlwTargetPreflight({ identity: initialIdentity, hierarchy, ...common });
   }
 
+  if (productParent.state === "ABSENT") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent: parentAbsentNode(state.slug),
+      leaf: parentAbsentNode(initialIdentity.canonicalSlug),
+      generationAvailable: true,
+    };
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      wordpressPages: [],
+      inventoryComplete: true,
+      hierarchy,
+      ...common,
+    });
+  }
+
+  const productParentId = productParent.wordpressObjectId!;
+  const stateRead = await readPages(state.slug, productParentId);
+  const stateParent = classifyNode({
+    slug: state.slug,
+    parentId: productParentId,
+    ...stateRead,
+  });
+
+  if (input.request.pageType === "state_service") {
+    const identity = {
+      ...createGlwCanonicalTargetIdentity({
+        productId: input.request.productId,
+        productTopic: input.request.productTopic,
+        stateCode: input.request.stateCode,
+        citySlug: state.slug,
+        applicationPath: input.request.canonicalPath,
+        canonicalParentId: productParentId,
+      }),
+      canonicalPath: input.request.canonicalPath,
+    };
+
+    const hierarchyBase: GlwHierarchyPreflight = {
+      productParent,
+      stateParent,
+      leaf: stateParent,
+      generationAvailable: true,
+    };
+
+    const hierarchy = {
+      ...hierarchyBase,
+      generationAvailable: hierarchyIsSafeForGeneration(hierarchyBase),
+    };
+
+    if (
+      stateParent.state === "UNVERIFIED"
+      || stateParent.state === "AMBIGUOUS"
+      || stateParent.state === "UNSUPPORTED_STATUS"
+    ) {
+      return resolveGlwTargetPreflight({
+        identity,
+        hierarchy,
+        ...common,
+      });
+    }
+
+    return resolveGlwTargetPreflight({
+      identity,
+      wordpressPages: stateRead.pages,
+      inventoryComplete: true,
+      hierarchy,
+      ...common,
+    });
+  }
+  if (stateParent.state === "UNVERIFIED" || stateParent.state === "AMBIGUOUS" || stateParent.state === "UNSUPPORTED_STATUS") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent,
+      leaf: unresolvedNode(initialIdentity.canonicalSlug, null),
+      generationAvailable: false,
+    };
+    return resolveGlwTargetPreflight({ identity: initialIdentity, hierarchy, ...common });
+  }
+
+  if (stateParent.state === "ABSENT") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent,
+      leaf: parentAbsentNode(initialIdentity.canonicalSlug),
+      generationAvailable: true,
+    };
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      wordpressPages: [],
+      inventoryComplete: true,
+      hierarchy,
+      ...common,
+    });
+  }
+
+  const stateParentId = stateParent.wordpressObjectId!;
   const identity = createGlwCanonicalTargetIdentity({
     productId: input.request.productId,
+    productTopic: input.request.productTopic,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,
     applicationPath: input.request.canonicalPath,
-    canonicalParentId: String(stateParentId),
+    canonicalParentId: stateParentId,
   });
-  const targetPages = await readPages(identity.canonicalSlug, String(stateParentId));
+
+  const targetRead = await readPages(identity.canonicalSlug, stateParentId);
+  const leaf = classifyNode({
+    slug: identity.canonicalSlug,
+    parentId: stateParentId,
+    ...targetRead,
+  });
+  const hierarchyBase: GlwHierarchyPreflight = {
+    productParent,
+    stateParent,
+    leaf,
+    generationAvailable: true,
+  };
+  const hierarchy = {
+    ...hierarchyBase,
+    generationAvailable: hierarchyIsSafeForGeneration(hierarchyBase),
+  };
+
+  if (leaf.state === "UNVERIFIED" || leaf.state === "AMBIGUOUS" || leaf.state === "UNSUPPORTED_STATUS") {
+    return resolveGlwTargetPreflight({ identity, hierarchy, ...common });
+  }
+
   return resolveGlwTargetPreflight({
     identity,
-    wordpressPages: targetPages,
+    wordpressPages: targetRead.pages,
+    inventoryComplete: true,
+    hierarchy,
     ...common,
   });
 }

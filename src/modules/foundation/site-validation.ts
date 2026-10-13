@@ -37,6 +37,9 @@ export function validateNewSiteInput(input: NewSiteInput): SiteValidationResult 
   if (input.domain && input.domain.includes("http")) {
     issues.push({ field: "domain", message: "Domain must not include protocol." });
   }
+  if (input.publicationPolicy && !["draft_only", "publish_after_gates"].includes(input.publicationPolicy)) {
+    issues.push({ field: "publicationPolicy", message: "Publication policy is not supported." });
+  }
 
   if (input.integrations.wordpressCredentialReference &&
     isBlank(input.integrations.wordpressCredentialReference)) {
@@ -71,9 +74,11 @@ export function validateUpdateSiteInput(
     issues.push({ field: "siteId", message: "Site ID is immutable." });
   }
 
+  const patchRecord = patch as UpdateSiteInput & { organizationId?: string };
+
   if (
-    Object.prototype.hasOwnProperty.call(patch, "organizationId") &&
-    patch.organizationId !== existing.organizationId
+    Object.prototype.hasOwnProperty.call(patchRecord, "organizationId") &&
+    patchRecord.organizationId !== existing.organizationId
   ) {
     issues.push({ field: "organizationId", message: "Organization reassignment is not allowed." });
   }
@@ -84,6 +89,9 @@ export function validateUpdateSiteInput(
 
   if (patch.domain && patch.domain.includes("http")) {
     issues.push({ field: "domain", message: "Domain must not include protocol." });
+  }
+  if (patch.publicationPolicy && !["draft_only", "publish_after_gates"].includes(patch.publicationPolicy)) {
+    issues.push({ field: "publicationPolicy", message: "Publication policy is not supported." });
   }
 
   if (patch.integrations) {

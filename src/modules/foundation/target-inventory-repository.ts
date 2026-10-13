@@ -1,0 +1,448 @@
+import { createCanonicalContentHash } from "./canonical-content-hash";
+import {
+  deepClone,
+  loadPersistedState,
+  resetPersistedState,
+  savePersistedState,
+} from "./foundation-persistence";
+import type {
+  TargetEligibility,
+  TargetInventoryRecord,
+  TargetParentReferences,
+  TargetState,
+} from "./target-inventory";
+
+const PERSISTENCE_NAMESPACE = "target-inventory-repository";
+
+export const TARGET_INVENTORY_BATCH_LIMITS = {
+  maximumTargetsPerBatch: 100_000,
+} as const;
+
+type TargetInventoryRepositoryState = {
+  targets: TargetInventoryRecord[];
+};
+
+export type TargetInventoryFilters = {
+  organizationId?: string;
+  siteId?: string;
+  pageBlueprintId?: string;
+  productFamilyId?: string;
+  productId?: string;
+  stateCode?: string;
+  cityKey?: string;
+  targetState?: TargetState;
+  eligibility?: TargetEligibility;
+};
+
+export type UpdateTargetInventoryMetadataInput = {
+  targetState?: TargetState;
+  eligibility?: TargetEligibility;
+  wordpressObjectId?: string | null;
+  wordpressStatus?: string | null;
+  wordpressUrl?: string | null;
+  lastPreflightAt?: string | null;
+  preflightPolicyVersion?: string | null;
+  parentReferences?: TargetParentReferences;
+  updatedAt?: string;
+};
+
+export class TargetInventoryRepositoryError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "TargetInventoryRepositoryError";
+    this.code = code;
+  }
+}
+
+const targetStore = new Map<string, TargetInventoryRecord>();
+let stateRevision = 0;
+let persistenceReplacementCount = 0;
+
+function emptyState(): TargetInventoryRepositoryState {
+  return { targets: [] };
+}
+
+function applyState(state: TargetInventoryRepositoryState): void {
+  targetStore.clear();
+  state.targets.forEach((target) => targetStore.set(target.targetId, deepClone(target)));
+}
+
+function snapshotState(): TargetInventoryRepositoryState {
+  return { targets: [...targetStore.values()].map((target) => deepClone(target)) };
+}
+
+const loaded = loadPersistedState<TargetInventoryRepositoryState>({
+  namespace: PERSISTENCE_NAMESPACE,
+  seedFactory: emptyState,
+});
+applyState(loaded.state);
+stateRevision = loaded.revision;
+
+function persistCurrentState(): void {
+  const saved = savePersistedState({
+    namespace: PERSISTENCE_NAMESPACE,
+    state: snapshotState(),
+    expectedRevision: stateRevision,
+  });
+  stateRevision = saved.revision;
+  persistenceReplacementCount += 1;
+}
+
+function assertRepositoryRevision(expectedRepositoryRevision?: number): void {
+  if (expectedRepositoryRevision !== undefined && expectedRepositoryRevision !== stateRevision) {
+    throw new TargetInventoryRepositoryError(
+      "REPOSITORY_REVISION_CONFLICT",
+      `Expected repository revision ${expectedRepositoryRevision}, found ${stateRevision}.`,
+    );
+  }
+}
+
+function mutateWithRollback<T>(mutator: () => T, expectedRepositoryRevision?: number): T {
+  assertRepositoryRevision(expectedRepositoryRevision);
+  const before = snapshotState();
+  try {
+    const result = mutator();
+    persistCurrentState();
+    return deepClone(result);
+  } catch (error) {
+    applyState(before);
+    throw error;
+  }
+}
+
+function immutableIdentity(target: TargetInventoryRecord): unknown {
+  return {
+    targetId: target.targetId,
+    pageIdentityId: target.pageIdentityId,
+    organizationId: target.organizationId,
+    siteId: target.siteId,
+    pageBlueprintId: target.pageBlueprintId,
+    identity: target.identity,
+    subject: target.subject,
+    geography: target.geography,
+    canonicalDimensions: target.canonicalDimensions,
+    applicationPath: target.applicationPath,
+    canonicalPath: target.canonicalPath,
+    canonicalSlug: target.canonicalSlug,
+    sourceCatalogAuthority: target.sourceProvenance.catalogAuthority,
+  };
+}
+
+function assertSameIdentity(existing: TargetInventoryRecord, candidate: TargetInventoryRecord): void {
+  if (createCanonicalContentHash(immutableIdentity(existing)) !== createCanonicalContentHash(immutableIdentity(candidate))) {
+    throw new TargetInventoryRepositoryError(
+      "TARGET_IDENTITY_CONFLICT",
+      `Target ${candidate.targetId} conflicts with its immutable persisted identity.`,
+    );
+  }
+}
+
+export function getTargetInventoryRepositoryRevision(): number {
+  return stateRevision;
+}
+
+export function getTargetInventoryPersistenceReplacementCount(): number {
+  return persistenceReplacementCount;
+}
+
+export function createTargetInventoryRecord(
+  target: TargetInventoryRecord,
+  expectedRepositoryRevision?: number,
+): TargetInventoryRecord {
+  assertRepositoryRevision(expectedRepositoryRevision);
+  const existing = targetStore.get(target.targetId);
+  if (existing) {
+    assertSameIdentity(existing, target);
+    return deepClone(existing);
+  }
+  return mutateWithRollback(() => {
+    targetStore.set(target.targetId, deepClone(target));
+    return target;
+  }, expectedRepositoryRevision);
+}
+
+export type UpsertTargetInventoryBatchResult = {
+  createdCount: number;
+  reusedCount: number;
+  repositoryRevision: number;
+  targets: readonly TargetInventoryRecord[];
+};
+
+export function upsertTargetInventoryBatch(input: {
+  targets: readonly TargetInventoryRecord[];
+  expectedRepositoryRevision?: number;
+}): UpsertTargetInventoryBatchResult {
+  if (input.targets.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch) {
+    throw new TargetInventoryRepositoryError(
+      "TARGET_BATCH_LIMIT_EXCEEDED",
+      "Target batch exceeds the configured persistence limit.",
+    );
+  }
+  const candidates = new Map<string, TargetInventoryRecord>();
+  input.targets.forEach((target) => {
+    const duplicate = candidates.get(target.targetId);
+    if (duplicate) assertSameIdentity(duplicate, target);
+    candidates.set(target.targetId, target);
+    const existing = targetStore.get(target.targetId);
+    if (existing) assertSameIdentity(existing, target);
+  });
+  const createdCount = [...candidates.keys()].filter((targetId) => !targetStore.has(targetId)).length;
+  const reusedCount = candidates.size - createdCount;
+  if (createdCount === 0) {
+    assertRepositoryRevision(input.expectedRepositoryRevision);
+    return {
+      createdCount,
+      reusedCount,
+      repositoryRevision: stateRevision,
+      targets: [...candidates.keys()].map((targetId) => deepClone(targetStore.get(targetId)!)),
+    };
+  }
+  return mutateWithRollback(() => {
+    candidates.forEach((target, targetId) => {
+      if (!targetStore.has(targetId)) targetStore.set(targetId, deepClone(target));
+    });
+    return {
+      createdCount,
+      reusedCount,
+      repositoryRevision: stateRevision + 1,
+      targets: [...candidates.keys()].map((targetId) => deepClone(targetStore.get(targetId)!)),
+    };
+  }, input.expectedRepositoryRevision);
+}
+
+export function getTargetInventoryRecord(targetId: string): TargetInventoryRecord | null {
+  const target = targetStore.get(targetId);
+  return target ? deepClone(target) : null;
+}
+
+export function listTargetInventoryRecords(
+  filters: TargetInventoryFilters = {},
+): readonly TargetInventoryRecord[] {
+  return [...targetStore.values()]
+    .filter((target) => !filters.organizationId || target.organizationId === filters.organizationId)
+    .filter((target) => !filters.siteId || target.siteId === filters.siteId)
+    .filter((target) => !filters.pageBlueprintId || target.pageBlueprintId === filters.pageBlueprintId)
+    .filter((target) => !filters.productFamilyId || target.subject.productFamilyId === filters.productFamilyId)
+    .filter((target) => !filters.productId || target.subject.productId === filters.productId)
+    .filter((target) => !filters.stateCode || target.geography.stateCode === filters.stateCode)
+    .filter((target) => !filters.cityKey || target.geography.cityKey === filters.cityKey)
+    .filter((target) => !filters.targetState || target.targetState === filters.targetState)
+    .filter((target) => !filters.eligibility || target.eligibility === filters.eligibility)
+    .sort((left, right) => left.targetId.localeCompare(right.targetId))
+    .map((target) => deepClone(target));
+}
+
+export function updateTargetInventoryMetadata(input: {
+  targetId: string;
+  expectedTargetVersion: number;
+  patch: UpdateTargetInventoryMetadataInput;
+  expectedRepositoryRevision?: number;
+}): TargetInventoryRecord {
+  const allowedPatchKeys = new Set([
+    "targetState",
+    "eligibility",
+    "wordpressObjectId",
+    "wordpressStatus",
+    "wordpressUrl",
+    "lastPreflightAt",
+    "preflightPolicyVersion",
+    "parentReferences",
+    "updatedAt",
+  ]);
+  const forbiddenPatchKey = Object.keys(input.patch).find((key) => !allowedPatchKeys.has(key));
+  if (forbiddenPatchKey) {
+    throw new TargetInventoryRepositoryError(
+      "TARGET_IDENTITY_IMMUTABLE",
+      `Target identity field cannot be updated: ${forbiddenPatchKey}.`,
+    );
+  }
+  return mutateWithRollback(() => {
+    const existing = targetStore.get(input.targetId);
+    if (!existing) {
+      throw new TargetInventoryRepositoryError("TARGET_NOT_FOUND", `Target not found: ${input.targetId}`);
+    }
+    if (existing.version !== input.expectedTargetVersion) {
+      throw new TargetInventoryRepositoryError(
+        "TARGET_VERSION_CONFLICT",
+        `Expected target version ${input.expectedTargetVersion}, found ${existing.version}.`,
+      );
+    }
+    const updated: TargetInventoryRecord = {
+      ...existing,
+      ...input.patch,
+      parentReferences: input.patch.parentReferences ?? existing.parentReferences,
+      updatedAt: input.patch.updatedAt ?? new Date().toISOString(),
+      version: existing.version + 1,
+    };
+    targetStore.set(updated.targetId, updated);
+    return updated;
+  }, input.expectedRepositoryRevision);
+}
+
+export function resetTargetInventoryRepositoryForTests(): void {
+  const reset = resetPersistedState<TargetInventoryRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: emptyState,
+  });
+  applyState(reset.state);
+  stateRevision = reset.revision;
+  persistenceReplacementCount = 0;
+}
+
+export type UpdateTargetInventoryMetadataBatchResult = {
+  updatedCount: number;
+  repositoryRevision: number;
+  targets: readonly TargetInventoryRecord[];
+};
+
+export type ApplyTargetPreflightBatchResult = {
+  createdCount: number;
+  reusedCount: number;
+  updatedCount: number;
+  repositoryRevision: number;
+  targets: readonly TargetInventoryRecord[];
+};
+
+export function applyTargetPreflightBatch(input: {
+  targets: readonly TargetInventoryRecord[];
+  updates: readonly {
+    targetId: string;
+    patch: UpdateTargetInventoryMetadataInput;
+  }[];
+  expectedRepositoryRevision?: number;
+}): ApplyTargetPreflightBatchResult {
+  if (input.targets.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch
+    || input.updates.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch) {
+    throw new TargetInventoryRepositoryError("TARGET_BATCH_LIMIT_EXCEEDED", "Target preflight batch exceeds the configured persistence limit.");
+  }
+  const allowedPatchKeys = new Set([
+    "targetState",
+    "eligibility",
+    "wordpressObjectId",
+    "wordpressStatus",
+    "wordpressUrl",
+    "lastPreflightAt",
+    "preflightPolicyVersion",
+    "parentReferences",
+    "updatedAt",
+  ]);
+  const candidates = new Map<string, TargetInventoryRecord>();
+  input.targets.forEach((target) => {
+    const duplicate = candidates.get(target.targetId);
+    if (duplicate) assertSameIdentity(duplicate, target);
+    const existing = targetStore.get(target.targetId);
+    if (existing) assertSameIdentity(existing, target);
+    candidates.set(target.targetId, target);
+  });
+  const updates = new Map<string, UpdateTargetInventoryMetadataInput>();
+  input.updates.forEach((update) => {
+    if (updates.has(update.targetId)) {
+      throw new TargetInventoryRepositoryError("DUPLICATE_TARGET_UPDATE", `Duplicate target metadata update: ${update.targetId}.`);
+    }
+    if (!candidates.has(update.targetId) && !targetStore.has(update.targetId)) {
+      throw new TargetInventoryRepositoryError("TARGET_NOT_FOUND", `Target not found: ${update.targetId}`);
+    }
+    const forbiddenPatchKey = Object.keys(update.patch).find((key) => !allowedPatchKeys.has(key));
+    if (forbiddenPatchKey) {
+      throw new TargetInventoryRepositoryError("TARGET_IDENTITY_IMMUTABLE", `Target identity field cannot be updated: ${forbiddenPatchKey}.`);
+    }
+    updates.set(update.targetId, update.patch);
+  });
+  const createdCount = [...candidates.keys()].filter((targetId) => !targetStore.has(targetId)).length;
+  const reusedCount = candidates.size - createdCount;
+  if (candidates.size === 0 && updates.size === 0) {
+    assertRepositoryRevision(input.expectedRepositoryRevision);
+    return { createdCount: 0, reusedCount: 0, updatedCount: 0, repositoryRevision: stateRevision, targets: [] };
+  }
+  return mutateWithRollback(() => {
+    candidates.forEach((target, targetId) => {
+      if (!targetStore.has(targetId)) targetStore.set(targetId, deepClone(target));
+    });
+    const targets = [...updates.entries()].map(([targetId, patch]) => {
+      const existing = targetStore.get(targetId)!;
+      const updated: TargetInventoryRecord = {
+        ...existing,
+        ...patch,
+        parentReferences: patch.parentReferences ?? existing.parentReferences,
+        updatedAt: patch.updatedAt ?? new Date().toISOString(),
+        version: existing.version + 1,
+      };
+      targetStore.set(targetId, updated);
+      return updated;
+    });
+    return {
+      createdCount,
+      reusedCount,
+      updatedCount: targets.length,
+      repositoryRevision: stateRevision + 1,
+      targets,
+    };
+  }, input.expectedRepositoryRevision);
+}
+
+export function updateTargetInventoryMetadataBatch(input: {
+  updates: readonly {
+    targetId: string;
+    expectedTargetVersion: number;
+    patch: UpdateTargetInventoryMetadataInput;
+  }[];
+  expectedRepositoryRevision?: number;
+}): UpdateTargetInventoryMetadataBatchResult {
+  if (input.updates.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch) {
+    throw new TargetInventoryRepositoryError(
+      "TARGET_BATCH_LIMIT_EXCEEDED",
+      "Target metadata batch exceeds the configured persistence limit.",
+    );
+  }
+  const allowedPatchKeys = new Set([
+    "targetState",
+    "eligibility",
+    "wordpressObjectId",
+    "wordpressStatus",
+    "wordpressUrl",
+    "lastPreflightAt",
+    "preflightPolicyVersion",
+    "parentReferences",
+    "updatedAt",
+  ]);
+  const seen = new Set<string>();
+  input.updates.forEach((update) => {
+    if (seen.has(update.targetId)) {
+      throw new TargetInventoryRepositoryError("DUPLICATE_TARGET_UPDATE", `Duplicate target metadata update: ${update.targetId}.`);
+    }
+    seen.add(update.targetId);
+    const forbiddenPatchKey = Object.keys(update.patch).find((key) => !allowedPatchKeys.has(key));
+    if (forbiddenPatchKey) {
+      throw new TargetInventoryRepositoryError("TARGET_IDENTITY_IMMUTABLE", `Target identity field cannot be updated: ${forbiddenPatchKey}.`);
+    }
+    const existing = targetStore.get(update.targetId);
+    if (!existing) throw new TargetInventoryRepositoryError("TARGET_NOT_FOUND", `Target not found: ${update.targetId}`);
+    if (existing.version !== update.expectedTargetVersion) {
+      throw new TargetInventoryRepositoryError(
+        "TARGET_VERSION_CONFLICT",
+        `Expected target version ${update.expectedTargetVersion}, found ${existing.version}.`,
+      );
+    }
+  });
+  if (input.updates.length === 0) {
+    assertRepositoryRevision(input.expectedRepositoryRevision);
+    return { updatedCount: 0, repositoryRevision: stateRevision, targets: [] };
+  }
+  return mutateWithRollback(() => {
+    const targets = input.updates.map((update) => {
+      const existing = targetStore.get(update.targetId)!;
+      const updated: TargetInventoryRecord = {
+        ...existing,
+        ...update.patch,
+        parentReferences: update.patch.parentReferences ?? existing.parentReferences,
+        updatedAt: update.patch.updatedAt ?? new Date().toISOString(),
+        version: existing.version + 1,
+      };
+      targetStore.set(updated.targetId, updated);
+      return updated;
+    });
+    return { updatedCount: targets.length, repositoryRevision: stateRevision + 1, targets };
+  }, input.expectedRepositoryRevision);
+}

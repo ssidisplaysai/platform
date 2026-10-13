@@ -1,0 +1,1 @@
+delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR;

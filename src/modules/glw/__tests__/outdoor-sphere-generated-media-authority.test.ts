@@ -1,0 +1,335 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  OUTDOOR_SPHERE_CAMPAIGN_ID,
+  OUTDOOR_SPHERE_ORGANIZATION_ID,
+  OUTDOOR_SPHERE_PRODUCT_ID,
+  OUTDOOR_SPHERE_SITE_ID,
+  buildOutdoorSphereGeneratedContextualPrompt,
+  isOutdoorSphereCampaignScope,
+  requiresGeneratedContextualMediaForOutdoorSphere,
+} from "../outdoor-sphere-contextual-media-policy";
+import { resolveOutdoorSphereGovernedCtaUrl } from "../outdoor-sphere-governed-cta-url";
+import { renderOutdoorSphereRichWordPress } from "../outdoor-sphere-rich-wordpress-render";
+
+describe("Outdoor Sphere generated contextual media authority", () => {
+  test("strict gating only applies to the bounded campaign/product/site scope", () => {
+    expect(
+      requiresGeneratedContextualMediaForOutdoorSphere({
+        campaignId: OUTDOOR_SPHERE_CAMPAIGN_ID,
+        organizationId: OUTDOOR_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_SPHERE_SITE_ID,
+        productId: OUTDOOR_SPHERE_PRODUCT_ID,
+      }),
+    ).toBe(true);
+
+    expect(
+      requiresGeneratedContextualMediaForOutdoorSphere({
+        campaignId: OUTDOOR_SPHERE_CAMPAIGN_ID,
+        organizationId: OUTDOOR_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_SPHERE_SITE_ID,
+        productId: "different-product",
+      }),
+    ).toBe(false);
+
+    expect(
+      isOutdoorSphereCampaignScope({
+        campaignId: OUTDOOR_SPHERE_CAMPAIGN_ID,
+        organizationId: OUTDOOR_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_SPHERE_SITE_ID,
+      }),
+    ).toBe(true);
+  });
+
+  test("prompt enforces conceptual non-documentary context and target location style", () => {
+    const prompt = buildOutdoorSphereGeneratedContextualPrompt({
+      stateName: "Florida",
+      cityName: "Miami",
+    });
+
+    expect(prompt).toContain("conceptual contextual visualization only");
+    expect(prompt).toContain("Target scene location style: Miami, Florida.");
+    expect(prompt).toContain("Minimize visible pixel structure");
+  });
+
+  test("continuation route blocks legacy fallback and requires generated contextual receipt", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("productAuthority.selectedMedia && !strictGeneratedContextualRequired");
+    expect(source).toContain("CONTEXTUAL_MEDIA_GENERATED_IMAGE_REQUIRED");
+    expect(source).toContain("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+    expect(source).toContain("Generated contextual media receipt is required for Outdoor LED Sphere continuation.");
+    expect(source).toContain("const suppressionEligible = strictGeneratedContextualRequired");
+    expect(source).toContain('&& input.siteRecord.domain === "leddisplaywarehouse.com"');
+  });
+
+  test("scoped title suppression targets native LDW entry title selectors", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/modules/glw/scoped-theme-title-suppression.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain(".page-title.the-title");
+    expect(source).toContain(".page-header .entry-title");
+    expect(source).toContain(".entry-header .entry-title");
+  });
+
+  test("continuation route binds generated contextual receipt to exact campaign target and page revision", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("campaignId: input.request.campaignId");
+    expect(source).toContain("targetId: strictTargetId");
+    expect(source).toContain("pageRevisionId");
+    expect(source).toContain("buildSessionId = `contextual-media:${strictTargetId}`");
+  });
+
+  test("review model requires both governed contextual assignment and exact generated receipt for strict scope", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/modules/glw/generated-page-review-read-model.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("selectedGeneratedContextualAssignment");
+    expect(source).toContain("generatedContextualReceipt");
+    expect(source).toContain("receipt.pageRevisionId === pageRevisionIdentity");
+    expect(source).toContain("receipt.targetId === input.target.targetId");
+    expect(source).toContain("Legacy featured media is not accepted as contextual in-use authority for this campaign.");
+  });
+
+  test("capture authority fails closed when strict scope lacks generated contextual state", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/modules/foundation/governed-render-capture-orchestrator.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("CONTEXTUAL_MEDIA_RECEIPT_REQUIRED");
+    expect(source).toContain("model.images.contextualInUse.state !== \"GENERATED_CONTEXTUAL\"");
+    expect(source).toContain("model.images.contextualInUse.state !== \"ASSIGNED_FEATURED\"");
+    expect(source).toContain("assignmentId: model.images.contextualInUse.assignmentId");
+  });
+
+  test("strict flow preserves product-truth reference and does not consume dispatch/publication allowances", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("role: \"PRODUCT_TRUTH\"");
+    expect(source).toContain("publicationPerformed: false");
+    expect(source).not.toContain("dispatch allowance consumed");
+  });
+
+  test("renderer keeps PRODUCT_AUTHORITY grounding required while hiding legacy product authority image in public HTML", () => {
+    const governedCtaUrl = "https://leddisplaywarehouse.com/contact-us/";
+    const canonicalProductUrl = "https://leddisplaywarehouse.com/outdoor-digital-sphere/";
+    const rendered = renderOutdoorSphereRichWordPress({
+      title: "Outdoor Digital Sphere in Georgia",
+      stateName: "Georgia",
+      productTopic: "Outdoor Digital Sphere",
+      semanticSourceHtml: "<article><h1>Bad Duplicate Heading</h1><p>Retained guide paragraph.</p><img src=\"https://x.test/i.jpg\" alt=\"x\"/><script>alert(1)</script><a href=\"javascript:alert(1)\">Unsafe</a></article>",
+      excerpt: "Concept-focused planning guidance for outdoor sphere applications.",
+      contextualMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/contextual-ga.jpg",
+      productAuthorityMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/product-authority.jpg",
+      productAuthorityAltText: "Approved outdoor digital sphere product authority",
+      canonicalProductUrl,
+      governedCtaUrl,
+    });
+
+    expect(rendered.ok).toBe(true);
+    if (!rendered.ok) return;
+
+    const h1Count = (rendered.html.match(/<h1\b/gi) ?? []).length;
+    expect(h1Count).toBe(1);
+    expect(rendered.html).toContain("data-genesis-primary-content");
+    expect(rendered.html).toContain("data-genesis-hero");
+    expect(rendered.html).toContain('data-media-role="CONTEXTUAL_IN_USE"');
+    expect(rendered.html).toContain('data-media-role="PRODUCT_AUTHORITY"');
+    expect(rendered.html).toContain('class="glw-sphere-shell glw-sphere-product-grid"');
+    expect(rendered.html).toContain('class="glw-sphere-product-copy"');
+    expect(rendered.html).not.toContain("glw-sphere-product-media-wrap");
+    expect(rendered.html).not.toContain("product-authority.jpg");
+    expect(rendered.html).toContain("contextual-ga.jpg");
+    expect(rendered.html).toContain("glw-sphere-hero");
+    expect(rendered.html).toContain("glw-sphere-planning");
+    expect(rendered.html).toContain("glw-sphere-cta");
+    expect(rendered.html).toContain("Start planning conversation");
+    expect(rendered.html).toContain("Discuss project planning");
+    expect(rendered.html).toContain(`<a class="glw-sphere-button glw-sphere-button-primary" href="${governedCtaUrl}">Discuss project planning</a>`);
+    expect(rendered.html).toContain(`<a class="glw-sphere-button glw-sphere-button-primary" href="${governedCtaUrl}">Start planning conversation</a>`);
+    expect(rendered.html).toContain(`<a class="glw-sphere-button glw-sphere-button-secondary" href="${canonicalProductUrl}">View Outdoor Digital Sphere product</a>`);
+    expect(rendered.html).toContain("Retained guide paragraph.");
+    expect(rendered.html).not.toContain("Bad Duplicate Heading");
+    expect(rendered.html).not.toContain("<img src=\"https://x.test/i.jpg\"");
+    expect(rendered.html).not.toContain("<script>");
+    expect(rendered.html).not.toContain("javascript:alert(1)");
+  });
+
+  test("strict outdoor sphere CTA uses contact-us and cannot be overridden by first internal link", () => {
+    const governedCtaUrl = resolveOutdoorSphereGovernedCtaUrl({
+      strictGeneratedContextualRequired: true,
+      siteId: "site-led-display-warehouse-production",
+      siteDomain: "leddisplaywarehouse.com",
+      approvedCampaignInternalLinks: [
+        { href: "https://leddisplaywarehouse.com/outdoor-digital-sphere/" },
+        { href: "https://leddisplaywarehouse.com/about/" },
+      ],
+    });
+
+    expect(governedCtaUrl).toBe("https://leddisplaywarehouse.com/contact-us/");
+  });
+
+  test("non-outdoor-sphere CTA behavior remains first approved internal link", () => {
+    const governedCtaUrl = resolveOutdoorSphereGovernedCtaUrl({
+      strictGeneratedContextualRequired: false,
+      siteId: "site-led-display-warehouse-production",
+      siteDomain: "leddisplaywarehouse.com",
+      approvedCampaignInternalLinks: [
+        { href: "https://leddisplaywarehouse.com/outdoor-digital-sphere/" },
+        { href: "https://leddisplaywarehouse.com/contact-us/" },
+      ],
+    });
+
+    expect(governedCtaUrl).toBe("https://leddisplaywarehouse.com/outdoor-digital-sphere/");
+  });
+
+  test("renderer uses container-responsive planning grid and narrow-width safety CSS", () => {
+    const rendered = renderOutdoorSphereRichWordPress({
+      title: "Outdoor Digital Sphere in Georgia",
+      stateName: "Georgia",
+      productTopic: "Outdoor Digital Sphere",
+      semanticSourceHtml: "<article><p>Retained guide paragraph.</p></article>",
+      excerpt: "Concept-focused planning guidance for outdoor sphere applications.",
+      contextualMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/contextual-ga.jpg",
+      productAuthorityMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/product-authority.jpg",
+      productAuthorityAltText: "Approved outdoor digital sphere product authority",
+      canonicalProductUrl: "https://leddisplaywarehouse.com/outdoor-digital-sphere/",
+      governedCtaUrl: "/outdoor-digital-sphere/",
+    });
+
+    expect(rendered.ok).toBe(true);
+    if (!rendered.ok) return;
+
+    expect(rendered.html).toContain("grid-template-columns:repeat(auto-fit,minmax(140px,1fr))");
+    expect(rendered.html).not.toContain("grid-template-columns:repeat(7,minmax(0,1fr))");
+    expect(rendered.html).toContain(".glw-sphere-shell{max-width:1180px;margin:0 auto;padding:0 20px;min-width:0}");
+    expect(rendered.html).toContain(".glw-sphere-product-grid{display:block;min-width:0}");
+    expect(rendered.html).toContain(".glw-sphere-guide-frame{background:#fff;border:1px solid #d7dedb;padding:30px;max-width:940px;margin:0 auto;min-width:0;overflow-wrap:anywhere}");
+    expect(rendered.html).toContain(".glw-sphere-card{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);padding:14px 12px;font-size:13px;font-weight:700;letter-spacing:.01em;text-align:center;min-width:0;overflow-wrap:anywhere}");
+    expect(rendered.html).toContain("Retained guide paragraph.");
+  });
+
+  test("renderer fails closed when strict rich inputs are missing", () => {
+    const rendered = renderOutdoorSphereRichWordPress({
+      title: "Outdoor Digital Sphere in Georgia",
+      stateName: "Georgia",
+      productTopic: "Outdoor Digital Sphere",
+      semanticSourceHtml: "<p>Guide content</p>",
+      excerpt: "Guide excerpt",
+      contextualMediaUrl: "",
+      productAuthorityMediaUrl: "",
+      productAuthorityAltText: "",
+    });
+
+    expect(rendered.ok).toBe(false);
+    if (rendered.ok) return;
+    expect(rendered.code).toBe("OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED");
+  });
+
+  test("strict continuation writes rich composition to same draft object and preserves final rich/html identity", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("const richWrite = await writeGenesisWordPressDraft({");
+    expect(source).toContain('operation: "UPDATE"');
+    expect(source).toContain("wordpressObjectId: result.wordpressObjectId");
+    expect(source).toContain("generatedDraft: finalizedPresentationArtifact");
+    expect(source).toContain("publicationPerformed: false");
+  });
+
+  test("strict contextual authority revision identity is aligned to one final completedAt timestamp", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("const completedAt = new Date().toISOString();");
+    expect(source).toContain("const pageRevisionId = `job:${draftJob.jobId}:${completedAt}`;");
+    expect(source).toContain("updatedAt: completedAt");
+    expect(source).toContain("completedAt,");
+  });
+
+  test("strict scope blocks plain article fallback while preserving non-outdoor behavior", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("productAuthority.selectedMedia && !strictGeneratedContextualRequired");
+    expect(source).toContain("OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED");
+    expect(source).toContain("OUTDOOR_SPHERE_RICH_WORDPRESS_WRITE_FAILED");
+    expect(source).toContain('status: "CONTENT_READY"');
+  });
+
+  test("strict scope resolves approved PRODUCT_AUTHORITY media URL with bounded fallback only", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("function resolveStrictProductAuthorityMediaUrl");
+    expect(source).toContain("const receiptUrl = parseAbsoluteHttpUrl(input.authority?.wordpressReceipt?.url ?? null);");
+    expect(source).toContain("input.authority.asset.type !== \"APPROVED_EXISTING\"");
+    expect(source).toContain("typeof mediaId !== \"number\" || !Number.isSafeInteger(mediaId) || mediaId < 1");
+    expect(source).toContain("const allowedOrigins = new Set<string>();");
+    expect(source).toContain("if (!allowedOrigins.has(assetUrl.origin.toLowerCase())) {");
+  });
+
+  test("strict scope validates approved PRODUCT_AUTHORITY before generated contextual image execution", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    const resolveStrictUrl = source.indexOf("resolveStrictProductAuthorityMediaUrl({");
+    const strictMissingFailClosed = source.indexOf("if (strictGeneratedContextualRequired && !strictApprovedProductAuthorityMediaUrl)");
+    const imageGeneration = source.indexOf("const imageResult = await generateGenesisFeaturedImageWithCampaignReferences({");
+
+    expect(resolveStrictUrl).toBeGreaterThan(0);
+    expect(strictMissingFailClosed).toBeGreaterThan(resolveStrictUrl);
+    expect(imageGeneration).toBeGreaterThan(strictMissingFailClosed);
+  });
+
+  test("strict scope forbids generated PRODUCT_AUTHORITY media substitution", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("input.authority.asset.type !== \"APPROVED_EXISTING\"");
+    expect(source).toContain("Outdoor Sphere rich composition requires approved product authority media with a WordPress URL.");
+    expect(source).not.toContain("productAuthorityMediaUrl: mediaResult.mediaUrl");
+  });
+
+  test("strict generated contextual repair reconciles WordPress featured media to generated contextual media with exact readback", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/modules/glw/contextual-media-production-service.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("requiresGeneratedContextualMediaForOutdoorSphere");
+    expect(source).toContain("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+    expect(source).toContain('featured_media: input.featuredMediaId');
+    expect(source).toContain("CONTEXTUAL_MEDIA_GENERATED_ASSIGNMENT_REQUIRED");
+    expect(source).toContain("CONTEXTUAL_MEDIA_GENERATED_RECEIPT_REQUIRED");
+    expect(source).toContain("CONTEXTUAL_MEDIA_FEATURED_MEDIA_READBACK_MISMATCH");
+    expect(source).toContain("featuredMediaAfter: afterFeatured.featuredMediaId");
+  });
+});
