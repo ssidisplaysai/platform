@@ -1,4 +1,4 @@
-const RUN_ID_PATTERN = /^[a-z0-9][a-z0-9-]{5,63}$/;
+const RUN_ID_PATTERN = /^s2g-run-[a-z0-9-]{3,55}$/;
 const ARN_PATTERN = /^arn:aws:[a-z0-9-]+:[a-z0-9-]*:\d{12}:.+$/;
 
 function failure(code) {

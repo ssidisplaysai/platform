@@ -216,7 +216,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
   const readerRole = new iam.Role(stack, "StagingSnapshotReaderRole", {
     assumedBy: new iam.ArnPrincipal(readerBrokerExecutionRole.roleArn).withConditions({
       StringLike: {
-        "aws:RequestTag/reconciliation-run-id": "[a-z0-9][a-z0-9-]{5,63}",
+        "aws:RequestTag/reconciliation-run-id": "s2g-run-*",
       },
       "ForAllValues:StringEquals": {
         "aws:TagKeys": ["reconciliation-run-id"],
@@ -231,7 +231,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
     actions: ["sts:TagSession"],
     conditions: {
       StringLike: {
-        "aws:RequestTag/reconciliation-run-id": "[a-z0-9][a-z0-9-]{5,63}",
+        "aws:RequestTag/reconciliation-run-id": "s2g-run-*",
       },
       "ForAllValues:StringEquals": {
         "aws:TagKeys": ["reconciliation-run-id"],
@@ -285,7 +285,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
     resources: [readerRole.roleArn],
     conditions: {
       StringLike: {
-        "aws:RequestTag/reconciliation-run-id": "[a-z0-9][a-z0-9-]{5,63}",
+        "aws:RequestTag/reconciliation-run-id": "s2g-run-*",
       },
       "ForAllValues:StringEquals": {
         "aws:TagKeys": ["reconciliation-run-id"],
