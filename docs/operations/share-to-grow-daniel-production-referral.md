@@ -342,3 +342,16 @@ Daniel referral publication remains blocked pending live production storefront h
 
 - `SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
 - details: `docs/operations/share-to-grow-shopify-production-adapter.md`
+
+## Follow-up Live Deployment/Handoff Attempt
+
+Live production non-purchase handoff attempt findings:
+
+- durable Daniel URL `https://stonerusa.com/q/daniel-coffeen` currently responds `404`
+- production landing token probes did not show active attribution bridge behavior
+- Shopify cart remained without Daniel attribution metadata in controlled no-purchase session
+
+Updated live gate:
+
+- `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
+- publication remains blocked until production WordPress bridge deployment/activation and non-purchase Daniel handoff certification are complete

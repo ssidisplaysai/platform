@@ -2,7 +2,7 @@
 
 Date (UTC): 2026-10-13  
 Branch: `infra/genesis-staging-runtime-v1`  
-Phase status: `SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
+Phase status: `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
 
 ## Scope
 
@@ -166,13 +166,90 @@ Implemented:
 
 No second ledger engine was introduced.
 
-## 7) Non-Purchase Storefront Certification State
+## 7) Live Storefront Deployment + Non-Purchase Certification Attempt
 
-Software harness and contracts are present, but live production storefront proof is incomplete in this phase because plugin deployment/activation on the authoritative production path was intentionally not executed.
+### Pre-gate confirmations
 
-- order created: `NO`
-- payment submitted: `NO`
-- production Shopify webhook ingress activated: `NO`
+- working tree clean: `YES`
+- source checkpoint: `362f46aa`
+- bridge package present: `integrations/wordpress/stoner-share-to-grow/`
+- durable route implementation present in source: `YES`
+- Daniel source mapping present:
+  - slug: `daniel-coffeen`
+  - tracking identity: `tracking-stoner-gym-daniel-coffeen-v1`
+  - canonical partner: `daniel-coffeen`
+
+### Production deployment audit (read-only)
+
+Observed production hosting signals:
+
+- `stonerusa.com` resolves to `92.205.169.54`
+- response headers: `Server: Apache`, `X-Powered-By: PHP/8.3.35`
+- WordPress REST surface present (`/wp-json`)
+
+Observed Shopify commerce host:
+
+- `shop.stonerusa.com` CNAME -> `shop.myshopify.com`
+- Shopify checkout redirect observed from `/checkout` -> `shop.app/checkout/...`
+
+Approved admin deployment channel (WordPress admin / SSH / SFTP / CI release path) was not available from this execution context, so production plugin install/activation and backup creation could not be performed here.
+
+### Live durable route result
+
+Probe:
+
+- `https://stonerusa.com/q/daniel-coffeen`
+
+Observed:
+
+- HTTP `404 Not Found`
+- no redirect chain into Shopify
+- no `genesis_share_to_grow_attribution` cookie issuance
+
+Result: live durable route is not active on production host yet.
+
+### Token matrix on production landing
+
+Probed `https://stonerusa.com/?genesis_attribution=<token>` with:
+
+- valid signed token
+- malformed token
+- bad signature token
+- expired token
+- wrong-organization token
+
+Observed in all cases:
+
+- response remained `HTTP 200` landing page
+- no attribution cookie issuance
+- no redirect/handoff behavior
+
+Interpretation: attribution bridge is not currently deployed/active on production WordPress runtime.
+
+### Shopify cart / checkout non-purchase observation
+
+Controlled non-purchase session:
+
+- added one product to cart on `shop.stonerusa.com`
+- cart observed via `/cart.js`
+- checkout initialized only (no submission/payment)
+
+Observed:
+
+- cart attributes: empty
+- line-item properties: empty
+- checkout redirect exists, but no Daniel attribution metadata present
+- no order submission attempted
+
+Result:
+
+- `CHECKOUT_HANDOFF=FAIL` for Daniel attribution continuity (blocked at deployment/handoff)
+
+### AWS ingress isolation retained
+
+- Shopify webhook secret exists but is not bound to live ECS task (`genesis-share-to-grow-production:2`)
+- no ALB rule matches `/api/share-to-grow/shopify/webhook`
+- Woo ingress unchanged
 
 ## 8) Validation
 
@@ -212,12 +289,13 @@ Page Factory:
 
 ## Final Status
 
-`SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
+`SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
 
 Blocking reason:
 
-- Software adapter and tests are complete, but live production storefront handoff/deployment certification on the authoritative production path is not yet executed.
+- software adapter is certified in source, but production WordPress plugin deployment/activation on `stonerusa.com` has not been completed via an approved production admin channel.
+- therefore durable Daniel route, live token verification, persistence, and Daniel metadata handoff into Shopify cart/checkout are not yet certifiable.
 
 Next action:
 
-"Bind the production Shopify webhook secret, expose only the Shopify webhook route, register bounded Shopify webhooks, and perform one controlled real Daniel-attributed Shopify order. Automated payouts remain disabled."
+"Deploy and activate the STONER Share-to-Grow WordPress bridge on production (`stonerusa.com`) via approved admin/release path, certify `/q/daniel-coffeen` redirect + persistence + Daniel Shopify cart metadata in non-purchase flow, then proceed to webhook-binding phase."

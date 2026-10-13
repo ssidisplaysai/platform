@@ -296,3 +296,20 @@ Current status remains blocked on live production storefront deployment/handoff 
 
 - `SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
 - details: `docs/operations/share-to-grow-shopify-production-adapter.md`
+
+## Follow-up: Live Production Handoff Attempt
+
+Live non-purchase production handoff certification was attempted with strict no-order/no-payment guardrails.
+
+Key observations:
+
+- `https://stonerusa.com/q/daniel-coffeen` currently returns `404` on production
+- production landing probes with valid/invalid `genesis_attribution` tokens return `200` with no attribution cookie evidence
+- Shopify cart/checkout path is live, but cart attributes and line properties remained empty in controlled session
+- no real order was submitted; no payment attempted
+
+Current phase status:
+
+- `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
+- blocker: production WordPress bridge deployment/activation on `stonerusa.com` not yet completed through approved admin/release channel
+- details: `docs/operations/share-to-grow-shopify-production-adapter.md`
