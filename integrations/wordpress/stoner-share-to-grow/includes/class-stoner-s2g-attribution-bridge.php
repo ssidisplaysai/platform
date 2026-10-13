@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Stoner_S2G_Attribution_Bridge {
 
-	const VERSION               = '1.0.0';
+	const VERSION               = '1.0.1';
 	const QUERY_KEY             = 'genesis_attribution';
 	const SESSION_KEY           = 'genesis_share_to_grow_attribution';
 	const COOKIE_NAME           = 'genesis_share_to_grow_attribution';
@@ -30,6 +30,7 @@ final class Stoner_S2G_Attribution_Bridge {
 	public static function register() {
 		add_action( 'init', array( __CLASS__, 'capture_from_request' ), 20 );
 		add_action( 'template_redirect', array( __CLASS__, 'handle_durable_route' ), 1 );
+		add_filter( 'allowed_redirect_hosts', array( __CLASS__, 'allow_shopify_redirect_host' ), 10, 2 );
 		add_action( 'woocommerce_checkout_create_order', array( __CLASS__, 'attach_order_metadata' ), 20, 2 );
 	}
 
@@ -55,6 +56,15 @@ final class Stoner_S2G_Attribution_Bridge {
 			return '';
 		}
 		return trim( (string) $environment );
+	}
+
+
+	public static function allow_shopify_redirect_host( $hosts, $host ) {
+		$destination_host = wp_parse_url( self::destination_url(), PHP_URL_HOST );
+		if ( is_string( $destination_host ) && '' !== $destination_host && ! in_array( $destination_host, $hosts, true ) ) {
+			$hosts[] = $destination_host;
+		}
+		return $hosts;
 	}
 
 	public static function capture_from_request() {
