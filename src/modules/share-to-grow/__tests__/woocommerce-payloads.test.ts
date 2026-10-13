@@ -47,6 +47,31 @@ describe("WooCommerce raw payload parsing", () => {
     expect(parsed.orderMeta._genesis_partner_id).toBe("jessica");
   });
 
+  test("scales per-unit metadata into totals for a two-shirt order", () => {
+    const rawBody = JSON.stringify({
+      id: 665,
+      currency: "USD",
+      date_paid_gmt: "2026-10-13T07:45:09",
+      meta_data: [{ key: "_genesis_partner_id", value: "daniel-coffeen" }],
+      line_items: [{
+        id: 11,
+        product_id: 646,
+        quantity: 2,
+        subtotal: "120.00",
+        total: "120.00",
+        meta_data: lineMeta,
+      }],
+    });
+    const parsed = parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" });
+    const line = parsed.order.lines[0];
+    expect(line.grossMerchandiseMinor).toBe(12000n);
+    expect(line.cogsMinor).toBe(3600n);
+    expect(line.inboundFreightDutyMinor).toBe(200n);
+    expect(line.fulfillmentPackagingMinor).toBe(400n);
+    expect(line.paymentProcessingMinor).toBe(400n);
+    expect(parsed.orderMeta._genesis_partner_id).toBe("daniel-coffeen");
+  });
+
   test("fails closed when canonical Genesis cost inputs are missing", () => {
     const rawBody = JSON.stringify({
       id: 1,
