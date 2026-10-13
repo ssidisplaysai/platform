@@ -829,3 +829,193 @@ Business mutation during auth certification: `NO`
 Final classification:
 
 - `SHARE_TO_GROW_WOO_AUTHENTICATION=PASS`
+
+## Share-to-Grow Production Woo Ingress + Bounded Lifecycle Canary (Completed)
+
+- Window (UTC): `2026-10-13T02:40:00Z` -> `2026-10-13T03:13:00Z`
+- Objective: enable only production Woo webhook path and certify one bounded production canary lifecycle while keeping payouts disabled and Page Factory unchanged.
+- Result: `SHARE_TO_GROW_PRODUCTION_WOO_CANARY=PASS`
+
+### Pre-Gate
+
+- Service/task:
+  - `genesis-share-to-grow-production`
+  - task definition `genesis-share-to-grow-production:2`
+  - state `1/1/0`, rollout `COMPLETED`
+- Target health: `healthy`
+- Health endpoint: `GET /api/health` -> `200 {"status":"ok"}`
+- Alarms: all 11 STG alarms `OK`, `0 ALARM`
+- Woo secret binding present: `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET`
+- Woo auth pre-certification present from prior phase
+- Woo public route pre-state: catch-all `404`
+- Canonical baseline pre-state:
+  - `schema_version=1`, `revision=1`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - all counts `0`
+
+### Woo Listener Rule Enablement
+
+- Created HTTPS listener rule:
+  - ARN: `arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/7ce747ea588e30db`
+  - priority: `9`
+  - conditions:
+    - host `share-to-grow.glwplatform.com`
+    - path `/api/share-to-grow/woocommerce/webhook`
+  - action: forward to STG TG `genesis-s2g-production`
+- Existing rules preserved:
+  - health rule `12` unchanged
+  - host catch-all `13` unchanged
+  - PF default rule unchanged (auth + PF TG forward)
+
+### Route Certification
+
+- `GET /api/health` -> `200`
+- `GET /` -> `404` fixed
+- `GET /does-not-exist` -> `404` fixed
+- unsigned Woo POST -> `401 {"error":"MISSING_WOOCOMMERCE_WEBHOOK_SIGNATURE"}`
+- unsigned Woo GET -> `405`
+- Conclusion:
+  - Woo path now reaches STG application (`YES`)
+  - non-Woo STG hostname paths remain blocked (`YES`)
+
+### Canary Contract (Source-Derived)
+
+From source/tests (`woocommerce-webhook-http`, payload parsers, partial-refund/cancel tests):
+
+- required headers:
+  - `x-wc-webhook-signature` (base64 HMAC SHA-256 over raw body)
+  - `x-wc-webhook-topic`
+  - `x-wc-webhook-delivery-id`
+- order payload fields used:
+  - `id`, `status`, `currency`, `total`, `date_paid_gmt`
+  - `meta_data` with `_genesis_touch_id`, `_genesis_tracking_identity_id`, `_genesis_partner_id`, `_genesis_campaign_id`
+  - `line_items[]` with `id`, `product_id`, `variation_id`, `quantity`, `subtotal`, `total`, and cost meta:
+    - `_genesis_cogs`
+    - `_genesis_inbound_freight_duty`
+    - `_genesis_fulfillment_packaging`
+    - `_genesis_payment_processing`
+- refund payload fields used:
+  - `id`, `parent_id`, `amount`, `date_created_gmt`
+  - `line_items[]` with negative `total` and `_refunded_item_id`
+- cancellation path used:
+  - `order.updated` with `status=cancelled`
+
+### Canary Identifiers and Event Sequence
+
+- canary namespace: `s2g-prod-canary-20261013`
+- orders:
+  - `91013003` (auth ingress probe, signed success)
+  - `91013011` (order + duplicate + partial refund + duplicate + cancellation + duplicate)
+  - `91013012` (order + over-refund cap)
+- processed receipt IDs:
+  - `s2g-prod-canary-20261013-o3-d1`
+  - `s2g-prod-canary-20261013-o1-d1`
+  - `s2g-prod-canary-20261013-o1-r1`
+  - `s2g-prod-canary-20261013-o1-c1`
+  - `s2g-prod-canary-20261013-o2-d1`
+  - `s2g-prod-canary-20261013-o2-r1`
+
+### Lifecycle Canary Results
+
+- Order event (o1-d1):
+  - auth: pass
+  - result: `processed`
+  - economics: one processed line, one earning allocation (`stoner`, `3700` minor), one pending entitlement
+- Duplicate order replay (same delivery/body):
+  - result: `replay`
+  - no new lines/ledger/entitlements
+- Partial refund (o1-r1, `20.00`):
+  - result: `partially_reversed`
+  - refund summary:
+    - customer refund `20.00`
+    - economic reversal `20.00`
+    - remaining net DMP `17.00`
+    - brand loss `0.00`
+  - reversal ledger entry: `-2000` minor
+- Duplicate refund replay (same delivery/body):
+  - result: `replay`
+  - no duplicate adjustment/reversal
+- Cancellation after partial (o1-c1 via `order.updated status=cancelled`):
+  - result: `reversed`
+  - remaining reversal exactly once: `-1700` minor
+  - order net reduced to zero
+- Duplicate cancellation replay (same delivery/body):
+  - result: `replay`
+  - no duplicate reversal
+- Over-refund cap scenario (o2-r1, refund `50.00` on DMP `37.00`):
+  - result: `reversed_with_brand_loss`
+  - refund summary:
+    - customer refund `50.00`
+    - economic reversal `37.00` (capped)
+    - remaining net DMP `0.00`
+    - brand loss `13.00`
+  - cap/rejection behavior verified (`reversal` did not exceed original DMP)
+
+### Final State + Invariants
+
+Final canonical snapshot:
+
+- `schema_version=1`
+- `revision=7`
+- `updated_at=2026-10-13 02:54:11.43932+00`
+- SHA-256 `6d856e874630854fcf9a05c59314aab004b9052dd3db474b20a076d64745181d`
+- counts:
+  - participants `0`
+  - trackingIdentities `0`
+  - ruleVersions `0`
+  - ledgerEntries `6`
+  - sourceEventReceipts `6`
+  - processedCommerceLines `3`
+  - payoutEntitlements `3`
+  - commerceAdjustments `3`
+
+Invariants:
+
+- schema valid: pass
+- split bounds valid: pass
+- negative amount rule violations: none
+- referential integrity: pass
+- duplicate receipts: `0`
+- duplicate processed lines: `0`
+- entitlement consistency: pass
+- reversal cap valid: pass
+- payout execution absent: pass
+- canonical hash reproducible: pass
+
+Canary isolation:
+
+- all persisted receipts are canary IDs (`unexpectedReceiptIds=[]`)
+- all processed lines are canary line keys
+- all commerce adjustments are canary order IDs
+- no staging/PF/non-canary namespace contamination detected
+
+### Payout Safety + Stability + PF Boundary
+
+- automated payouts remain disabled
+- no payout provider execution/transfer invocation
+- entitlement states: `pending`/`reversed` only
+
+Post-canary 15-minute window:
+
+- start `2026-10-13T02:57:08.7034910Z`
+- end `2026-10-13T03:12:36.5030704Z`
+- duration `15.46m`
+- across four samples:
+  - service remained `1/1/0`, `COMPLETED`
+  - target remained `healthy`
+  - health endpoint remained `200`
+  - unsigned Woo POST remained auth-rejected (`401`)
+  - alarms in `ALARM`: `0`
+  - persistence/db/secret errors: `0`
+  - unexpected 5xx markers: `0`
+  - no task restarts
+  - RDS remained `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+
+Page Factory drift:
+
+- no STG-caused changes to PF ECS/task defs/ECR/IAM/secrets/ALB default/TG/DNS/DB/monitoring/source
+- `PAGE_FACTORY_DRIFT_RISK=NO`
+
+Final classification:
+
+- `SHARE_TO_GROW_PRODUCTION_WOO_CANARY=PASS`

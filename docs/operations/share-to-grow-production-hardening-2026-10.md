@@ -917,3 +917,53 @@ Final classification update:
 - Woo events processed: `0`
 - Payouts: disabled; no side effects
 - Page Factory drift: none (`PAGE_FACTORY_DRIFT_RISK=NO`)
+
+## Share-to-Grow Production Woo Ingress + Bounded Lifecycle Canary (Completed)
+
+- Classification: `SHARE_TO_GROW_PRODUCTION_WOO_CANARY=PASS`
+
+### Changes in This Phase
+
+1. Added one ALB rule for production Woo path only:
+   - priority `9`
+   - host `share-to-grow.glwplatform.com`
+   - path `/api/share-to-grow/woocommerce/webhook`
+   - forward to STG TG `genesis-s2g-production`
+2. Left health rule (`12`), host catch-all (`13`), and PF default rule unchanged.
+3. Executed one bounded production canary lifecycle using canary-only identifiers and source-defined payload contract.
+
+### Canary Certification Highlights
+
+- Route behavior after rule add:
+  - `/api/health` => `200`
+  - `/` and arbitrary paths => `404` fixed-response
+  - unsigned Woo POST => app-level auth rejection (`401` missing signature)
+- Lifecycle outcomes:
+  - order accepted and processed
+  - duplicate order replay no-op
+  - partial refund produced bounded reversal and remaining net DMP
+  - duplicate refund replay no-op
+  - cancellation after partial refund reversed only remainder once
+  - duplicate cancellation replay no-op
+  - over-refund capped to original economic allocation (`37.00`) with brand-loss reporting
+- Final state:
+  - revision moved from baseline `1` to `7`
+  - final canonical SHA-256 `6d856e874630854fcf9a05c59314aab004b9052dd3db474b20a076d64745181d`
+  - only canary records persisted; no non-canary receipts/lines/adjustments
+- Invariants:
+  - schema/split/reference/integrity checks passed
+  - no duplicate receipts/processed lines
+  - reversal cap respected
+  - payout execution absent
+- Post-canary stability (`15.46m`):
+  - ECS steady `1/1/0`, target healthy, health `200`
+  - all 11 STG alarms `OK`, `0 ALARM`
+  - no persistence/DB/secret errors
+  - RDS healthy (`available`, `MultiAZ=true`, no pending modifications)
+
+### Safety/Boundary Assertions
+
+- No Woo secret value exposure in logs/output/docs.
+- No IAM/secret/task/service mutation in this phase outside ALB routing rule.
+- Automated payouts remained disabled.
+- No Page Factory drift (`PAGE_FACTORY_DRIFT_RISK=NO`).
