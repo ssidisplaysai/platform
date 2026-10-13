@@ -644,3 +644,33 @@ To move from `BLOCKED_HEALTH` to `PASS`, external operations must complete:
 3. wait for ACM certificate status `ISSUED`
 4. attach issued cert to HTTPS listener as additional SNI certificate
 5. rerun strict public HTTPS checks against `https://share-to-grow.glwplatform.com/api/health`
+
+### Completion Update (PASS)
+
+External DNS propagation and ACM validation completed, then final gate checks were rerun.
+
+- ACM certificate `arn:aws:acm:us-west-2:452630323448:certificate/3218d97a-c585-47ab-bbe9-3633e5d44252` is now `ISSUED` (`ValidationStatus=SUCCESS`)
+- Certificate attached to production HTTPS listener as additional SNI cert
+- Public DNS now resolves:
+  - `share-to-grow.glwplatform.com` -> `genesi-runti-8hl31agbz6rt-743202067.us-west-2.elb.amazonaws.com`
+  - `_fea44451dbc7bacd728a8edcad25cf94.share-to-grow.glwplatform.com` -> `_1d854ad3551f80165b012391846d30e7.wzccmgtwzk.acm-validations.aws`
+- Strict TLS hostname verification passed (`curl` exit `0` with host-preserving validation)
+- Public HTTPS checks passed:
+  - `GET /api/health` -> `200` with `{"status":"ok"}`
+  - `GET /` -> `404`
+  - `GET /api/share-to-grow/woocommerce/webhook` -> `404`
+  - `POST /api/share-to-grow/woocommerce/webhook` -> `404`
+  - `GET /does-not-exist` -> `404`
+- Service/target remained steady:
+  - ECS `1/1/0`, rollout `COMPLETED`
+  - one healthy target in `genesis-s2g-production` (`10.42.2.136:3000`)
+- All 11 `genesis-s2g-prod-*` alarms `OK`, `0 ALARM`
+- Canonical state unchanged:
+  - `schema_version=1`, `revision=1`
+  - `updated_at=2026-10-12 14:46:21.214147+00`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - all collection counts `0`
+
+Final classification update:
+
+- `SHARE_TO_GROW_HEALTH_ONLY_INGRESS=PASS`

@@ -843,3 +843,24 @@ Before/after values remained identical:
   - `_fea44451dbc7bacd728a8edcad25cf94.share-to-grow.glwplatform.com.`
   - `_1d854ad3551f80165b012391846d30e7.wzccmgtwzk.acm-validations.aws.`
 - After ACM status becomes `ISSUED`, attach cert to ALB listener as additional SNI cert, then rerun strict public HTTPS validation for `/api/health`.
+
+### Completion Update (PASS)
+
+External DNS and ACM validation were completed, then certification was rerun.
+
+- ACM certificate `arn:aws:acm:us-west-2:452630323448:certificate/3218d97a-c585-47ab-bbe9-3633e5d44252` reached `ISSUED`
+- Certificate attached to production ALB HTTPS listener as additional SNI cert
+- Public DNS resolution succeeded for hostname + ACM validation record
+- Strict TLS hostname validation passed for `share-to-grow.glwplatform.com`
+- Public route checks:
+  - `/api/health` -> `200` (`{"status":"ok"}`)
+  - `/`, Woo GET/POST path, and arbitrary path -> `404` (fixed-response block)
+- ECS steady state and target health remained green:
+  - service `1/1/0`, rollout `COMPLETED`
+  - one healthy target in dedicated STG TG
+- Alarms: all 11 STG alarms `OK`, `0 ALARM`
+- Canonical state remained unchanged (`schema_version=1`, `revision=1`, same SHA-256, all counts zero)
+
+Final classification update:
+
+- `SHARE_TO_GROW_HEALTH_ONLY_INGRESS=PASS`
