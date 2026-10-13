@@ -13,8 +13,12 @@
 ## Required roles
 
 - `StagingSnapshotOperatorRole`
-  - Launches only approved staging one-off export task definitions.
-  - May pass only approved staging execution/task roles.
+  - Can only invoke broker function URLs with AWS_IAM auth.
+  - Has no direct `ecs:RunTask`, `iam:PassRole`, or task override authority.
+- `SnapshotLaunchBrokerExecutionRole`
+  - Validates run authorization, enforces fixed staging task/network config, and performs controlled `ecs:RunTask`.
+- `SnapshotReaderBrokerExecutionRole`
+  - Validates run authorization and assumes reader role with server-controlled `reconciliation-run-id` tag.
 
 ## Required database reader role (provision separately)
 
@@ -48,21 +52,20 @@ Hard requirements:
 2. IAM least-privilege review approved.
 3. Staging-only stack diff reviewed.
 4. Explicit sign-off that no production stack updates are included.
-5. Controlled launch broker design approval (see blocker below).
-
-## Current blocker: ECS override immutability
-
-Direct `ecs:RunTask` permits caller-supplied container overrides. To prevent destination redirection and run-parameter tampering, provisioning remains blocked until one of the following is approved:
-
-1. Launch broker (Lambda/Step Function) that accepts validated run ID only, strips overrides, and invokes `RunTask` with fixed parameters.
-2. Equivalent control proving immutable task command/environment at launch time.
+5. Broker authorization-record governance approved (who can create/approve run records and TTL policy).
 
 ## Snapshot acquisition and encrypted export
 
 1. Assume `StagingSnapshotOperatorRole`.
 2. Verify target account and region.
-3. Register/launch one-off `genesis-staging-snapshot-export` task.
-4. Confirm task is in staging cluster/subnets/security group only.
+3. Invoke launch broker URL with signed IAM request and only `runId`.
+4. Broker validates:
+   - caller identity,
+   - run authorization record (`APPROVED` + operator binding),
+   - exact approved task definition revision,
+   - digest-pinned container image,
+   - fixed staging network config and `enableExecuteCommand=false`.
+5. Confirm launched task is in staging cluster/subnets/security group only.
 5. Read CloudWatch logs and verify only metadata appears:
    - runId
    - namespace
@@ -75,7 +78,8 @@ Direct `ecs:RunTask` permits caller-supplied container overrides. To prevent des
 
 ## Secure download and local handling
 
-1. Assume `StagingSnapshotReaderRole` with `reconciliation-run-id` principal tag.
+1. Invoke reader broker URL with signed IAM request and `runId`.
+2. Broker validates operator-to-run binding and issues temporary credentials for reader role with server-controlled `reconciliation-run-id` session tag.
 2. Download objects into a protected local directory outside the repository.
 3. Verify local SHA256 hashes against exporter metadata.
 4. Do not upload raw snapshots to GitHub, CI artifacts, or chat outputs.
@@ -97,6 +101,7 @@ Direct `ecs:RunTask` permits caller-supplied container overrides. To prevent des
 
 - Keep CloudWatch logs metadata-only.
 - Exporter failure logs must emit fixed failure codes only (no raw exception payloads).
+- Launch and reader brokers must log metadata and fixed failure codes only.
 - Enforce TLS and SSE-KMS for all snapshot artifact writes.
 - Keep artifacts under short retention lifecycle.
 - Track execution events in CloudTrail management events and S3 data-event plan.

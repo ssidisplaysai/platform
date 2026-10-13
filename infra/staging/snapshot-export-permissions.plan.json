@@ -1,7 +1,7 @@
 {
   "status": "approved-not-applied",
   "scope": "staging-only-share-to-grow-snapshot-export",
-  "provisioningReadiness": "NOT_READY",
+  "provisioningReadiness": "READY_WITH_APPROVAL_GATES",
   "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
   "taskDefinitionFamily": "genesis-staging-snapshot-export",
   "namespace": "share-to-grow-repository",
@@ -46,12 +46,33 @@
     },
     {
       "roleLogicalName": "StagingSnapshotOperatorRole",
-      "purpose": "Launch only approved staging one-off snapshot export tasks",
+      "purpose": "Invoke launch and reader session brokers only",
       "prohibitedActions": [
+        "ecs:RunTask",
         "ecs:UpdateService",
         "cloudformation:ExecuteChangeSet",
         "iam:CreateRole",
         "iam:PutRolePolicy"
+      ]
+    },
+    {
+      "roleLogicalName": "SnapshotLaunchBrokerExecutionRole",
+      "purpose": "Server-side validation and controlled ecs:RunTask for fixed staging export task",
+      "prohibitedActions": [
+        "ecs:UpdateService",
+        "ecs:CreateService",
+        "iam:CreateRole",
+        "cloudformation:ExecuteChangeSet"
+      ]
+    },
+    {
+      "roleLogicalName": "SnapshotReaderBrokerExecutionRole",
+      "purpose": "Server-side issuance of run-tag-bound reader sessions",
+      "prohibitedActions": [
+        "ecs:*",
+        "rds:*",
+        "secretsmanager:*",
+        "s3:PutObject"
       ]
     }
   ],
@@ -85,16 +106,19 @@
     ],
     "mustUseDedicatedSecret": "SNAPSHOT_DB_READER_SECRET_ARN"
   },
-  "currentBlockers": [
-    {
-      "code": "ECS_OVERRIDE_IMMUTABILITY_UNRESOLVED",
-      "description": "Direct ecs:RunTask allows caller-controlled container overrides that can redirect destinations. Provisioning requires a controlled launch broker that strips overrides and signs allowed run parameters."
-    }
-  ],
+  "currentBlockers": [],
+  "launchBrokerControls": {
+    "authorizationRecord": "SnapshotRunAuthorizationTable",
+    "requiredFields": ["runId", "status=APPROVED", "operatorArn", "approvedTaskDefinitionArn", "readerRoleArn", "expiresAtEpoch"],
+    "idempotency": "claimRunLaunch conditional update on launchState; replay returns IDEMPOTENT_ALREADY_LAUNCHED",
+    "overrideProtection": "broker rejects caller-supplied ECS cluster/taskDefinition/overrides and builds fixed run-task input server-side",
+    "stagingNetwork": "fixed staging cluster/subnets/security groups; assignPublicIp=DISABLED; ECS Exec disabled"
+  },
   "requiredApprovalsBeforeApply": [
     "Security architecture review",
     "IAM least-privilege review",
     "Data-handling and retention sign-off",
-    "Staging change window approval"
+    "Staging change window approval",
+    "Run-authorization record governance sign-off"
   ]
 }

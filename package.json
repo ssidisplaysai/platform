@@ -25,6 +25,10 @@
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.910.0",
+    "@aws-sdk/client-ecs": "^3.910.0",
+    "@aws-sdk/client-sts": "^3.910.0",
+    "@aws-sdk/lib-dynamodb": "^3.910.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/pdf-parse": "^1.1.5",
     "cheerio": "^1.2.0",
