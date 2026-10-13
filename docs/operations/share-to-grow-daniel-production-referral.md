@@ -304,3 +304,19 @@ No STG-caused changes to:
 Next action:
 
 "Implement and certify the STONER WooCommerce attribution capture/handoff before placing any real order."
+
+## Follow-up Implementation Status (Storefront Bridge Package Prepared)
+
+Subsequent follow-up work created a production-ready WordPress/Woo bridge package in-repo:
+
+- `integrations/wordpress/stoner-share-to-grow/stoner-share-to-grow.php`
+- `integrations/wordpress/stoner-share-to-grow/includes/class-stoner-s2g-attribution-bridge.php`
+- `integrations/wordpress/stoner-share-to-grow/README.md`
+- `integrations/wordpress/stoner-share-to-grow/tests/run.php`
+
+And provisioned dedicated signing secret:
+
+- `genesis/production/share-to-grow/attribution-signing`
+
+Current blocker remains deployment/certification on the actual production storefront path.  
+See `docs/operations/share-to-grow-storefront-attribution.md` for full evidence and final phase status.

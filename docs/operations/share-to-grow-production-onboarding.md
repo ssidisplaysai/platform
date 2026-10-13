@@ -257,7 +257,14 @@ Follow-up referral certification was executed and is currently blocked on storef
 - result: `SHARE_TO_GROW_DANIEL_REFERRAL=BLOCKED_STOREFRONT_INTEGRATION`
 - canonical state remained unchanged (`revision=13`, same SHA/counters)
 - blocker summary:
-  - no dedicated production attribution-signing secret configured
-  - no certified production WordPress/Woo attribution capture + session persistence + checkout handoff deployment evidence
+  - storefront integration was not yet production-certified at that checkpoint
+  - production WordPress/Woo attribution capture + session persistence + checkout handoff deployment evidence was missing at that checkpoint
 - detailed evidence and acceptance plan:
   - `docs/operations/share-to-grow-daniel-production-referral.md`
+
+## Follow-up: Storefront Attribution Bridge
+
+Storefront bridge implementation package and dedicated signing secret were prepared, but full production storefront certification remains blocked pending Woo storefront target/deployment activation.
+
+- current status: `SHARE_TO_GROW_STOREFRONT_ATTRIBUTION=BLOCKED`
+- details: `docs/operations/share-to-grow-storefront-attribution.md`
