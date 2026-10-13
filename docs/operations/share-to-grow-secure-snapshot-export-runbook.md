@@ -55,6 +55,9 @@ Hard requirements:
   - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
   - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
   - [s2g-db-admin-launcher-permissions.plan.json](../../infra/staging/s2g-db-admin-launcher-permissions.plan.json)
+- Before creating/executing any launcher stack change set, run preflight validation:
+  - `node infra/staging/s2g-db-admin-launcher/cdk/validate-diagnostic-launcher-deployment.mjs --profile genesis-production --region us-west-2 --account-id 452630323448`
+  - The validator fails closed if the Lambda asset object is missing from the CDK bootstrap bucket, if the stack is in `ROLLBACK_COMPLETE` without explicit recovery acknowledgment, if the retained DynamoDB table conflicts with fresh creation, or if activation/task-definition defaults drift from reviewed disabled bootstrap values.
 - The default command is diagnostic-only (`--diagnose-admin-readonly`) and requires:
   - fixed staging host/database,
   - `DB_ADMIN_USERNAME` + `DB_ADMIN_PASSWORD` from the exact staging RDS-managed admin secret,
@@ -70,6 +73,7 @@ Hard requirements:
 3. Staging-only stack diff reviewed.
 4. Explicit sign-off that no production stack updates are included.
 5. Broker authorization-record governance approved (who can create/approve run records and TTL policy).
+6. Confirm the synthesized launcher Lambda asset object exists in `cdk-hnb659fds-assets-<account>-<region>` before executing a CloudFormation change set.
 
 ## Two-stage broker activation
 
