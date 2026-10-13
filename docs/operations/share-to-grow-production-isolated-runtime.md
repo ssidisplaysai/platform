@@ -1122,3 +1122,145 @@ Source-derived schema requirements confirmed for next onboarding phase:
 Final classification:
 
 - `SHARE_TO_GROW_CANARY_GOVERNANCE=PASS`
+
+## Share-to-Grow Stoner Gym Production Onboarding (Completed)
+
+- Window (UTC): `2026-10-13T03:40:00Z` -> `2026-10-13T03:56:00Z`
+- Objective: create first real production Share-to-Grow canonical config objects for STONER GYM and Daniel (no real commerce event, payouts still disabled).
+- Result: `SHARE_TO_GROW_STONER_GYM_ONBOARDING=PASS`
+
+### Source Schema + Hierarchy Model
+
+Canonical shapes confirmed from source:
+
+- participants: `CollaborationParticipantRecord`
+- tracking identities: `TrackingIdentityReferenceRecord`
+- rule versions: `EconomicRuleVersion`
+
+Hierarchy representation is source-supported via participant role + optional `sponsorPartnerId` (creator-only depth guard). No MLM/multi-level extension was introduced.
+
+### Pre-State
+
+- `schema_version=1`
+- `revision=8`
+- canonical SHA-256 `5ac81450bc69dad98d0f72dca09c30767dba4ad0120810e7283494dc23d56a06`
+- counts:
+  - participants `0`
+  - trackingIdentities `0`
+  - ruleVersions `0`
+  - ledgerEntries `7`
+  - sourceEventReceipts `7`
+  - processedCommerceLines `3`
+  - payoutEntitlements `3`
+  - commerceAdjustments `4`
+
+### Production IDs + Objects Written
+
+Program and partner IDs:
+
+- program `stoner-gym`
+- STONER participant `stoner` (role `brand`)
+- Daniel participant `daniel-coffeen` (role `founding_collaborator`)
+- tracking identity `tracking-stoner-gym-daniel-coffeen-v1` (slug `daniel-coffeen`)
+- rule versions:
+  - `stoner-gym-production-organic-v1`
+  - `stoner-gym-production-daniel-direct-v1`
+
+### Rule Design + Dry-Run Validation
+
+Persisted splits:
+
+- organic: STONER `100%`
+- Daniel direct: STONER `50%`, Daniel `50%`
+
+Recruited creator path (required 50/35/15) validated in memory only with synthetic creator (not persisted), because rule schema requires concrete beneficiary IDs and no real creator participant is approved yet.
+
+Dry-run outputs on DMP `3700` minor:
+
+- organic: STONER `3700`
+- Daniel direct: STONER `1850`, Daniel `1850`
+- recruited creator synthetic: STONER `1850`, creator `1295`, Daniel `555`
+
+Dry-run status: `PASS`
+
+### Canonical Write Mechanism + Revision Trace
+
+Repository-semantic optimistic revision write flow used on namespace `share-to-grow-repository`.
+
+- raw SQL direct JSON patch: `NO`
+- overwrite/delete canary history: `NO`
+
+Revision trace:
+
+- participant `stoner` -> revision `9`
+- participant `daniel-coffeen` -> revision `10`
+- tracking `tracking-stoner-gym-daniel-coffeen-v1` -> revision `11`
+- rule `stoner-gym-production-organic-v1` -> revision `12`
+- rule `stoner-gym-production-daniel-direct-v1` -> revision `13`
+
+### Post-State
+
+- `schema_version=1`
+- `revision=13`
+- `updated_at=2026-10-13 03:53:39.892603+00`
+- canonical SHA-256 `ea144a01d7791858da2baf8d99f9e493e56ed29fb052681119d6cb855f7a0b91`
+- counts:
+  - participants `2`
+  - trackingIdentities `1`
+  - ruleVersions `2`
+  - ledgerEntries `7`
+  - sourceEventReceipts `7`
+  - processedCommerceLines `3`
+  - payoutEntitlements `3`
+  - commerceAdjustments `4`
+
+Configuration-only invariants:
+
+- new ledger entries `0`
+- new receipts `0`
+- new processed lines `0`
+- new payout entitlements `0`
+- new adjustments `0`
+- canary history intact
+
+### Tracking / Link Format
+
+From source (`GENESIS_WORDPRESS_TOKEN_QUERY_KEY`):
+
+- query key: `genesis_attribution`
+- token shape: `<base64url-payload>.<base64url-hmac-signature>`
+- referral URL shape: `https://<landing-host>/<path>?genesis_attribution=<signed-token>`
+- QR payload: same URL string
+
+### Woo Readiness + Payout Safety + Health
+
+- Woo listener for `/api/share-to-grow/woocommerce/webhook`: active
+- `DANIEL_ATTRIBUTION_LOOKUP=PASS`
+- `DANIEL_DIRECT_RULE_RESOLUTION=PASS`
+- real Woo event sent in this phase: `NO`
+- `REAL_PRODUCTION_WOO_EVENTS=0`
+
+Payout safety:
+
+- automated payouts enabled: `NO`
+- new payout entitlements from phase: `0`
+- provider calls: `0`
+- external transfers: `0`
+
+Health:
+
+- ECS `1/1/0`, rollout `COMPLETED`
+- target `healthy`
+- health endpoint `200`
+- unsigned Woo POST `401` (expected)
+- alarms in `ALARM`: `0`
+- RDS `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+
+### Page Factory Boundary
+
+- no STG-caused changes to PF ECS/task definitions/ECR/IAM/secrets/ALB/DNS/DB/monitoring/source
+- `PAGE_FACTORY_DRIFT_RISK=NO`
+
+Final classification:
+
+- `SHARE_TO_GROW_STONER_GYM_ONBOARDING=PASS`
