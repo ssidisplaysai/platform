@@ -1,0 +1,233 @@
+jest.mock("server-only", () => ({}));
+
+import {
+  resolveGlwCampaignJobReconciliationDecision,
+  resolveGlwCampaignTargetRecoveryAction,
+} from "@/modules/glw/campaign-target-reconciliation";
+
+function runningTarget(
+  overrides: Partial<{
+    jobId: string | null;
+    dispatchDate: string | null;
+    leaseId: string | null;
+  }> = {},
+) {
+  return {
+    targetId: "target-campaign-1-fl",
+    campaignId: "campaign-1",
+    organizationId: "org-1",
+    siteId: "site-1",
+    productId: "product-1",
+    stateCode: "FL",
+    status: "running" as const,
+    jobId:
+      overrides.jobId === undefined
+        ? "job-1"
+        : overrides.jobId,
+    wordpressObjectId: null,
+    attemptCount: 1,
+    lastError: null,
+    dispatchDate:
+      overrides.dispatchDate === undefined
+        ? "2026-08-31"
+        : overrides.dispatchDate,
+    leaseId:
+      overrides.leaseId === undefined
+        ? "lease-1"
+        : overrides.leaseId,
+    leasedAt: "2026-08-31T20:00:00.000Z",
+    leaseExpiresAt: "2026-08-31T21:00:00.000Z",
+    createdAt: "2026-08-31T20:00:00.000Z",
+    updatedAt: "2026-08-31T20:00:00.000Z",
+  };
+}
+
+describe("GLW campaign target reconciliation", () => {
+  test("job-bearing running target recovers exact job", () => {
+    expect(
+      resolveGlwCampaignTargetRecoveryAction(
+        runningTarget(),
+      ),
+    ).toBe("recover_exact_job");
+  });
+
+  test("no-job dispatched target resumes exact target", () => {
+    expect(
+      resolveGlwCampaignTargetRecoveryAction(
+        runningTarget({
+          jobId: null,
+        }),
+      ),
+    ).toBe("resume_exact_target");
+  });
+
+  test("content-ready requires exact continuation", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "CONTENT_READY",
+      }),
+    ).toEqual({
+      action: "continue",
+    });
+  });
+
+  test("recoverable content failure requires exact continuation", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        errorCode: "GENERATED_CONTENT_QA_FAILED",
+        generatedDraft: { contentHtml: "<p>draft</p>" },
+      }),
+    ).toEqual({
+      action: "continue",
+    });
+  });
+
+  test.each([
+    "WORDPRESS_HIERARCHY_READ_FAILED",
+    "WORDPRESS_HIERARCHY_WRITE_FAILED",
+    "WORDPRESS_READ_FAILED",
+    "WORDPRESS_WRITE_FAILED",
+  ])("recoverable WordPress failure %s requires exact continuation", (errorCode) => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        errorCode,
+        generatedDraft: { contentHtml: "<p>draft</p>" },
+      }),
+    ).toEqual({
+      action: "continue",
+    });
+  });
+
+  test("WordPress failure without generated draft remains failed", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        errorCode: "WORDPRESS_WRITE_FAILED",
+        error: "WordPress failed.",
+      }),
+    ).toEqual({
+      action: "failed",
+      error: "WordPress failed.",
+    });
+  });
+
+  test("complete verified draft becomes draft-ready", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "COMPLETE",
+        wordpressObjectId: "19817",
+        wordpressStatus: "draft",
+      }),
+    ).toEqual({
+      action: "draft_ready",
+      wordpressObjectId: "19817",
+    });
+  });
+
+  test("numeric WordPress IDs normalize to canonical string", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "COMPLETE",
+        wordpressObjectId: 19817,
+        wordpressStatus: "draft",
+      }),
+    ).toEqual({
+      action: "draft_ready",
+      wordpressObjectId: "19817",
+    });
+  });
+
+  test("published result fails closed", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "COMPLETE",
+        wordpressObjectId: "19817",
+        wordpressStatus: "publish",
+      }),
+    ).toEqual({
+      action: "failed",
+      error:
+        "Completed generation did not resolve to a verified WordPress draft.",
+    });
+  });
+
+  test("complete result without WordPress ID fails closed", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "COMPLETE",
+        wordpressObjectId: null,
+        wordpressStatus: "draft",
+      }),
+    ).toEqual({
+      action: "failed",
+      error:
+        "Completed generation did not resolve to a verified WordPress draft.",
+    });
+  });
+
+  test("failed generation synchronizes failure", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        error: "Generation failed upstream.",
+      }),
+    ).toEqual({
+      action: "failed",
+      error: "Generation failed upstream.",
+    });
+  });
+
+  test("pre-execution dispatch failure requeues through reconciliation", () => {
+    expect(resolveGlwCampaignJobReconciliationDecision({
+      status: "FAILED",
+      errorCode: "DISPATCH_FAILED",
+      errorMessage: "GLW n8n MCP execution is not configured.",
+      externalExecutionId: null,
+      generatedDraft: null,
+      wordpressObjectId: null,
+    })).toEqual({
+      action: "requeue",
+      error: "GLW n8n MCP execution is not configured.",
+    });
+  });
+
+  test("stale poll timeout requeues through reconciliation", () => {
+    expect(resolveGlwCampaignJobReconciliationDecision({
+      status: "FAILED",
+      errorCode: "POLL_TIMEOUT",
+      errorMessage: "n8n execution did not reach a terminal state within the bounded polling window.",
+      externalExecutionId: "execution-1",
+      generatedDraft: null,
+      wordpressObjectId: null,
+    })).toEqual({
+      action: "requeue",
+      error: "n8n execution did not reach a terminal state within the bounded polling window.",
+    });
+  });
+
+  test("failed dispatch with an external execution cannot be requeued as pre-execution", () => {
+    expect(resolveGlwCampaignJobReconciliationDecision({
+      status: "FAILED",
+      errorCode: "DISPATCH_FAILED",
+      errorMessage: "Execution failed after acceptance.",
+      externalExecutionId: "execution-1",
+      generatedDraft: null,
+      wordpressObjectId: null,
+    })).toEqual({
+      action: "failed",
+      error: "Execution failed after acceptance.",
+    });
+  });
+
+  test("running generation waits", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "RUNNING",
+      }),
+    ).toEqual({
+      action: "wait",
+    });
+  });
+});

@@ -1,0 +1,174 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyProductionInspection",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeServices",
+        "ecs:DescribeTaskDefinition",
+        "cloudtrail:LookupEvents",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:DescribeListenerCertificates",
+        "elasticloadbalancing:DescribeTargetHealth",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeNetworkInterfaces",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CognitoReadOnlyExistingPool",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:ListUserPoolClients"
+      ],
+      "Resource": "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON"
+    },
+    {
+      "Sid": "IamManagedPolicyReadOnlyInspection",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion"
+      ],
+      "Resource": [
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
+        "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*"
+      ]
+    },
+    {
+      "Sid": "IamReadOnlyInspection",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:GetRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H",
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "arn:aws:iam::452630323448:role/genesis-staging-task-role"
+      ]
+    },
+    {
+      "Sid": "SimulateOwnPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "iam:SimulatePrincipalPolicy"
+      ],
+      "Resource": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole"
+    },
+    {
+      "Sid": "SimulateProposedPoliciesNoResourceSupport",
+      "Effect": "Allow",
+      "Action": [
+        "iam:SimulateCustomPolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProductionImageProvenanceReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:DescribeImages",
+        "ecr:DescribeRepositories",
+        "ecr:BatchGetImage",
+        "ecr:ListImages"
+      ],
+      "Resource": "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime"
+    },
+    {
+      "Sid": "ProductionCloudFormationStackReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:ListChangeSets",
+        "cloudformation:ListStackResources"
+      ],
+      "Resource": "arn:aws:cloudformation:us-west-2:452630323448:stack/GenesisRuntimeStack/*"
+    },
+    {
+      "Sid": "ProductionEcsTaskReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeTasks"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+        }
+      }
+    },
+    {
+      "Sid": "ProductionEcsTaskListReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:ListTasks"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production"
+        }
+      }
+    },
+    {
+      "Sid": "ProductionEcsTaskDefinitionListReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:ListTaskDefinitions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProductionLogStreamReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/production/web:*"
+    },
+    {
+      "Sid": "ProductionResourceInventoryReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBClusterSnapshots",
+        "rds:DescribeDBClusters",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBSnapshots",
+        "rds:DescribeDBSubnetGroups",
+        "cloudwatch:DescribeAlarms",
+        "ec2:DescribeRouteTables"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProductionSecretMetadataReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:GenesisFoundationStackGenes-qUJa9sj48pI1-D65uuI",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/openai-*",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/wordpress-*"
+      ]
+    }
+  ]
+}

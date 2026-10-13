@@ -98,7 +98,8 @@ describe("GLW selective page generation recovery", () => {
     const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPageGenerationWorkspace.tsx"), "utf8");
     expect(source).toContain('aria-label="Generation operation"');
     expect(source).toContain('aria-label="WordPress object ID"');
-    expect(source).toContain("Update exact WordPress draft");
+    expect(source).toContain("Update exact draft");
+    expect(source).toContain("Update WordPress Draft");
     expect(source).toContain("execution.wordpressObjectId");
     expect(source).toContain("execution.wordpressUrl");
     expect(source).toContain("execution.qaStatus");
@@ -110,7 +111,8 @@ describe("GLW selective page generation recovery", () => {
   test("shows canonical target preflight and blocks unavailable mutations", () => {
     const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPageGenerationWorkspace.tsx"), "utf8");
     expect(source).toContain("/api/glw/target-preflight");
-    expect(source).toContain("Canonical WordPress target");
+    expect(source).toContain("WordPress Target");
+    expect(source).toContain("Canonical WordPress path");
     expect(source).toContain("targetPreflight.target.applicationPath");
     expect(source).toContain("targetPreflight.target.canonicalPath");
     expect(source).toContain("targetPreflight.target.wordpressObjectId");
@@ -123,13 +125,227 @@ describe("GLW selective page generation recovery", () => {
 
   test("blocks canonical collisions and published updates before dispatch", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
-    const collisionGuard = source.indexOf('code: "CREATE_COLLISION"');
-    const updateGuard = source.indexOf('code: "UPDATE_AUTHORITY_REQUIRED"');
+    const mutationGuard = source.indexOf('code: "WORDPRESS_MUTATION_NOT_AUTHORIZED"');
     const dispatch = source.indexOf("service.execute(preview.request)");
-    expect(collisionGuard).toBeGreaterThan(0);
-    expect(updateGuard).toBeGreaterThan(collisionGuard);
-    expect(dispatch).toBeGreaterThan(updateGuard);
-    expect(source).toContain("Published WordPress targets cannot be updated under the draft-only release.");
-    expect(source).toContain("Creation was stopped before any WordPress changes.");
+    const authorityCheck = source.lastIndexOf("verifyMutationAuthority(", dispatch);
+    expect(mutationGuard).toBeGreaterThan(0);
+    expect(authorityCheck).toBeGreaterThan(mutationGuard);
+    expect(dispatch).toBeGreaterThan(authorityCheck);
+    expect(source.slice(dispatch)).toContain("publicationPerformed: false");
   });
+
+  test("preserves structured Product Intelligence evidence through completion", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("productAuthority:");
+    expect(source).toContain("internalLinks:");
+    expect(source).toContain("externalReferences:");
+    expect(source).toContain("mediaAuthority:");
+    expect(source).toContain("const existingChecks");
+    expect(source).toContain("...existingChecks");
+  });
+
+  test("persists guarded ProjectorEnclosure workbook SEO authority evidence", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("loadProjectorEnclosureSeoAuthority().select");
+    expect(source).toContain("projectorEnclosureSeoAuthority");
+    expect(source).toContain("await glwPageExecutionRepository.list()");
+    expect(source).toContain("existingOwners: input.keywordOwners");
+    expect(source).toContain('input.request.plannedOperation.startsWith("UPDATE_")');
+    expect(source).toContain("verifiedCompatibilityKeywords: []");
+    expect(source).toContain("verifiedElectricalKeywords: []");
+    expect(source).toContain("primaryKeyword: enrichment.seoAuthority.primaryKeyword?.keyword");
+    expect(source).toContain("selectionRationale: enrichment.seoAuthority.selectionRationale");
+    expect(source).toContain("cannibalization: enrichment.seoAuthority.cannibalization");
+    expect(source).toContain("provenance: enrichment.seoAuthority.provenance");
+    expect(source).toContain('errorCode: "SEO_AUTHORITY_INELIGIBLE"');
+  });
+
+  test("continues CONTENT_READY with exact target/job/execution fail-closed guards and without dispatch", () => {
+    const routeSource = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const lookupSource = readFileSync(resolve(process.cwd(), "src/modules/glw/campaign-continuation-target-lookup.ts"), "utf8");
+    expect(routeSource).toContain('if (action === "continue")');
+    expect(routeSource).toContain('const expectedTargetId = body.targetId?.trim() ?? "";');
+    expect(routeSource).toContain('const expectedExecutionId = body.executionId?.trim() ?? "";');
+    expect(routeSource).toContain('resolveExactContinuationCampaignTarget({');
+    expect(routeSource).toContain('Published targets cannot continue through draft continuation.');
+    expect(routeSource).toContain('publicationPerformed: false');
+    expect(lookupSource).toContain('Campaign target does not match the exact existing job.');
+    expect(lookupSource).toContain('Conflicting WordPress identity exists for this campaign target.');
+    expect(lookupSource).toContain('Continuation request executionId does not match the exact existing execution.');
+  });
+
+  test("campaign reconcile reuses existing continue path for content-ready target continuation", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+    expect(source).toContain('targetId?: string;');
+    expect(source).toContain('executionId?: string;');
+    expect(source).toContain('Exact target continuation requires targetId, jobId, and executionId.');
+    expect(source).toContain('action: "continue"');
+    expect(source).toContain('reconcileGlwContentReadyTargetDraft');
+    expect(source).toContain('action: "draft_ready"');
+    expect(source).toContain('executionIdAfter: job.externalExecutionId ?? null');
+  });
+
+  test("renders approved GLW campaign internal links before generated-content QA", () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/app/api/glw/page-generation/route.ts",
+      ),
+      "utf8",
+    );
+
+    const resolveAuthority =
+      source.indexOf(
+        "resolveGlwAllowedInternalLinks({",
+      );
+
+    const renderAuthority =
+      source.indexOf(
+        "renderGlwAllowedInternalLinks({",
+      );
+
+    const generatedQa =
+      source.indexOf(
+        "evaluateGlwGeneratedContentQa({",
+        renderAuthority,
+      );
+
+    expect(resolveAuthority).toBeGreaterThan(0);
+    expect(renderAuthority).toBeGreaterThan(
+      resolveAuthority,
+    );
+    expect(generatedQa).toBeGreaterThan(
+      renderAuthority,
+    );
+  });
+
+  test("applies scoped host theme title suppression for persisted GLW drafts", () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/app/api/glw/page-generation/route.ts",
+      ),
+      "utf8",
+    );
+
+    expect(source).toContain("applyScopedThemeTitleSuppression");
+    expect(source).toContain("suppressionEligible = strictGeneratedContextualRequired");
+    expect(source).toContain("preWriteSuppression");
+    expect(source).toContain("postWriteSuppression");
+    expect(source).toContain("generatedDraft: finalizedArtifact");
+  });
+
+  test("treats FAILED zero-authority canonicalization with generated draft as exact recoverable content failure", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean {");
+    expect(source).toContain('|| job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"');
+    expect(source).toContain("&& Boolean(job.generatedDraft);");
+  });
+
+  test("treats FAILED zero-authority canonicalization with generated draft as recoverable for finalization", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("const recoverableQaFailure = input.recoveryContext?.qaFailure ?? isExactRecoverableContentFailure(input.job);");
+    expect(source).toContain("const recoverableWordPressFailure = input.recoveryContext?.wordPressFailure ?? isExactRecoverableWordPressFailure(input.job);");
+    expect(source).toContain("resolveFinalizationArtifactSource({");
+  });
+
+  test("production-shaped QA recovery continuation preserves FAILED GENERATED_CONTENT_QA_FAILED intent through post-enrichment bounded repair guard", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("recoveryContext?: {");
+    expect(source).toContain("qaFailure: boolean;");
+    expect(source).toContain("wordPressFailure: boolean;");
+    expect(source).toContain("qaFailure: isExactRecoverableContentFailure(currentJob)");
+    expect(source).toContain("wordPressFailure: isExactRecoverableWordPressFailure(currentJob)");
+    expect(source).toContain("qaFailure: exactRecoverableContentFailure");
+    expect(source).toContain("wordPressFailure: exactRecoverableWordPressFailure");
+    expect(source).toContain("&& recoverableQaFailure");
+
+    const prepare = source.indexOf("prepareGeneratedContentForSite({");
+    const qa = source.indexOf("let qa = evaluateGlwGeneratedContentQa({", prepare);
+    const bounded = source.indexOf("const eligibleForBoundedRepair =", qa);
+    const repair = source.indexOf("repairGlwStateContentToMinimum({", bounded);
+    const dispatch = source.indexOf("service.execute(preview.request)", repair);
+
+    expect(prepare).toBeGreaterThan(0);
+    expect(qa).toBeGreaterThan(prepare);
+    expect(bounded).toBeGreaterThan(qa);
+    expect(repair).toBeGreaterThan(bounded);
+    expect(dispatch).toBeGreaterThan(repair);
+  });
+
+  test("requests zero-authority fallback only for Outdoor Sphere LDW state-service scope", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("function resolveZeroAuthorityFallbackPolicy(request: GlwGenerationRequest): GlwZeroAuthorityFallbackPolicy");
+    expect(source).toContain('request.organizationId === "led-display-warehouse"');
+    expect(source).toContain('request.siteId === "site-led-display-warehouse-production"');
+    expect(source).toContain('request.productId === "prod-outdoor-digital-sphere"');
+    expect(source).toContain('request.pageType === "state_service"');
+    expect(source).toContain('return "OUTDOOR_SPHERE_STATE_SERVICE"');
+    expect(source).toContain('return "STRICT"');
+    expect(source).toContain("fallbackPolicy: resolveZeroAuthorityFallbackPolicy(input.request)");
+  });
+
+  test("keeps unrelated FAILED errors non-recoverable and continue path finalizes without generation dispatch", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const recoverableFailure = source.indexOf('job.errorCode === "GENERATED_CONTENT_QA_FAILED"');
+    const zeroAuthorityFailure = source.indexOf('job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"', recoverableFailure);
+    const contentRepairFailure = source.indexOf('job.errorCode?.startsWith("CONTENT_REPAIR_") === true', zeroAuthorityFailure);
+    const continueBranch = source.indexOf('if (action === "continue")');
+    const generateBranch = source.indexOf('if (action !== "generate")');
+    const finalizeCall = source.indexOf("finalizeContentReadyExecution({", continueBranch);
+    const dispatchCall = source.indexOf("service.execute(preview.request)", continueBranch);
+    const unrelatedFailure = source.indexOf("WORDPRESS_HIERARCHY_READ_FAILED", recoverableFailure);
+
+    expect(recoverableFailure).toBeGreaterThan(0);
+    expect(zeroAuthorityFailure).toBeGreaterThan(recoverableFailure);
+    expect(contentRepairFailure).toBeGreaterThan(zeroAuthorityFailure);
+    expect(unrelatedFailure).toBeGreaterThan(contentRepairFailure);
+    expect(finalizeCall).toBeGreaterThan(continueBranch);
+    expect(dispatchCall).toBeGreaterThan(generateBranch);
+  });
+
+  test("adds explicit same-job terminal retry action with product-authority and runtime gates", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "retry_failed_execution")');
+    expect(source).toContain("hasValidRetryProductAuthority(preview.request)");
+    expect(source).toContain('code: "RETRY_PRODUCT_AUTHORITY_INVALID"');
+    expect(source).toContain('code: "RETRY_RUNTIME_INVALID"');
+    expect(source).toContain("service.retryFailedExecution({");
+    expect(source).toContain("sameJobRetried: true");
+    expect(source).toContain("retryRequestId");
+  });
+
+  test("adds duplicate quarantine action and blocks quarantined continuation/retry/recovery", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "quarantine_duplicate")');
+    expect(source).toContain('code: "DUPLICATE_QUARANTINE_ACTIVE"');
+    expect(source).toContain('disposition: "QUARANTINED_SUPERSEDED_DUPLICATE"');
+    expect(source).toContain("executionDuplicateQuarantine");
+    expect(source).toContain("isGlwExecutionQuarantined(currentJob)");
+  });
+
+  test("keeps failed-dispatch recovery and continue action paths intact", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "recover_failed_dispatch")');
+    expect(source).toContain("service.recoverFailedDispatch(jobId, preview.request)");
+    expect(source).toContain('if (action === "continue")');
+    expect(source).toContain("finalizeContentReadyExecution({");
+  });
+
+  test("recoverable FAILED content still reruns claim authority before WordPress draft persistence", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const recoverableFailure = source.indexOf("const recoverableQaFailure = input.recoveryContext?.qaFailure ?? isExactRecoverableContentFailure(input.job);");
+    const continueBranch = source.indexOf('if (action === "continue")');
+    const finalizeCall = source.indexOf("finalizeContentReadyExecution({", continueBranch);
+    const claimAuthorityCheck = source.indexOf("if (claimAuthority && !claimAuthority.ok)", recoverableFailure);
+    const claimFailureWrite = source.indexOf('errorMessage: `Unsupported factual claims detected under ${claimAuthority.policyVersion}.`', claimAuthorityCheck);
+    const wordpressWrite = source.indexOf("writeGenesisWordPressDraft", claimFailureWrite);
+
+    expect(recoverableFailure).toBeGreaterThan(0);
+    expect(finalizeCall).toBeGreaterThan(continueBranch);
+    expect(claimAuthorityCheck).toBeGreaterThan(recoverableFailure);
+    expect(claimFailureWrite).toBeGreaterThan(claimAuthorityCheck);
+    expect(wordpressWrite).toBeGreaterThan(claimFailureWrite);
+  });
+
 });

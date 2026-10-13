@@ -5,20 +5,21 @@ import { resolvePermissions } from "@/modules/foundation/permissions";
 import { getVisibleNavigationItems } from "@/modules/foundation/selectors";
 
 describe("GLW entry-point restoration", () => {
-  test("registers GLW in descriptor-driven navigation", () => {
-    const glw = FOUNDATION_NAVIGATION_ITEMS.find((item) => item.id === "glw");
+  test("registers campaigns as the primary GLW operator navigation", () => {
+    const glw = FOUNDATION_NAVIGATION_ITEMS.find((item) => item.id === "campaigns");
 
     expect(glw).toBeDefined();
-    expect(glw?.label).toBe("LED Display Warehouse");
-    expect(glw?.href).toBe("/glw");
+    expect(glw?.label).toBe("Campaigns");
+    expect(glw?.href).toBe("/glw/campaigns?scope=all");
     expect(glw?.requiredPermissions).toEqual(["workspace:view"]);
   });
 
-  test("shows GLW navigation for signed-in viewer permissions", () => {
+  test("shows campaign navigation for signed-in viewer permissions", () => {
     const permissions = resolvePermissions(["viewer"]);
     const visible = getVisibleNavigationItems(FOUNDATION_NAVIGATION_ITEMS, permissions);
 
-    expect(visible.some((item) => item.id === "glw")).toBe(true);
+    expect(visible.some((item) => item.id === "campaigns")).toBe(true);
+    expect(visible.some((item) => item.label === "LED Display Warehouse")).toBe(false);
   });
 
   test("restores /glw route with protected shell integration", () => {
@@ -40,7 +41,7 @@ describe("GLW entry-point restoration", () => {
     const source = readFileSync(routePath, "utf8");
     expect(source).toContain('import { AppShell } from "@/components/layout/app-shell";');
     expect(source).toContain("<AppShell>");
-    expect(source).toContain("<GlwPagesCenter />");
+    expect(source).toContain("<GlwPagesCenter");
   });
 
   test("keeps GLW route links internally consistent", () => {

@@ -1,0 +1,268 @@
+import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  isRecordInScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
+import { getSiteById } from "@/modules/foundation/site-repository";
+import { evaluateProfileReadiness, getIntegrationProfileById } from "@/modules/foundation/integration-profile-repository";
+import { createSiteIntelligenceN8nProvider, getSiteIntelligenceProviderStatus } from "@/modules/foundation/site-intelligence-n8n-provider";
+import { executeSiteIntelligenceResearch } from "@/modules/foundation/site-intelligence-research-executor";
+import {
+  addCreativeInput,
+  addCreativeProposal,
+  addInitialStrategyProposal,
+  addStrategyProposal,
+  approveSiteIntelligence,
+  classifyCreativeInput,
+  decideCreativeProposal,
+  decideSiteOpportunity,
+  decideStrategy,
+  ensureSiteIntelligenceWorkspace,
+  getSiteIntelligenceWorkspace,
+  getStrategyReadiness,
+  listCapabilityEvidenceOptions,
+  recordSiteOpportunity,
+  refreshApprovedStrategy,
+  reopenApprovedStrategyForReview,
+  startSiteIntelligence,
+  updateCreativeInputMetadata,
+  validateOpportunityCapability,
+} from "@/modules/foundation/site-intelligence-repository";
+import { synthesizeInitialSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
+import { synthesizeCreativeDirection } from "@/modules/foundation/site-creative-direction-synthesizer";
+import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "@/modules/foundation/site-capability-transition";
+import { continueSiteBuild, ensurePersistedProjectedCreativeCandidate, projectCreativeReviewHandoff } from "@/modules/foundation/site-build-continuation";
+import type { CreativeInput, SiteAssetClassification } from "@/modules/foundation/site-intelligence";
+
+type Context = { params: Promise<{ siteId: string }> };
+const CLASSIFICATIONS = new Set<SiteAssetClassification>(["OWNER_APPROVED_PUBLISHABLE", "OWNER_SUPPLIED_REFERENCE", "EXTERNAL_INSPIRATION_ONLY", "COMPETITOR_REFERENCE_ONLY", "UNVERIFIED", "REJECTED"]);
+const SENTIMENTS = new Set<CreativeInput["sentiment"]>(["LIKE", "DISLIKE", "REFERENCE_ONLY"]);
+
+function errorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : "SITE_INTELLIGENCE_REQUEST_FAILED";
+  const conflict = message.includes("conflict") || message.includes("CONFLICT");
+  return NextResponse.json({ error: message }, { status: conflict ? 409 : 422 });
+}
+
+async function scopedSite(request: NextRequest, context: Context) {
+  const scope = resolveRequestScope(request);
+  const { siteId } = await context.params;
+  const site = getSiteById(siteId);
+  if (!hasOrganizationScope(scope) || !site || !isRecordInScope({ recordOrganizationId: site.organizationId, recordSiteId: site.siteId, scope })) return null;
+  return site;
+}
+
+export async function GET(request: NextRequest, context: Context) {
+  const auth = authorizeRequest(request, "sites:read");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const site = await scopedSite(request, context);
+  if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+  const workspace = getSiteIntelligenceWorkspace(site.siteId);
+  const creativeReviewHandoff = projectCreativeReviewHandoff(site);
+  return NextResponse.json({
+    site: { siteId: site.siteId, organizationId: site.organizationId, displayName: site.displayName, publicationPolicy: site.publicationPolicy, enabled: site.enabled },
+    workspace,
+    creativeReviewHandoff,
+    capabilityEvidenceOptions: workspace ? listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) : [],
+    strategyReadiness: workspace ? getStrategyReadiness(workspace) : { ready: false, blockers: ["Complete and approve Site Intelligence review."], approvedOpportunityCount: 0, verifiedCapabilityCount: 0, qualifiedCapabilityCount: 0 },
+    startBoundary: "START_SITE_INTELLIGENCE",
+    provider: getSiteIntelligenceProviderStatus(),
+  });
+}
+
+export async function POST(request: NextRequest, context: Context) {
+  const auth = authorizeRequest(request, "sites:update");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const site = await scopedSite(request, context);
+  if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+  const body = await request.json() as Record<string, unknown>;
+  const action = String(body.action ?? "");
+  const common = {
+    siteId: site.siteId,
+    organizationId: site.organizationId,
+    expectedRevision: Number(body.expectedRevision),
+    actor: String(body.actor ?? "site-owner"),
+    reason: String(body.reason ?? "Owner action through Site Intelligence workspace."),
+  };
+
+  try {
+    let workspace;
+    switch (action) {
+      case "START": {
+        const status = getSiteIntelligenceProviderStatus(); if (!status.configured) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED" }, { status: 503 });
+        const profileIds = [site.profiles.brandProfileReference, site.profiles.seoProfileReference, site.profiles.promptProfileReference, site.profiles.imageProfileReference];
+        if (profileIds.some((id) => !id || !evaluateProfileReadiness(id)?.ready)) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROFILE_AUTHORITY_NOT_READY" }, { status: 422 });
+        const brand = getIntegrationProfileById(site.profiles.brandProfileReference!);
+        const created = ensureSiteIntelligenceWorkspace({ organizationId: site.organizationId, siteId: site.siteId, publicBrandIdentity: String(body.publicBrandIdentity ?? site.displayName), actor: common.actor });
+        const started = created.intelligenceState === "INTELLIGENCE_NOT_STARTED" ? startSiteIntelligence({ ...common, expectedRevision: created.revision, providerReference: status.providerId }) : created;
+        workspace = await executeSiteIntelligenceResearch({ expectedRevision: started.revision, actor: common.actor, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
+        break;
+      }
+      case "RESEARCH_MORE": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const opportunityId = String(body.opportunityId); const status = getSiteIntelligenceProviderStatus(); if (!status.configured) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED" }, { status: 503 });
+        workspace = decideSiteOpportunity({ ...common, opportunityId, decision: "RESEARCH_MORE" });
+        const brand = getIntegrationProfileById(site.profiles.brandProfileReference!);
+        workspace = await executeSiteIntelligenceResearch({ expectedRevision: workspace.revision, actor: common.actor, focusOpportunityId: opportunityId, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
+        break;
+      }
+      case "RETRY_RESEARCH": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const execution = (current.researchExecutions ?? []).find((candidate) => candidate.kind === "INITIAL");
+        if (!execution || execution.state !== "RECOVERABLE") throw new Error("RESEARCH_EXECUTION_NOT_RECOVERABLE");
+        const status = getSiteIntelligenceProviderStatus(); if (!status.configured) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED" }, { status: 503 });
+        const profileIds = [site.profiles.brandProfileReference, site.profiles.seoProfileReference, site.profiles.promptProfileReference, site.profiles.imageProfileReference];
+        if (profileIds.some((id) => !id || !evaluateProfileReadiness(id)?.ready)) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROFILE_AUTHORITY_NOT_READY" }, { status: 422 });
+        const brand = getIntegrationProfileById(site.profiles.brandProfileReference!);
+        workspace = await executeSiteIntelligenceResearch({ expectedRevision: current.revision, actor: common.actor, maxAttempts: 1, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
+        break;
+      }
+      case "DECIDE_OPPORTUNITY":
+        workspace = decideSiteOpportunity({ ...common, opportunityId: String(body.opportunityId), decision: body.decision as never });
+        break;
+      case "RECORD_OPPORTUNITY":
+        workspace = recordSiteOpportunity({ ...common, opportunity: body.opportunity as never, evidence: Array.isArray(body.evidence) ? body.evidence as never : [] });
+        break;
+      case "VALIDATE_CAPABILITY":
+        workspace = validateOpportunityCapability({ ...common, opportunityId: String(body.opportunityId), state: body.state as never, evidenceIds: Array.isArray(body.evidenceIds) ? body.evidenceIds.map(String) : [], evidenceRelevance: Array.isArray(body.evidenceRelevance) ? body.evidenceRelevance as never : [], attestation: String(body.attestation ?? ""), notes: String(body.notes ?? "") });
+        break;
+      case "APPROVE_INTELLIGENCE":
+        workspace = approveSiteIntelligence(common);
+        break;
+      case "PROPOSE_STRATEGY":
+        workspace = addStrategyProposal({ ...common, proposal: body.proposal as never });
+        break;
+      case "GENERATE_STRATEGY": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const readiness = getStrategyReadiness(current); if (!readiness.ready) throw new Error(`STRATEGY_NOT_READY:${readiness.blockers.join("|")}`);
+        const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
+        const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
+        if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
+        const proposal = synthesizeInitialSiteStrategy(current, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        workspace = addInitialStrategyProposal({ ...common, expectedRevision: current.revision, proposal, reason: "Genesis synthesized the first Site Strategy proposal from approved intelligence and scoped profile authority." });
+        break;
+      }
+      case "GENERATE_REVISED_STRATEGY": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const latest = current.strategyRevisions.at(-1); if (!latest || latest.status !== "REVISION_REQUESTED") throw new Error("STRATEGY_REVISION_NOT_REQUESTED");
+        const revisionInstructions = String(body.revisionInstructions ?? "").trim(); if (!revisionInstructions) throw new Error("STRATEGY_REVISION_INSTRUCTIONS_REQUIRED");
+        const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
+        const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
+        if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
+        const finalized = { ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) };
+        const revised = synthesizeInitialSiteStrategy(finalized, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        workspace = addStrategyProposal({ ...common, expectedRevision: current.revision, proposal: { ...revised, reason: `${revised.reason} Owner revision instructions: ${revisionInstructions}` }, reason: `Owner requested a revised Genesis Site Strategy proposal: ${revisionInstructions}` });
+        break;
+      }
+      case "REFRESH_STRATEGY": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        if (resolvePostCapabilityTransition(current).nextStep !== "REVIEW_UPDATED_STRATEGY") throw new Error("STRATEGY_REFRESH_NOT_REQUIRED");
+        const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
+        const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
+        if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
+        const finalized = { ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) };
+        const proposal = synthesizeInitialSiteStrategy(finalized, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        workspace = refreshApprovedStrategy({ ...common, expectedRevision: current.revision, proposal, reason: "Owner requested an updated Site Strategy proposal after final capability review." });
+        break;
+      }
+      case "REOPEN_STRATEGY":
+        workspace = reopenApprovedStrategyForReview({ ...common, reason: String(body.reason ?? "Owner reopened the approved strategy for review.") });
+        break;
+      case "DECIDE_STRATEGY":
+        workspace = decideStrategy({ ...common, decision: body.decision as never });
+        break;
+      case "ADD_CREATIVE_INPUT":
+        workspace = addCreativeInput({ ...common, creativeInput: body.creativeInput as never });
+        break;
+      case "ADD_URL_REFERENCE": {
+        const classification = String(body.classification) as SiteAssetClassification;
+        const sentiment = String(body.sentiment) as CreativeInput["sentiment"];
+        if (!CLASSIFICATIONS.has(classification) || !SENTIMENTS.has(sentiment)) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
+        const existing = getSiteIntelligenceWorkspace(site.siteId);
+        const brand = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const base = existing ?? ensureSiteIntelligenceWorkspace({ organizationId: site.organizationId, siteId: site.siteId, publicBrandIdentity: brand?.organizationId === site.organizationId ? brand.profileName.split(/\s+[—-]\s+/)[0] : site.displayName, actor: common.actor });
+        workspace = addCreativeInput({ ...common, expectedRevision: base.revision, creativeInput: { inputId: `creative-input-${randomUUID()}`, kind: "URL", reference: String(body.reference ?? ""), sentiment, classification, notes: body.notes === null ? null : String(body.notes ?? ""), suppliedBy: common.actor, suppliedAt: new Date().toISOString(), binaryAsset: null } });
+        break;
+      }
+      case "CLASSIFY_CREATIVE_INPUT":
+        workspace = classifyCreativeInput({ ...common, inputId: String(body.inputId), classification: body.classification as never });
+        break;
+      case "UPDATE_CREATIVE_INPUT": {
+        const classification = body.classification === undefined ? undefined : String(body.classification) as SiteAssetClassification;
+        const sentiment = body.sentiment === undefined ? undefined : String(body.sentiment) as CreativeInput["sentiment"];
+        if ((classification !== undefined && !CLASSIFICATIONS.has(classification)) || (sentiment !== undefined && !SENTIMENTS.has(sentiment))) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
+        workspace = updateCreativeInputMetadata({ ...common, inputId: String(body.inputId), reference: body.reference === undefined ? undefined : String(body.reference), classification, sentiment, notes: body.notes === undefined ? undefined : body.notes === null ? null : String(body.notes) });
+        break;
+      }
+      case "PROPOSE_CREATIVE":
+        workspace = addCreativeProposal({ ...common, proposal: body.proposal as never });
+        break;
+      case "GENERATE_CREATIVE_DIRECTION": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const proposal = synthesizeCreativeDirection({ ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) }, String(body.ownerInstruction ?? ""));
+        workspace = addCreativeProposal({ ...common, expectedRevision: current.revision, proposal, reason: "Owner requested a Creative Direction proposal grounded in approved strategy and creative references." });
+        break;
+      }
+      case "GENERATE_REVISED_CREATIVE_DIRECTION": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const latest = current.creativeRevisions.at(-1); if (!latest || (latest.status !== "REVISION_REQUESTED" && latest.status !== "REJECTED")) throw new Error("CREATIVE_REVISION_NOT_REQUESTED");
+        const revisionInstructions = String(body.revisionInstructions ?? "").trim(); if (!revisionInstructions) throw new Error("CREATIVE_REVISION_INSTRUCTIONS_REQUIRED");
+        const proposal = synthesizeCreativeDirection({ ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) }, revisionInstructions);
+        workspace = addCreativeProposal({ ...common, expectedRevision: current.revision, proposal, reason: `Owner requested a revised Creative Direction proposal: ${revisionInstructions}` });
+        break;
+      }
+      case "DECIDE_CREATIVE":
+        workspace = decideCreativeProposal({ ...common, decision: body.decision as never });
+        break;
+      case "APPROVE_UPDATED_CREATIVE": {
+        const persisted = ensurePersistedProjectedCreativeCandidate({
+          site,
+          actor: common.actor,
+          reason: "Owner approved the projected Creative Direction update for the current approved Strategy.",
+        });
+        workspace = decideCreativeProposal({
+          ...common,
+          expectedRevision: persisted.workspaceRevision,
+          decision: "APPROVED",
+          reason: "Owner approved the projected Creative Direction update.",
+        });
+        await continueSiteBuild(site);
+        break;
+      }
+      case "REQUEST_UPDATED_CREATIVE_CHANGES": {
+        const revisionInstructions = String(body.revisionInstructions ?? "").trim();
+        if (!revisionInstructions) throw new Error("CREATIVE_REVISION_INSTRUCTIONS_REQUIRED");
+        const persisted = ensurePersistedProjectedCreativeCandidate({
+          site,
+          actor: common.actor,
+          reason: "Owner requested changes on projected Creative Direction update.",
+        });
+        const reviewRequested = decideCreativeProposal({
+          ...common,
+          expectedRevision: persisted.workspaceRevision,
+          decision: "REVISION_REQUESTED",
+          reason: `Owner requested projected Creative Direction changes: ${revisionInstructions}`,
+        });
+        const proposal = synthesizeCreativeDirection({ ...reviewRequested, opportunities: selectDistinctCapabilityOpportunities(reviewRequested.opportunities) }, revisionInstructions);
+        workspace = addCreativeProposal({
+          ...common,
+          expectedRevision: reviewRequested.revision,
+          proposal,
+          reason: `Owner requested a revised projected Creative Direction proposal: ${revisionInstructions}`,
+        });
+        break;
+      }
+      default:
+        return NextResponse.json({ error: "Unsupported intelligence action." }, { status: 400 });
+    }
+    return NextResponse.json({ workspace, creativeReviewHandoff: projectCreativeReviewHandoff(site), capabilityEvidenceOptions: listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}

@@ -1,8 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const PERSISTENCE_SCHEMA_VERSION = 1;
 const DEFAULT_PERSISTENCE_DIR = ".gcp-foundation-data";
+const LOCK_RETRY_LIMIT = 2_000;
+const LOCK_RETRY_DELAY_MS = 5;
+const STALE_LOCK_AGE_MS = 30_000;
+const LOCK_WAIT_BUFFER = new Int32Array(new SharedArrayBuffer(4));
 
 type PersistenceEnvelope<T> = {
   schemaVersion: number;
@@ -39,10 +43,15 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function resolvePersistenceRoot(): string {
+export function resolvePersistenceRoot(): string {
   const fromEnv = process.env.GCP_FOUNDATION_PERSISTENCE_DIR?.trim();
   if (fromEnv && fromEnv.length > 0) {
     return fromEnv;
+  }
+
+  const fromSessionEnv = process.env.GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR?.trim();
+  if (fromSessionEnv && fromSessionEnv.length > 0) {
+    return fromSessionEnv;
   }
 
   if (process.env.NODE_ENV === "test") {
@@ -60,6 +69,36 @@ function ensureDirectory(path: string): void {
 function namespaceFile(namespace: string): string {
   const root = resolvePersistenceRoot();
   return join(root, `${namespace}.json`);
+}
+
+function withPersistenceLock<T>(filePath: string, operation: () => T): T {
+  const lockPath = `${filePath}.lock`;
+  ensureDirectory(dirname(filePath));
+  for (let attempt = 0; attempt < LOCK_RETRY_LIMIT; attempt += 1) {
+    let lockHandle: number | null = null;
+    try {
+      lockHandle = openSync(lockPath, "wx");
+      writeFileSync(lockHandle, JSON.stringify({ processId: process.pid, acquiredAt: nowIso() }), "utf-8");
+      try {
+        return operation();
+      } finally {
+        closeSync(lockHandle);
+        lockHandle = null;
+        if (existsSync(lockPath)) unlinkSync(lockPath);
+      }
+    } catch (error) {
+      if (lockHandle !== null) closeSync(lockHandle);
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") throw error;
+      try {
+        if (Date.now() - statSync(lockPath).mtimeMs > STALE_LOCK_AGE_MS) unlinkSync(lockPath);
+      } catch {
+        // Another writer released or recovered the lock.
+      }
+      Atomics.wait(LOCK_WAIT_BUFFER, 0, 0, LOCK_RETRY_DELAY_MS);
+    }
+  }
+  throw new FoundationPersistenceError(`Timed out acquiring persistence lock for ${filePath}.`, "PERSISTENCE_LOCK_TIMEOUT");
 }
 
 function readEnvelopeFromDisk<T>(filePath: string): PersistenceEnvelope<T> | null {
@@ -102,7 +141,7 @@ function readEnvelopeFromDisk<T>(filePath: string): PersistenceEnvelope<T> | nul
 }
 
 function atomicWriteEnvelope<T>(filePath: string, envelope: PersistenceEnvelope<T>): void {
-  const tempPath = `${filePath}.tmp`;
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   ensureDirectory(dirname(filePath));
 
   try {
@@ -133,12 +172,15 @@ export function deepClone<T>(value: T): T {
 export function loadPersistedState<T>(input: {
   namespace: string;
   seedFactory: () => T;
+  persistenceRoot?: string;
 }): {
   state: T;
   revision: number;
   seeded: boolean;
 } {
-  const filePath = namespaceFile(input.namespace);
+  const filePath = input.persistenceRoot && input.persistenceRoot.trim().length > 0
+    ? join(input.persistenceRoot.trim(), `${input.namespace}.json`)
+    : namespaceFile(input.namespace);
   const envelope = readEnvelopeFromDisk<T>(filePath);
 
   if (envelope) {
@@ -162,45 +204,52 @@ export function savePersistedState<T>(input: {
   namespace: string;
   state: T;
   expectedRevision: number;
+  persistenceRoot?: string;
 }): {
   revision: number;
 } {
-  const filePath = namespaceFile(input.namespace);
-  const existing = readEnvelopeFromDisk<T>(filePath);
-  if (!existing && input.expectedRevision !== 0) {
-    throw new FoundationPersistenceConflictError(
-      `Revision conflict for ${input.namespace}: expected ${input.expectedRevision}, found missing state.`,
-    );
-  }
+  const filePath = input.persistenceRoot && input.persistenceRoot.trim().length > 0
+    ? join(input.persistenceRoot.trim(), `${input.namespace}.json`)
+    : namespaceFile(input.namespace);
+  return withPersistenceLock(filePath, () => {
+    const existing = readEnvelopeFromDisk<T>(filePath);
+    if (!existing && input.expectedRevision !== 0) {
+      throw new FoundationPersistenceConflictError(
+        `Revision conflict for ${input.namespace}: expected ${input.expectedRevision}, found missing state.`,
+      );
+    }
 
-  const currentRevision = existing?.revision ?? 0;
+    const currentRevision = existing?.revision ?? 0;
+    if (currentRevision !== input.expectedRevision) {
+      throw new FoundationPersistenceConflictError(
+        `Revision conflict for ${input.namespace}: expected ${input.expectedRevision}, found ${currentRevision}.`,
+      );
+    }
 
-  if (currentRevision !== input.expectedRevision) {
-    throw new FoundationPersistenceConflictError(
-      `Revision conflict for ${input.namespace}: expected ${input.expectedRevision}, found ${currentRevision}.`,
-    );
-  }
+    const nextRevision = currentRevision + 1;
+    const envelope: PersistenceEnvelope<T> = {
+      schemaVersion: PERSISTENCE_SCHEMA_VERSION,
+      revision: nextRevision,
+      updatedAt: nowIso(),
+      data: deepClone(input.state),
+    };
 
-  const nextRevision = currentRevision + 1;
-  const envelope: PersistenceEnvelope<T> = {
-    schemaVersion: PERSISTENCE_SCHEMA_VERSION,
-    revision: nextRevision,
-    updatedAt: nowIso(),
-    data: deepClone(input.state),
-  };
-
-  atomicWriteEnvelope(filePath, envelope);
-  return { revision: nextRevision };
+    atomicWriteEnvelope(filePath, envelope);
+    return { revision: nextRevision };
+  });
 }
 
 export function resetPersistedState<T>(input: {
   namespace: string;
   seedFactory: () => T;
+  persistenceRoot?: string;
 }): {
   state: T;
   revision: number;
 } {
-  const filePath = namespaceFile(input.namespace);
+  const filePath = input.persistenceRoot && input.persistenceRoot.trim().length > 0
+    ? join(input.persistenceRoot.trim(), `${input.namespace}.json`)
+    : namespaceFile(input.namespace);
   const seeded = input.seedFactory();
   const envelope: PersistenceEnvelope<T> = {
     schemaVersion: PERSISTENCE_SCHEMA_VERSION,
@@ -209,7 +258,7 @@ export function resetPersistedState<T>(input: {
     data: deepClone(seeded),
   };
 
-  atomicWriteEnvelope(filePath, envelope);
+  withPersistenceLock(filePath, () => atomicWriteEnvelope(filePath, envelope));
 
   return {
     state: deepClone(seeded),

@@ -1,0 +1,117 @@
+jest.mock("server-only", () => ({}));
+
+import { NextRequest } from "next/server";
+import { authenticateOperator, createScryptPasswordHash, getOperatorSessionSecurityPosture, OPERATOR_CSRF_COOKIE, OPERATOR_CSRF_HEADER, OPERATOR_SESSION_AUTHORITY, OPERATOR_SESSION_COOKIE, refreshOperatorSessionExpiry, resolveAuthenticatedOperatorPrincipal, revokeOperatorSession, validateOperatorMutationRequest } from "../operator-session";
+
+const password = "correct horse battery staple";
+let environment: NodeJS.ProcessEnv;
+const request = (input: { token?: string; csrf?: string; headers?: Record<string, string>; method?: string; url?: string } = {}) => { const cookies = [input.token ? `${OPERATOR_SESSION_COOKIE}=${input.token}` : "", input.csrf ? `${OPERATOR_CSRF_COOKIE}=${input.csrf}` : ""].filter(Boolean).join("; "); return new NextRequest(input.url ?? "https://genesis.example/api/action", { method: input.method ?? "GET", headers: { ...(cookies ? { cookie: cookies } : {}), ...input.headers } }); };
+
+beforeEach(async () => { process.env.GCP_FOUNDATION_PERSISTENCE_DIR = `${process.cwd()}/.gcp-foundation-data-test-session-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`; const passwordHash = await createScryptPasswordHash(password, Buffer.alloc(16, 7)); environment = { ...process.env, NODE_ENV: "production", GENESIS_TRUSTED_LOCAL_OPERATOR: "false", GENESIS_OPERATOR_DIRECTORY_JSON: JSON.stringify([{ principalId: "operator-001", email: "operator@example.com", roles: ["platform_admin"], passwordHash }]) }; });
+
+test("valid opaque session resolves a server-derived principal, roles, capabilities, and session", async () => { const session = await authenticateOperator({ identity: "operator@example.com", password, environment }); const resolved = resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), environment); expect(resolved).toMatchObject({ ok: true, principal: { principalId: "operator-001", email: "operator@example.com", roles: ["platform_admin"], sessionId: session.principal.sessionId, authenticationAuthority: OPERATOR_SESSION_AUTHORITY } }); if (resolved.ok) expect(resolved.principal.capabilities).toContain("sites:update"); });
+test("trusted flag true resolves central operator principal without session or cookie", () => {
+	const trusted = { ...environment, GENESIS_TRUSTED_LOCAL_OPERATOR: "true" };
+	const resolved = resolveAuthenticatedOperatorPrincipal(request(), new Date(), trusted);
+	expect(resolved).toMatchObject({
+		ok: true,
+		principal: {
+			principalId: "genesis-operator-robert",
+			email: "rk@ssidisplays.com",
+			roles: ["platform_admin"],
+			sessionId: "trusted-local-operator",
+			authenticationAuthority: OPERATOR_SESSION_AUTHORITY,
+		},
+		csrfToken: null,
+	});
+});
+test("trusted flag false keeps existing missing-session failure path", () => {
+	const untrusted = { ...environment, GENESIS_TRUSTED_LOCAL_OPERATOR: "false" };
+	expect(resolveAuthenticatedOperatorPrincipal(request(), new Date(), untrusted)).toMatchObject({ ok: false, state: "NOT_AUTHENTICATED" });
+});
+test("missing, tampered, expired, and revoked sessions fail closed", async () => { expect(resolveAuthenticatedOperatorPrincipal(request(), new Date(), environment)).toMatchObject({ ok: false, state: "NOT_AUTHENTICATED" }); expect(resolveAuthenticatedOperatorPrincipal(request({ token: "forged" }), new Date(), environment)).toMatchObject({ ok: false, state: "SESSION_TAMPERED" }); const expired = await authenticateOperator({ identity: "operator-001", password, now: new Date(0), environment }); expect(resolveAuthenticatedOperatorPrincipal(request({ token: expired.token }), new Date(), environment)).toMatchObject({ ok: false, state: "SESSION_EXPIRED" }); const revoked = await authenticateOperator({ identity: "operator-001", password, environment }); revokeOperatorSession(revoked.principal.sessionId); expect(resolveAuthenticatedOperatorPrincipal(request({ token: revoked.token }), new Date(), environment)).toMatchObject({ ok: false, state: "SESSION_REVOKED" }); });
+test("forged role, principal, session, owner, and email headers do not authenticate in production", () => { const forged = request({ headers: { "x-gcp-roles": "platform_admin", "x-gcp-principal-id": "owner", "x-gcp-session-id": "session", "x-gcp-owner": "true", "x-gcp-email": "owner@example.com" } }); expect(resolveAuthenticatedOperatorPrincipal(forged, new Date(), environment)).toMatchObject({ ok: false, state: "NOT_AUTHENTICATED" }); });
+test("mutation requires matching same-origin CSRF bound to the authenticated session", async () => { const session = await authenticateOperator({ identity: "operator-001", password, environment }); const valid = request({ token: session.token, csrf: session.csrfToken, method: "POST", headers: { origin: "https://genesis.example", [OPERATOR_CSRF_HEADER]: session.csrfToken } }); expect(validateOperatorMutationRequest(valid, resolveAuthenticatedOperatorPrincipal(valid, new Date(), environment))).toBe(true); const crossOrigin = request({ token: session.token, csrf: session.csrfToken, method: "POST", headers: { origin: "https://attacker.example", [OPERATOR_CSRF_HEADER]: session.csrfToken } }); expect(validateOperatorMutationRequest(crossOrigin, resolveAuthenticatedOperatorPrincipal(crossOrigin, new Date(), environment))).toBe(false); const wrongToken = request({ token: session.token, csrf: session.csrfToken, method: "POST", headers: { origin: "https://genesis.example", [OPERATOR_CSRF_HEADER]: "wrong" } }); expect(validateOperatorMutationRequest(wrongToken, resolveAuthenticatedOperatorPrincipal(wrongToken, new Date(), environment))).toBe(false); });
+test("trusted local mutation allows same-origin POST without cookies or CSRF but still blocks cross-origin", () => {
+	const trusted = { ...environment, GENESIS_TRUSTED_LOCAL_OPERATOR: "true" };
+	const sameOrigin = request({ method: "POST", headers: { origin: "https://genesis.example" } });
+	const sameOriginResolution = resolveAuthenticatedOperatorPrincipal(sameOrigin, new Date(), trusted);
+	expect(validateOperatorMutationRequest(sameOrigin, sameOriginResolution, trusted)).toBe(true);
+	const crossOrigin = request({ method: "POST", headers: { origin: "https://attacker.example" } });
+	const crossOriginResolution = resolveAuthenticatedOperatorPrincipal(crossOrigin, new Date(), trusted);
+	expect(validateOperatorMutationRequest(crossOrigin, crossOriginResolution, trusted)).toBe(false);
+});
+test("different sessions for the same principal remain distinct for grant binding", async () => { const first = await authenticateOperator({ identity: "operator-001", password, environment }); const second = await authenticateOperator({ identity: "operator-001", password, environment }); expect(first.principal.principalId).toBe(second.principal.principalId); expect(first.principal.sessionId).not.toBe(second.principal.sessionId); });
+test("persists principal snapshot so restart-time directory gaps do not invalidate active sessions", async () => {
+	const session = await authenticateOperator({ identity: "operator-001", password, environment });
+	const restartedEnvironment = { ...environment, GENESIS_OPERATOR_DIRECTORY_JSON: "" };
+	const resolved = resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), restartedEnvironment);
+	expect(resolved).toMatchObject({ ok: true, principal: { principalId: "operator-001", roles: ["platform_admin"] } });
+});
+test("A: valid real-style session survives restart without re-authentication when session persistence root is stable", async () => {
+	const root = `${process.cwd()}/.gcp-foundation-data-test-session-durability-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`;
+	const loginEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root, GCP_FOUNDATION_PERSISTENCE_DIR: `${root}-ignored-at-restart` };
+	const session = await authenticateOperator({ identity: "operator@example.com", password, environment: loginEnvironment });
+	const restartedEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root, GCP_FOUNDATION_PERSISTENCE_DIR: `${root}-different-runtime-root` };
+	const resolved = resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), restartedEnvironment);
+	expect(resolved).toMatchObject({ ok: true, principal: { principalId: "operator-001", sessionId: session.principal.sessionId } });
+});
+test("B: revoked session remains revoked after restart", async () => {
+	const root = `${process.cwd()}/.gcp-foundation-data-test-session-revoked-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`;
+	const loginEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root };
+	const session = await authenticateOperator({ identity: "operator@example.com", password, environment: loginEnvironment });
+	revokeOperatorSession(session.principal.sessionId, new Date(), loginEnvironment);
+	const restartedEnvironment = { ...loginEnvironment };
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), restartedEnvironment)).toMatchObject({ ok: false, state: "SESSION_REVOKED" });
+});
+test("C: expired session fails after restart", async () => {
+	const root = `${process.cwd()}/.gcp-foundation-data-test-session-expired-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`;
+	const loginEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root };
+	const expired = await authenticateOperator({ identity: "operator@example.com", password, now: new Date(0), environment: loginEnvironment });
+	const restartedEnvironment = { ...loginEnvironment };
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: expired.token, csrf: expired.csrfToken }), new Date(), restartedEnvironment)).toMatchObject({ ok: false, state: "SESSION_EXPIRED" });
+});
+test("D: tampered cookie fails after restart", async () => {
+	const root = `${process.cwd()}/.gcp-foundation-data-test-session-tampered-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`;
+	const loginEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root };
+	await authenticateOperator({ identity: "operator@example.com", password, environment: loginEnvironment });
+	const restartedEnvironment = { ...loginEnvironment };
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: "forged", csrf: "forged" }), new Date(), restartedEnvironment)).toMatchObject({ ok: false, state: "SESSION_TAMPERED" });
+});
+test("E: missing or invalid principal fails closed after restart", async () => {
+	const root = `${process.cwd()}/.gcp-foundation-data-test-session-missing-principal-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`;
+	const loginEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root };
+	const session = await authenticateOperator({ identity: "operator@example.com", password, environment: loginEnvironment });
+	const restartedEnvironment = {
+		...loginEnvironment,
+		GENESIS_OPERATOR_DIRECTORY_JSON: JSON.stringify([{ principalId: "different-operator", email: "different@example.com", roles: ["platform_admin"], passwordHash: loginEnvironment.GENESIS_OPERATOR_DIRECTORY_JSON ? JSON.parse(loginEnvironment.GENESIS_OPERATOR_DIRECTORY_JSON)[0].passwordHash : "" }]),
+	};
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), restartedEnvironment)).toMatchObject({ ok: false, state: "DIRECTORY_UNAVAILABLE" });
+});
+test("F: signing secret source is stable across restart and not embedded in source", async () => {
+	const root = `${process.cwd()}/.gcp-foundation-data-test-session-secret-${expect.getState().currentTestName?.replace(/\W+/g, "-")}`;
+	const loginEnvironment = { ...environment, GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR: root };
+	delete loginEnvironment.GENESIS_OPERATOR_SESSION_TOKEN_SECRET;
+	const postureBefore = getOperatorSessionSecurityPosture(loginEnvironment);
+	expect(postureBefore).toMatchObject({ tokenDigestSecretSource: "PERSISTED_GENERATED", persistenceRoot: root });
+	const session = await authenticateOperator({ identity: "operator@example.com", password, environment: loginEnvironment });
+	const restartedEnvironment = { ...loginEnvironment };
+	const postureAfter = getOperatorSessionSecurityPosture(restartedEnvironment);
+	expect(postureAfter).toMatchObject({ tokenDigestSecretSource: "PERSISTED_GENERATED", persistenceRoot: root });
+	expect(restartedEnvironment.GENESIS_OPERATOR_SESSION_TOKEN_SECRET).toBeUndefined();
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), restartedEnvironment)).toMatchObject({ ok: true, principal: { principalId: "operator-001" } });
+});
+test("refreshing a valid session extends expiry and preserves authorization", async () => {
+	const now = new Date("2026-01-01T00:00:00.000Z");
+	const session = await authenticateOperator({ identity: "operator@example.com", password, now, environment });
+	const refreshAt = new Date(now.getTime() + 15 * 60 * 1000);
+	const refreshedExpiry = refreshOperatorSessionExpiry(session.principal.sessionId, refreshAt, environment);
+	expect(refreshedExpiry).not.toBeNull();
+	if (!refreshedExpiry) return;
+	expect(new Date(refreshedExpiry).getTime()).toBeGreaterThan(new Date(session.principal.expiresAt).getTime());
+	const beforeRefreshCutoff = new Date(now.getTime() + 50 * 60 * 1000);
+	const afterOriginalExpiry = new Date(now.getTime() + 65 * 60 * 1000);
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), beforeRefreshCutoff, environment).ok).toBe(true);
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), afterOriginalExpiry, environment).ok).toBe(true);
+});
+test("test principal injection is available only in test runtime", () => { const forged = request({ headers: { "x-gcp-roles": "platform_admin", "x-gcp-principal-id": "synthetic", "x-gcp-session-id": "synthetic-session" } }); expect(resolveAuthenticatedOperatorPrincipal(forged, new Date(), { ...environment, NODE_ENV: "production" }).ok).toBe(false); expect(resolveAuthenticatedOperatorPrincipal(forged, new Date(), { ...environment, NODE_ENV: "test" })).toMatchObject({ ok: true, principal: { principalId: "synthetic", sessionId: "synthetic-session" } }); });

@@ -54,6 +54,31 @@ function nodeRun(json: Record<string, unknown>) {
   return [{ data: { main: [[{ json }]] } }];
 }
 
+function contentReadySnapshot(overrides?: {
+  executionId?: string;
+  contentReady?: Record<string, unknown>;
+}): GlwN8nExecutionSnapshot {
+  return {
+    executionId: overrides?.executionId ?? "123",
+    state: "SUCCESS",
+    errorMessage: null,
+    runData: {
+      "GLW Content Ready": nodeRun({
+        job_id: "glw-job-001",
+        glw_content_ready: true,
+        requested_publishing_mode: "draft",
+        mutation_authority: "GENESIS",
+        page_title: "Recovered page title",
+        seo_title: "Recovered SEO title",
+        focus_keyphrase: "indoor led video wall austin",
+        desired_hierarchical_slug: "indoor-led-video-wall/texas/austin",
+        article_html: "<p>one two three four five</p>",
+        ...overrides?.contentReady,
+      }),
+    },
+  };
+}
+
 function terminalSnapshot(overrides?: {
   executionId?: string;
   qa?: Record<string, unknown>;
@@ -122,13 +147,404 @@ function discoveryReader(input?: {
 }
 
 describe("GLW one-draft execution recovery", () => {
+  test("recovers one side-effect-free dispatch failure using the same job identity", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const failing = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { throw new Error("GLW n8n MCP execution is not configured."); } }, createJobId: () => "same-job" });
+    const failed = await failing.execute(request);
+    expect(failed).toMatchObject({ jobId: "same-job", status: "FAILED", errorCode: "DISPATCH_FAILED", externalExecutionId: null });
+    const recovering = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { return { kind: "accepted", executionId: "700001", status: "accepted" }; } } });
+    const recovered = await recovering.recoverFailedDispatch("same-job", request);
+    expect(recovered).toMatchObject({ jobId: "same-job", status: "DISPATCHED", externalExecutionId: "700001" });
+    expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("same-job recovery denies wrong site and never creates a duplicate", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const failing = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { throw new Error("not configured"); } }, createJobId: () => "same-job" });
+    await failing.execute(request);
+    await expect(failing.recoverFailedDispatch("same-job", { ...request, siteId: "wrong-site" })).rejects.toThrow("exact persisted job identity");
+    expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("concurrent same-job recovery permits one dispatch only", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const failing = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { throw new Error("not configured"); } }, createJobId: () => "same-job" });
+    await failing.execute(request);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    let dispatchCount = 0;
+    const recovering = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { dispatchCount += 1; await gate; return { kind: "accepted", executionId: "700002", status: "accepted" }; } } });
+    const first = recovering.recoverFailedDispatch("same-job", request);
+    const second = recovering.recoverFailedDispatch("same-job", request);
+    release();
+    const results = await Promise.allSettled([first, second]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    expect(dispatchCount).toBe(1);
+    expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("retries a terminal failed external execution on the same job with preserved history", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const initial = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          return {
+            kind: "failed",
+            executionId: "764944",
+            status: "failed",
+            errorCode: "N8N_EXECUTION_FAILED",
+            errorMessage: "GLW_MODEL_PRODUCT_AUTHORITY_REQUIRED",
+          };
+        },
+      },
+      createJobId: () => "same-job",
+    });
+    const failed = await initial.execute(request);
+    expect(failed).toMatchObject({
+      jobId: "same-job",
+      status: "FAILED",
+      externalExecutionId: "764944",
+      generatedDraft: null,
+      wordpressObjectId: null,
+      publicationIntent: "draft",
+      requestedPublicationMode: "draft",
+    });
+
+    let dispatchCount = 0;
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          dispatchCount += 1;
+          return { kind: "accepted", executionId: "764946", status: "accepted" };
+        },
+      },
+    });
+    const retried = await retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "764944",
+      retryRequestId: "retry:same-job:764944",
+      reader: {
+        async readExecution() {
+          return {
+            executionId: "764944",
+            state: "FAILED",
+            runData: null,
+            errorMessage: "GLW_MODEL_PRODUCT_AUTHORITY_REQUIRED",
+          };
+        },
+        async findExecutionIds() {
+          return [];
+        },
+      },
+    });
+
+    const history = (retried.qaChecks as { executionRetryHistory?: Array<{ previousExecutionId: string; newExecutionId: string; attemptNumber: number }> })?.executionRetryHistory ?? [];
+    expect(retried).toMatchObject({
+      jobId: "same-job",
+      status: "DISPATCHED",
+      externalExecutionId: "764946",
+      publicationIntent: "draft",
+      requestedPublicationMode: "draft",
+    });
+    expect(history).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        previousExecutionId: "764944",
+        newExecutionId: "764946",
+        attemptNumber: 1,
+      }),
+    ]));
+    expect(dispatchCount).toBe(1);
+    expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("same retry request is idempotent and does not dispatch twice", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const seed = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          return { kind: "failed", executionId: "900001", status: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "first" };
+        },
+      },
+      createJobId: () => "same-job",
+    });
+    await seed.execute(request);
+
+    let dispatchCount = 0;
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          dispatchCount += 1;
+          return { kind: "accepted", executionId: "900002", status: "accepted" };
+        },
+      },
+    });
+    const retryReader = {
+      async readExecution() {
+        return { executionId: "900001", state: "FAILED" as const, runData: null, errorMessage: "first" };
+      },
+      async findExecutionIds() {
+        return [] as string[];
+      },
+    };
+
+    const first = await retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "900001",
+      retryRequestId: "retry:same-job:900001",
+      reader: retryReader,
+    });
+    const second = await retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "900001",
+      retryRequestId: "retry:same-job:900001",
+      reader: retryReader,
+    });
+
+    expect(first.externalExecutionId).toBe("900002");
+    expect(second.externalExecutionId).toBe("900002");
+    expect(dispatchCount).toBe(1);
+  });
+
+  test("blocks terminal retry when duplicate quarantine is active", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const initial = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          return {
+            kind: "failed",
+            executionId: "764944",
+            status: "failed",
+            errorCode: "N8N_EXECUTION_FAILED",
+            errorMessage: "terminal failure",
+          };
+        },
+      },
+      createJobId: () => "same-job",
+    });
+    await initial.execute(request);
+
+    await repository.update("same-job", {
+      disposition: "QUARANTINED_SUPERSEDED_DUPLICATE",
+      qaChecks: {
+        executionDuplicateQuarantine: {
+          operation: "QUARANTINE_DUPLICATE",
+          supersededByJobId: "canonical-job",
+        },
+      },
+    });
+
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          return { kind: "accepted", executionId: "764946", status: "accepted" };
+        },
+      },
+    });
+
+    await expect(retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "764944",
+      retryRequestId: "retry:same-job:764944",
+      reader: {
+        async findExecutionIds() {
+          return [];
+        },
+        async readExecution() {
+          return {
+            executionId: "764944",
+            state: "FAILED",
+            runData: null,
+            errorMessage: "terminal failure",
+          };
+        },
+      },
+    })).rejects.toThrow("Duplicate quarantine is active for this job.");
+  });
+
+  test("rejects terminal retry when generated draft exists", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository([
+      {
+        jobId: "same-job",
+        correlationId: "same-job",
+        executionTransport: "N8N_MCP",
+        organizationId: request.organizationId,
+        siteId: request.siteId,
+        productId: request.productId,
+        productTopic: request.productTopic,
+        state: request.stateName,
+        city: request.cityName,
+        slug: request.canonicalPath,
+        title: request.title,
+        seoTitle: request.seoTitle,
+        metaDescription: request.metaDescription,
+        publicationIntent: "draft",
+        status: "FAILED",
+        externalExecutionId: "900010",
+        wordpressObjectId: null,
+        wordpressUrl: null,
+        wordpressStatus: null,
+        generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: request.canonicalPath, excerpt: null, seoTitle: null, metaDescription: null, focusKeyphrase: null },
+        errorCode: "N8N_EXECUTION_FAILED",
+        errorMessage: "failed",
+        requestedPublicationMode: "draft",
+        disposition: null,
+        qaStatus: null,
+        qaChecks: null,
+        qaFailureReasons: null,
+        focusKeyphrase: null,
+        wordCount: null,
+        featuredImagePresent: null,
+        createdAt: "2030-01-01T00:00:00.000Z",
+        dispatchedAt: "2030-01-01T00:00:10.000Z",
+        updatedAt: "2030-01-01T00:00:20.000Z",
+        completedAt: "2030-01-01T00:00:30.000Z",
+      },
+    ]);
+
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "accepted", executionId: "900011", status: "accepted" }; } },
+    });
+
+    await expect(retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "900010",
+      retryRequestId: "retry:900010",
+      reader: {
+        async readExecution() { return { executionId: "900010", state: "FAILED", runData: null, errorMessage: "failed" }; },
+        async findExecutionIds() { return []; },
+      },
+    })).rejects.toThrow("generated draft");
+  });
+
+  test("rejects terminal retry when downstream WordPress side effects exist", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const seed = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "failed", executionId: "910001", status: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "failed" }; } },
+      createJobId: () => "same-job",
+    });
+    await seed.execute(request);
+    await repository.update("same-job", {
+      wordpressObjectId: "12000",
+      wordpressStatus: "publish",
+      wordpressUrl: "https://example.test/?page_id=12000",
+    });
+
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "accepted", executionId: "910002", status: "accepted" }; } },
+    });
+
+    await expect(retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "910001",
+      retryRequestId: "retry:910001",
+      reader: {
+        async readExecution() { return { executionId: "910001", state: "FAILED", runData: null, errorMessage: "failed" }; },
+        async findExecutionIds() { return []; },
+      },
+    })).rejects.toThrow("WordPress side effects");
+  });
+
+  test("rejects terminal retry when previous execution is still running", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const seed = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "failed", executionId: "920001", status: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "failed" }; } },
+      createJobId: () => "same-job",
+    });
+    await seed.execute(request);
+
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "accepted", executionId: "920002", status: "accepted" }; } },
+    });
+
+    await expect(retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "920001",
+      retryRequestId: "retry:920001",
+      reader: {
+        async readExecution() { return { executionId: "920001", state: "RUNNING", runData: null, errorMessage: null }; },
+        async findExecutionIds() { return []; },
+      },
+    })).rejects.toThrow("still running");
+  });
+
+  test("rejects terminal retry when previous execution succeeded", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const seed = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "failed", executionId: "930001", status: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "failed" }; } },
+      createJobId: () => "same-job",
+    });
+    await seed.execute(request);
+
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "accepted", executionId: "930002", status: "accepted" }; } },
+    });
+
+    await expect(retry.retryFailedExecution({
+      jobId: "same-job",
+      request,
+      expectedFailedExecutionId: "930001",
+      retryRequestId: "retry:930001",
+      reader: {
+        async readExecution() { return { executionId: "930001", state: "SUCCESS", runData: null, errorMessage: null }; },
+        async findExecutionIds() { return []; },
+      },
+    })).rejects.toThrow("succeeded");
+  });
+
+  test("rejects terminal retry when request identity does not match the persisted job", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const seed = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "failed", executionId: "940001", status: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "failed" }; } },
+      createJobId: () => "same-job",
+    });
+    await seed.execute(request);
+
+    const retry = createGlwDraftExecutionService({
+      repository,
+      dispatcher: { async dispatch() { return { kind: "accepted", executionId: "940002", status: "accepted" }; } },
+    });
+
+    await expect(retry.retryFailedExecution({
+      jobId: "same-job",
+      request: { ...request, cityName: "Dallas" },
+      expectedFailedExecutionId: "940001",
+      retryRequestId: "retry:940001",
+      reader: {
+        async readExecution() { return { executionId: "940001", state: "FAILED", runData: null, errorMessage: "failed" }; },
+        async findExecutionIds() { return []; },
+      },
+    })).rejects.toThrow("exact persisted job identity");
+  });
+
   test("maps a validated local request to the historical n8n contract", () => {
     const mapped = mapGenerationRequestToN8nDraft("glw-job-001", request);
     expect(request.siteId).toBe(GLW_APPLICATION_SITE_ID);
-    expect(mapped.site.id).toBe(GLW_N8N_ENGINE_SITE_ID);
+    expect(mapped.site.id).toBe(GLW_APPLICATION_SITE_ID);
     expect(mapped.publicationKey).toContain(GLW_APPLICATION_SITE_ID);
     expect(mapped.page.productId).toBe(GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID);
-    expect(mapped.page.product).toBe(GLW_N8N_ENGINE_PRODUCT_NAME);
+    expect(mapped.page.product).toBe(request.productTopic);
     expect(mapped.page.productTopic).toBe(request.productTopic);
     expect(mapped.operation).toBe("CREATE_CITY");
     expect(mapped.wordpressObjectId).toBeNull();
@@ -151,10 +567,10 @@ describe("GLW one-draft execution recovery", () => {
       jobId,
       callbackUrl: "",
       operation: "CREATE_CITY",
-      site: { id: "led-display-warehouse", name: "LEDDisplayWarehouse.com" },
+      site: { id: "site-led-display-warehouse-production", name: "LEDDisplayWarehouse.com" },
       page: {
         productId: "prod-indoor-led-video-wall",
-        product: "LED Video Walls",
+        product: "Indoor LED Video Wall",
         productTopic: "Indoor LED Video Wall",
         state: "Texas",
         city: "Austin",
@@ -168,22 +584,40 @@ describe("GLW one-draft execution recovery", () => {
     );
   });
 
-  test("rejects unknown or wrong-layer site identities at the engine boundary", () => {
+  test("preserves generalized canonical site identity while legacy resolver remains strict", () => {
     expect(() => resolveGlwN8nEngineSiteId("site-unknown")).toThrow("Unsupported GLW application site");
     expect(() => resolveGlwN8nEngineSiteId(GLW_N8N_ENGINE_SITE_ID)).toThrow(
       "Unsupported GLW application site",
     );
-    expect(() => mapGenerationRequestToN8nDraft("glw-job-001", { ...request, siteId: "site-unknown" }))
-      .toThrow("Unsupported GLW application site");
+
+    const mapped = mapGenerationRequestToN8nDraft("glw-job-001", {
+      ...request,
+      siteId: "site-generalized-example",
+      siteName: "Generalized Example",
+    });
+
+    expect(mapped.site).toEqual({
+      id: "site-generalized-example",
+      name: "Generalized Example",
+      domain: "LEDDisplayWarehouse.com",
+      canonicalUrl: "https://leddisplaywarehouse.com",
+      wordpressApiBaseUrl: "https://leddisplaywarehouse.com/wp-json/wp/v2",
+    });
   });
 
-  test("rejects unknown product identities at the engine boundary", () => {
+  test("preserves generalized canonical product identity while legacy resolver remains strict", () => {
     expect(() => resolveGlwN8nEngineProduct("prod-unknown"))
       .toThrow("Unsupported GLW application product");
-    expect(() => mapGenerationRequestToN8nDraft("glw-job-001", {
+
+    const mapped = mapGenerationRequestToN8nDraft("glw-job-001", {
       ...request,
-      productId: "prod-unknown",
-    })).toThrow("Unsupported GLW application product");
+      productId: "prod-generalized-example",
+      productTopic: "Generalized Product",
+    });
+
+    expect(mapped.page.productId).toBe("prod-generalized-example");
+    expect(mapped.page.product).toBe("Generalized Product");
+    expect(mapped.page.productTopic).toBe("Generalized Product");
   });
 
   test("allows explicit draft execution", async () => {
@@ -274,6 +708,47 @@ describe("GLW async n8n result recovery", () => {
     })).toMatchObject({ kind: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "token=[REDACTED]" });
   });
 
+  test("normalizes known mojibake in content-ready generated draft content", () => {
+    const normalized = normalizeGlwN8nExecutionResult({
+      snapshot: contentReadySnapshot({
+        contentReady: {
+          article_html: "<p>AlaskaÃ¢â‚¬â„¢s viewing range is 360Ã‚Â° Ã¢â‚¬â€œ 180Ã‚Â°.</p>",
+        },
+      }),
+      expectedJobId: "glw-job-001",
+    });
+
+    expect(normalized).toMatchObject({ kind: "complete", disposition: "CONTENT_READY" });
+    if (!normalized || normalized.kind !== "complete") throw new Error("Expected complete result.");
+    expect(normalized.generatedDraft?.contentHtml).toContain("Alaska’s viewing range is 360° – 180°.");
+    expect(normalized.generatedDraft?.contentHtml).not.toMatch(/[âÃÂ\uFFFD]/);
+  });
+
+  test("normalizes residual Alaska-style mojibake in content-ready generated draft content", () => {
+    const normalized = normalizeGlwN8nExecutionResult({
+      snapshot: contentReadySnapshot({
+        contentReady: {
+          article_html: "<p>If youâ€™re in Alaska, viewing angles can span 160Â° â€“ 180Â° and mediaâ€”when tailored wellâ€”can perform strongly.</p>",
+        },
+      }),
+      expectedJobId: "glw-job-001",
+    });
+
+    expect(normalized).toMatchObject({ kind: "complete", disposition: "CONTENT_READY" });
+    if (!normalized || normalized.kind !== "complete") throw new Error("Expected complete result.");
+    expect(normalized.generatedDraft?.contentHtml).toContain("If you’re in Alaska, viewing angles can span 160° – 180° and media—when tailored well—can perform strongly.");
+    expect(normalized.generatedDraft?.contentHtml).not.toMatch(/[âÃÂ\uFFFD]/);
+  });
+
+  test("fails closed when content-ready generated draft retains unknown encoding corruption", () => {
+    expect(() => normalizeGlwN8nExecutionResult({
+      snapshot: contentReadySnapshot({
+        contentReady: { article_html: "<p>Unknown corruption Ãxyz remains.</p>" },
+      }),
+      expectedJobId: "glw-job-001",
+    })).toThrow(GlwExecutionResultError);
+  });
+
   test("extracts WordPress, SEO, image, disposition, and QA data", () => {
     expect(normalizeGlwN8nExecutionResult({ snapshot: terminalSnapshot(), expectedJobId: "glw-job-001" }))
       .toMatchObject({
@@ -348,7 +823,7 @@ describe("GLW async n8n result recovery", () => {
         normalized: { normalized_city_page_status: "publish", requested_publishing_mode: "publish" },
       }),
       expectedJobId: "glw-job-001",
-    })).toThrow("WordPress draft identity");
+    })).toThrow("required draft publication mode");
   });
 
   test("rejects a terminal result without WordPress identity", () => {
@@ -378,7 +853,8 @@ describe("GLW async n8n result recovery", () => {
     const result = await service.pollToTerminal("glw-job-001", { readExecution }, { maxAttempts: 3, intervalMs: 0 });
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(readExecution).toHaveBeenCalledTimes(3);
-    expect(result).toMatchObject({ status: "RUNNING", errorCode: "POLL_TIMEOUT", completedAt: null });
+    expect(result).toMatchObject({ status: "FAILED", errorCode: "POLL_TIMEOUT" });
+    expect(result.completedAt).not.toBeNull();
   });
 
   test("rejects a mismatched execution identity returned by the reader", async () => {

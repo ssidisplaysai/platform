@@ -1,0 +1,53 @@
+export type GlwCampaignStatus = "draft" | "active" | "paused" | "complete";
+export type GlwCampaignPublicationPolicy = "draft_only" | "publish_after_gates";
+export type GlwCampaignPageType = "state_service" | "city_service";
+export type GlwCampaignMediaPolicyMode = "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
+
+export type GlwCampaignMediaPolicy = {
+  mode: GlwCampaignMediaPolicyMode;
+  allowlistMediaAuthorityIds: readonly string[];
+  campaignHeroMediaAuthorityId?: string | null;
+};
+
+export type GlwCampaignCityTarget = {
+  stateCode: string;
+  citySlug: string;
+  cityName: string;
+};
+
+export type GlwCampaign = {
+  campaignId: string;
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  name: string;
+  pageType: GlwCampaignPageType;
+  stateCodes: readonly string[];
+  cityTargets?: readonly GlwCampaignCityTarget[];
+  pagesPerDay: number;
+  publicationPolicy: GlwCampaignPublicationPolicy;
+  imageRequired: boolean;
+  campaignMediaPolicy?: GlwCampaignMediaPolicy;
+  status: GlwCampaignStatus;
+  completedTargetCount: number;
+  failedTargetCount: number;
+  parentCampaignId?: string | null;
+  originReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NewGlwCampaignInput = {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  name: string;
+  pageType: GlwCampaignPageType;
+  stateCodes: readonly string[];
+  cityTargets?: readonly GlwCampaignCityTarget[];
+  pagesPerDay: number;
+  publicationPolicy: GlwCampaignPublicationPolicy;
+  imageRequired: boolean;
+  parentCampaignId?: string | null;
+  originReason?: string | null;
+};

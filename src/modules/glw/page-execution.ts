@@ -1,4 +1,5 @@
 import type { GlwGenerationRequest } from "./page-generation";
+import type { GlwZeroAuthorityCanonicalizationReceipt } from "./zero-authority-claim-canonicalization";
 
 export const GLW_APPLICATION_SITE_ID = "site-led-display-warehouse-production";
 export const GLW_N8N_ENGINE_SITE_ID = "led-display-warehouse";
@@ -49,10 +50,21 @@ export type GlwPageExecutionStatus =
   | "DISPATCHED"
   | "DISCOVERING_EXECUTION"
   | "RUNNING"
+  | "CONTENT_READY"
   | "COMPLETE"
   | "FAILED";
 
 export type GlwExecutionTransport = "N8N_WEBHOOK" | "N8N_MCP";
+
+export type GlwGeneratedDraftArtifact = {
+  title: string;
+  contentHtml: string;
+  slug: string;
+  excerpt: string | null;
+  seoTitle: string | null;
+  metaDescription: string | null;
+  focusKeyphrase: string | null;
+};
 
 export type GlwPageExecutionRecord = {
   jobId: string;
@@ -74,6 +86,10 @@ export type GlwPageExecutionRecord = {
   wordpressObjectId: string | null;
   wordpressUrl: string | null;
   wordpressStatus: string | null;
+  generatedDraft: GlwGeneratedDraftArtifact | null;
+  rawGeneratedDraft?: GlwGeneratedDraftArtifact | null;
+  canonicalizedGeneratedDraft?: GlwGeneratedDraftArtifact | null;
+  canonicalizationReceipt?: GlwZeroAuthorityCanonicalizationReceipt | null;
   errorCode: string | null;
   errorMessage: string | null;
   requestedPublicationMode: "draft";
@@ -90,6 +106,35 @@ export type GlwPageExecutionRecord = {
   completedAt: string | null;
 };
 
+const GLW_DUPLICATE_QUARANTINE_DISPOSITION = "QUARANTINED_SUPERSEDED_DUPLICATE";
+export const GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION = "REFERENCE_EXECUTION_RETIRED";
+
+export function isGlwExecutionQuarantined(record: GlwPageExecutionRecord): boolean {
+  if (record.disposition === GLW_DUPLICATE_QUARANTINE_DISPOSITION) return true;
+  const checks = record.qaChecks;
+  if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
+  return Boolean((checks as Record<string, unknown>).executionDuplicateQuarantine);
+}
+
+export function isGlwReferenceExecutionRetiredForProjection(record: GlwPageExecutionRecord): boolean {
+  if (record.disposition === GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION) return true;
+  const checks = record.qaChecks;
+  if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
+  return Boolean((checks as Record<string, unknown>).referenceExecutionRetirement);
+}
+
+type GlwExecutionRetryHistoryEntry = {
+  operation: "RETRY_FAILED_EXECUTION";
+  retryRequestId: string;
+  attemptNumber: number;
+  previousExecutionId: string;
+  previousExecutionState: "FAILED";
+  previousErrorMessage: string | null;
+  retriedAt: string;
+  newExecutionId: string | null;
+  acceptedStatus: "accepted" | "running" | "complete" | "failed" | "dispatch_failed";
+};
+
 export type GlwN8nDraftRequest = {
   jobId: string;
   callbackUrl: string;
@@ -100,7 +145,13 @@ export type GlwN8nDraftRequest = {
   type: "page_generation";
   workspaceId: string;
   workspace_id: string;
-  site: { id: string; name: string };
+  site: {
+    id: string;
+    name: string;
+    domain: string | null;
+    canonicalUrl: string | null;
+    wordpressApiBaseUrl: string | null;
+  };
   page: {
     hierarchyMode: "city_child_target";
     hierarchy_mode: "city_child_target";
@@ -131,6 +182,8 @@ export type GlwN8nDraftRequest = {
     category: string;
     additionalInstructions: string;
     additional_instructions: string;
+    referenceGenerationClaimContract: GlwGenerationRequest["referenceGenerationClaimContract"];
+    referenceGenerationAuthority: GlwGenerationRequest["referenceGenerationAuthority"];
     status: "draft";
   };
   promptData: { tone: string; audience: string; callToAction: string };
@@ -157,6 +210,9 @@ export type GlwN8nDraftRequest = {
     citySlug: string;
     hierarchicalSlug: string;
     additionalInstructions: string;
+    referenceGenerationClaimContract: GlwGenerationRequest["referenceGenerationClaimContract"];
+    referenceGenerationAuthority: GlwGenerationRequest["referenceGenerationAuthority"];
+    referenceAuthorityBinding: GlwGenerationRequest["referenceAuthorityBinding"];
   };
 };
 
@@ -166,9 +222,10 @@ export type GlwN8nDraftResponse =
       kind: "complete";
       executionId: string;
       status: "complete";
-      wordpressObjectId: string;
-      wordpressUrl: string;
-      wordpressStatus: "draft";
+      wordpressObjectId: string | null;
+      wordpressUrl: string | null;
+      wordpressStatus: "draft" | null;
+      generatedDraft?: GlwGeneratedDraftArtifact;
       requestedPublicationMode?: "draft";
       disposition?: string;
       qaStatus?: string;
@@ -213,6 +270,11 @@ export type GlwN8nExecutionReader = {
   readExecution(executionId: string): Promise<GlwN8nExecutionSnapshot>;
   findExecutionIds(input: { jobId: string; startedAt: string }): Promise<readonly string[]>;
 };
+
+export const GLW_TERMINAL_READ_POLICY = {
+  maximumAttempts: 15,
+  intervalMs: 5_000,
+} as const;
 
 export class GlwUnknownExecutionError extends Error {}
 export class GlwDraftOnlyExecutionError extends Error {}
@@ -292,8 +354,9 @@ export function mapGenerationRequestToN8nDraft(
   const tone = "Confident";
   const audience = "Commercial display buyers";
   const callToAction = "Request a quote";
-  const category = "LED Displays";
-  const additionalInstructions = "Create a factual draft for editorial review. Do not publish publicly.";
+  const category = request.productTopic;
+  const additionalInstructions = request.additionalInstructions?.trim()
+    || "Create a factual draft for editorial review. Do not publish publicly.";
   const wordCount = 1500;
 
   return {
@@ -306,7 +369,13 @@ export function mapGenerationRequestToN8nDraft(
     type: "page_generation",
     workspaceId: request.organizationId,
     workspace_id: request.organizationId,
-    site: { id: resolveGlwN8nEngineSiteId(request.siteId), name: request.siteName },
+    site: {
+      id: request.siteId,
+      name: request.siteName,
+      domain: request.siteDomain,
+      canonicalUrl: request.siteCanonicalUrl,
+      wordpressApiBaseUrl: request.wordpressApiBaseUrl,
+    },
     page: {
       hierarchyMode: "city_child_target",
       hierarchy_mode: "city_child_target",
@@ -315,7 +384,7 @@ export function mapGenerationRequestToN8nDraft(
       pageType: request.pageType,
       page_type: request.pageType,
       productId: request.productId,
-      product: resolveGlwN8nEngineProduct(request.productId),
+      product: request.productTopic,
       productTopic: request.productTopic,
       product_topic: request.productTopic,
       state: request.stateName ?? "",
@@ -337,6 +406,8 @@ export function mapGenerationRequestToN8nDraft(
       category,
       additionalInstructions,
       additional_instructions: additionalInstructions,
+      referenceGenerationClaimContract: request.referenceGenerationClaimContract,
+      referenceGenerationAuthority: request.referenceGenerationAuthority,
       status: "draft",
     },
     promptData: { tone, audience, callToAction },
@@ -363,6 +434,9 @@ export function mapGenerationRequestToN8nDraft(
       citySlug: request.citySlug,
       hierarchicalSlug: request.canonicalPath,
       additionalInstructions,
+      referenceGenerationClaimContract: request.referenceGenerationClaimContract,
+      referenceGenerationAuthority: request.referenceGenerationAuthority,
+      referenceAuthorityBinding: request.referenceAuthorityBinding,
     },
   };
 }
@@ -400,6 +474,69 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function asReadonlyRecord(value: unknown): Readonly<Record<string, unknown>> | null {
+  const record = asRecord(value);
+  return record ? record as Readonly<Record<string, unknown>> : null;
+}
+
+function mergeReadonlyRecords(
+  base: Readonly<Record<string, unknown>> | null | undefined,
+  patch: Readonly<Record<string, unknown>> | null | undefined,
+): Readonly<Record<string, unknown>> | null {
+  const left = base ? { ...base } : {};
+  const right = patch ? { ...patch } : {};
+  const merged = { ...left, ...right };
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+
+function normalizeCanonicalPath(value: string): string {
+  return value.replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+function normalizeRetryHistory(
+  checks: Readonly<Record<string, unknown>> | null | undefined,
+): GlwExecutionRetryHistoryEntry[] {
+  const entries = asRecord(checks)?.executionRetryHistory;
+  if (!Array.isArray(entries)) return [];
+  return entries
+    .map((entry) => asRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    .map((entry) => {
+      const operation = optionalString(entry.operation);
+      const retryRequestId = optionalString(entry.retryRequestId);
+      const previousExecutionId = optionalString(entry.previousExecutionId);
+      const previousExecutionState = optionalString(entry.previousExecutionState);
+      const retriedAt = optionalString(entry.retriedAt);
+      const acceptedStatus = optionalString(entry.acceptedStatus);
+      if (
+        operation !== "RETRY_FAILED_EXECUTION"
+        || !retryRequestId
+        || !previousExecutionId
+        || previousExecutionState !== "FAILED"
+        || !retriedAt
+        || !acceptedStatus
+      ) {
+        return null;
+      }
+      const attempt = Number(entry.attemptNumber);
+      const newExecutionId = optionalString(entry.newExecutionId);
+      return {
+        operation,
+        retryRequestId,
+        attemptNumber: Number.isFinite(attempt) && attempt > 0 ? Math.floor(attempt) : 1,
+        previousExecutionId,
+        previousExecutionState: "FAILED" as const,
+        previousErrorMessage: optionalString(entry.previousErrorMessage),
+        retriedAt,
+        newExecutionId,
+        acceptedStatus: ["accepted", "running", "complete", "failed", "dispatch_failed"].includes(acceptedStatus)
+          ? acceptedStatus as "accepted" | "running" | "complete" | "failed" | "dispatch_failed"
+          : "accepted",
+      };
+    })
+    .filter((entry): entry is GlwExecutionRetryHistoryEntry => Boolean(entry));
+}
+
 function extractNodeJson(runData: unknown, nodeName: string): Record<string, unknown> | null {
   const runs = asRecord(runData)?.[nodeName];
   if (!Array.isArray(runs) || runs.length === 0) return null;
@@ -435,6 +572,70 @@ function countHtmlWords(value: unknown): number | null {
   const text = value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   return text ? text.split(" ").length : null;
 }
+
+export function normalizeGlwGeneratedText(value: string): string {
+  return value
+    .replace(/Ã¢â‚¬â„¢/g, "’")
+    .replace(/Ã¢â‚¬â€œ/g, "–")
+    .replace(/Ã¢â‚¬â€/g, "—")
+    .replace(/Ã¢â‚¬â€/g, "—")
+    .replace(/Ã‚Â°/g, "°")
+    .replace(/Ã‚Â/g, "")
+    .replace(/Ã¢â‚¬Å“/g, "“")
+    .replace(/Ã¢â‚¬Â/g, "”")
+    .replace(/â€™/g, "’")
+    .replace(/â€“/g, "–")
+    .replace(/â€”/g, "—")
+    .replace(/Â°/g, "°")
+    .replace(/Â/g, "");
+}
+
+function assertNoGeneratedMojibake(value: string): void {
+  if (/[âÃÂ\uFFFD]/.test(value)) {
+    throw new GlwExecutionResultError("Generated draft contains unresolved encoding corruption.");
+  }
+}
+
+function normalizeGeneratedDraft(
+  generated: Record<string, unknown> | null,
+): GlwGeneratedDraftArtifact | null {
+  if (!generated) return null;
+  const rawTitle = optionalString(generated.page_title ?? generated.title);
+  const rawContentHtml = optionalString(generated.article_html ?? generated.content_html ?? generated.content);
+  const slug = optionalString(
+    generated.desired_hierarchical_slug
+      ?? generated.requested_target_path
+      ?? generated.hierarchical_slug
+      ?? generated.slug,
+  );
+  if (!rawTitle || !rawContentHtml || !slug) return null;
+
+  const title = normalizeGlwGeneratedText(rawTitle);
+  const contentHtml = normalizeGlwGeneratedText(rawContentHtml);
+  const excerpt = optionalString(generated.excerpt ?? generated.meta_description ?? generated.metaDescription);
+  const seoTitle = optionalString(generated.seo_title ?? generated.meta_title);
+  const metaDescription = optionalString(generated.meta_description ?? generated.metaDescription);
+  const focusKeyphrase = optionalString(generated.focus_keyphrase ?? generated.focus_keyword);
+  const normalizedExcerpt = excerpt ? normalizeGlwGeneratedText(excerpt) : null;
+  const normalizedSeoTitle = seoTitle ? normalizeGlwGeneratedText(seoTitle) : null;
+  const normalizedMetaDescription = metaDescription ? normalizeGlwGeneratedText(metaDescription) : null;
+  const normalizedFocusKeyphrase = focusKeyphrase ? normalizeGlwGeneratedText(focusKeyphrase) : null;
+
+  for (const value of [title, contentHtml, normalizedExcerpt, normalizedSeoTitle, normalizedMetaDescription, normalizedFocusKeyphrase]) {
+    if (value) assertNoGeneratedMojibake(value);
+  }
+
+  return {
+    title,
+    contentHtml,
+    slug,
+    excerpt: normalizedExcerpt,
+    seoTitle: normalizedSeoTitle,
+    metaDescription: normalizedMetaDescription,
+    focusKeyphrase: normalizedFocusKeyphrase,
+  };
+}
+
 export function normalizeGlwN8nExecutionResult(input: {
   snapshot: GlwN8nExecutionSnapshot;
   expectedJobId: string;
@@ -447,6 +648,46 @@ export function normalizeGlwN8nExecutionResult(input: {
       status: "failed",
       errorCode: "N8N_EXECUTION_FAILED",
       errorMessage: redactGlwExecutionError(input.snapshot.errorMessage ?? "n8n execution failed."),
+    };
+  }
+
+  const contentReady = extractNodeJson(input.snapshot.runData, "GLW Content Ready");
+  if (contentReady) {
+    const jobId = optionalString(contentReady.job_id ?? contentReady.jobId);
+    if (jobId !== input.expectedJobId) {
+      throw new GlwExecutionResultError("Terminal n8n execution does not match the tracked GLW job.");
+    }
+    if (contentReady.glw_content_ready !== true) {
+      throw new GlwExecutionResultError("GLW content-ready terminal node did not assert content readiness.");
+    }
+    if (optionalString(contentReady.requested_publishing_mode ?? contentReady.publishing_mode) !== "draft") {
+      throw new GlwExecutionResultError("Terminal n8n execution did not preserve the required draft publication mode.");
+    }
+    if (optionalString(contentReady.mutation_authority) !== "GENESIS") {
+      throw new GlwExecutionResultError("GLW content-ready terminal node did not preserve Genesis mutation authority.");
+    }
+    const generatedDraft = normalizeGeneratedDraft(contentReady);
+    if (!generatedDraft) {
+      throw new GlwExecutionResultError("GLW content-ready terminal node is missing the generated draft artifact.");
+    }
+    return {
+      kind: "complete",
+      executionId: input.snapshot.executionId,
+      status: "complete",
+      wordpressObjectId: null,
+      wordpressUrl: null,
+      wordpressStatus: null,
+      generatedDraft,
+      requestedPublicationMode: "draft",
+      disposition: "CONTENT_READY",
+      qaStatus: "CONTENT_READY",
+      qaChecks: {},
+      qaFailureReasons: {},
+      pageTitle: generatedDraft.title,
+      seoTitle: generatedDraft.seoTitle ?? undefined,
+      focusKeyphrase: generatedDraft.focusKeyphrase ?? undefined,
+      wordCount: countHtmlWords(generatedDraft.contentHtml) ?? undefined,
+      featuredImagePresent: false,
     };
   }
 
@@ -488,8 +729,21 @@ export function normalizeGlwN8nExecutionResult(input: {
   const requestedPublicationMode = optionalString(
     normalized.requested_publishing_mode ?? qa.requestedPublishingMode,
   );
-  if (!wordpressObjectId || !wordpressUrl || wordpressStatus !== "draft" || requestedPublicationMode !== "draft") {
-    throw new GlwExecutionResultError("Terminal n8n execution did not produce the expected WordPress draft identity.");
+  if (requestedPublicationMode !== "draft") {
+    throw new GlwExecutionResultError("Terminal n8n execution did not preserve the required draft publication mode.");
+  }
+
+  const generatedDraft = normalizeGeneratedDraft(generated);
+  const hasWordPressDraftIdentity = Boolean(
+    wordpressObjectId
+      && wordpressUrl
+      && wordpressStatus === "draft",
+  );
+
+  if (!hasWordPressDraftIdentity && !generatedDraft) {
+    throw new GlwExecutionResultError(
+      "Terminal n8n execution produced neither a WordPress draft identity nor a complete generated draft artifact.",
+    );
   }
 
   const featuredImagePresent = optionalBoolean(
@@ -504,18 +758,19 @@ export function normalizeGlwN8nExecutionResult(input: {
     kind: "complete",
     executionId: input.snapshot.executionId,
     status: "complete",
-    wordpressObjectId,
-    wordpressUrl,
-    wordpressStatus: "draft",
+    wordpressObjectId: hasWordPressDraftIdentity ? wordpressObjectId : null,
+    wordpressUrl: hasWordPressDraftIdentity ? wordpressUrl : null,
+    wordpressStatus: hasWordPressDraftIdentity ? "draft" : null,
+    generatedDraft: generatedDraft ?? undefined,
     requestedPublicationMode: "draft",
     disposition: optionalString(qa.qa_disposition ?? normalized.disposition) ?? undefined,
     qaStatus,
     qaChecks: asRecord(qa.qa_checks ?? qa.qaChecks) ?? {},
     qaFailureReasons: asRecord(qa.qa_failure_reasons ?? qa.qaFailureReasons) ?? {},
-    pageTitle: optionalString(qa.qa_title ?? generated?.page_title) ?? undefined,
-    seoTitle: optionalString(qa.qa_meta_title ?? generated?.seo_title) ?? undefined,
-    focusKeyphrase: optionalString(qa.qa_focus_keyword ?? generated?.focus_keyphrase) ?? undefined,
-    wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generated?.article_html) ?? undefined,
+    pageTitle: optionalString(qa.qa_title ?? generatedDraft?.title) ?? undefined,
+    seoTitle: optionalString(qa.qa_meta_title ?? generatedDraft?.seoTitle) ?? undefined,
+    focusKeyphrase: optionalString(qa.qa_focus_keyword ?? generatedDraft?.focusKeyphrase) ?? undefined,
+    wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generatedDraft?.contentHtml ?? generated?.article_html) ?? undefined,
     featuredImagePresent: featuredImagePresent
       ?? (Boolean(featuredImageUrl) || (featuredImageId !== null && featuredImageId > 0)),
   };
@@ -530,6 +785,8 @@ export function createGlwDraftExecutionService(input: {
 }) {
   const createJobId = input.createJobId ?? (() => crypto.randomUUID());
   const now = input.now ?? (() => new Date().toISOString());
+  const recoveringDispatches = new Set<string>();
+  const retryingTerminalFailures = new Set<string>();
 
   async function applyTerminalResult(
     jobId: string,
@@ -537,6 +794,7 @@ export function createGlwDraftExecutionService(input: {
   ): Promise<GlwPageExecutionRecord> {
     const existing = await input.repository.getById(jobId);
     if (!existing) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+    if (isGlwExecutionQuarantined(existing)) return existing;
     if (existing.status === "COMPLETE" || existing.status === "FAILED") return existing;
     if (existing.externalExecutionId && result.executionId && existing.externalExecutionId !== result.executionId) {
       throw new GlwUnknownExecutionError("Execution identity does not match the tracked GLW job.");
@@ -544,28 +802,35 @@ export function createGlwDraftExecutionService(input: {
 
     const timestamp = now();
     if (result.kind === "complete") {
+      const contentReady = Boolean(result.generatedDraft && !result.wordpressObjectId);
+      const qaChecks = mergeReadonlyRecords(asReadonlyRecord(existing.qaChecks), result.qaChecks);
+      const qaFailureReasons = mergeReadonlyRecords(asReadonlyRecord(existing.qaFailureReasons), result.qaFailureReasons);
       return input.repository.update(jobId, {
-        status: "COMPLETE",
+        status: contentReady ? "CONTENT_READY" : "COMPLETE",
         externalExecutionId: result.executionId,
-        wordpressObjectId: result.wordpressObjectId,
+        wordpressObjectId: contentReady ? existing.wordpressObjectId : result.wordpressObjectId,
         wordpressUrl: result.wordpressUrl,
         wordpressStatus: result.wordpressStatus,
+        generatedDraft: result.generatedDraft ?? existing.generatedDraft,
         requestedPublicationMode: result.requestedPublicationMode ?? "draft",
         disposition: result.disposition ?? null,
-        qaStatus: result.qaStatus ?? "COMPLETE",
-        qaChecks: result.qaChecks ?? null,
-        qaFailureReasons: result.qaFailureReasons ?? null,
-        title: result.pageTitle ?? existing.title,
-        seoTitle: result.seoTitle ?? existing.seoTitle,
-        focusKeyphrase: result.focusKeyphrase ?? null,
-        wordCount: result.wordCount ?? null,
+        qaStatus: result.qaStatus ?? (contentReady ? "CONTENT_READY" : "COMPLETE"),
+        qaChecks,
+        qaFailureReasons,
+        title: result.pageTitle ?? result.generatedDraft?.title ?? existing.title,
+        seoTitle: result.seoTitle ?? result.generatedDraft?.seoTitle ?? existing.seoTitle,
+        focusKeyphrase: result.focusKeyphrase ?? result.generatedDraft?.focusKeyphrase ?? null,
+        wordCount: result.wordCount ?? countHtmlWords(result.generatedDraft?.contentHtml) ?? null,
         featuredImagePresent: result.featuredImagePresent ?? null,
         errorCode: null,
         errorMessage: null,
         updatedAt: timestamp,
-        completedAt: timestamp,
+        completedAt: contentReady ? null : timestamp,
       });
     }
+
+    const qaChecks = mergeReadonlyRecords(asReadonlyRecord(existing.qaChecks), result.qaChecks);
+    const qaFailureReasons = mergeReadonlyRecords(asReadonlyRecord(existing.qaFailureReasons), result.qaFailureReasons);
 
     return input.repository.update(jobId, {
       status: "FAILED",
@@ -573,8 +838,8 @@ export function createGlwDraftExecutionService(input: {
       errorCode: result.errorCode,
       errorMessage: redactGlwExecutionError(result.errorMessage),
       qaStatus: result.qaStatus ?? (result.errorCode === "FAILED_QA" ? "FAILED_QA" : null),
-      qaChecks: result.qaChecks ?? null,
-      qaFailureReasons: result.qaFailureReasons ?? null,
+      qaChecks,
+      qaFailureReasons,
       updatedAt: timestamp,
       completedAt: timestamp,
     });
@@ -582,6 +847,211 @@ export function createGlwDraftExecutionService(input: {
 
   return {
     applyTerminalResult,
+    async recoverFailedDispatch(jobId: string, request: GlwGenerationRequest): Promise<GlwPageExecutionRecord> {
+      if (recoveringDispatches.has(jobId)) throw new GlwExecutionResultError("Exact failed dispatch recovery is already in progress.");
+      recoveringDispatches.add(jobId);
+      try {
+        const current = await input.repository.getById(jobId);
+        if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+        if (isGlwExecutionQuarantined(current)) {
+          throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+        }
+        if (current.status !== "FAILED" || current.errorCode !== "DISPATCH_FAILED" || current.externalExecutionId || current.dispatchedAt || current.generatedDraft || current.wordpressObjectId) {
+          throw new GlwExecutionResultError("Only a side-effect-free failed dispatch can be recovered in place.");
+        }
+        const exactIdentity = current.organizationId === request.organizationId
+          && current.siteId === request.siteId
+          && current.productId === request.productId
+          && current.state === request.stateName
+          && current.city === request.cityName
+          && current.slug === request.canonicalPath
+          && current.publicationIntent === "draft";
+        if (!exactIdentity) throw new GlwExecutionResultError("Failed dispatch recovery request does not match the exact persisted job identity.");
+
+        await input.repository.update(jobId, {
+          status: "QUEUED",
+          errorCode: null,
+          errorMessage: null,
+          completedAt: null,
+          updatedAt: now(),
+        });
+        try {
+          const dispatchStartedAt = now();
+          const response = await input.dispatcher.dispatch(mapGenerationRequestToN8nDraft(jobId, request));
+          if (response.kind === "complete" || response.kind === "failed") return applyTerminalResult(jobId, response);
+          return input.repository.update(jobId, {
+            status: response.executionId && response.status === "running" ? "RUNNING" : "DISPATCHED",
+            externalExecutionId: response.executionId,
+            dispatchedAt: dispatchStartedAt,
+            updatedAt: now(),
+          });
+        } catch (error) {
+          return input.repository.update(jobId, {
+            status: "FAILED",
+            errorCode: "DISPATCH_FAILED",
+            errorMessage: redactGlwExecutionError(error),
+            updatedAt: now(),
+            completedAt: now(),
+          });
+        }
+      } finally {
+        recoveringDispatches.delete(jobId);
+      }
+    },
+    async retryFailedExecution(inputRetry: {
+      jobId: string;
+      request: GlwGenerationRequest;
+      expectedFailedExecutionId: string;
+      retryRequestId: string;
+      reader: GlwN8nExecutionReader;
+    }): Promise<GlwPageExecutionRecord> {
+      const retryRequestId = inputRetry.retryRequestId.trim();
+      const expectedFailedExecutionId = inputRetry.expectedFailedExecutionId.trim();
+      if (!retryRequestId) {
+        throw new GlwExecutionResultError("Retry request ID is required for idempotency.");
+      }
+      if (!expectedFailedExecutionId) {
+        throw new GlwExecutionResultError("Exact failed external execution ID is required.");
+      }
+
+      if (retryingTerminalFailures.has(inputRetry.jobId)) {
+        throw new GlwExecutionResultError("Terminal failed execution retry is already in progress for this job.");
+      }
+      retryingTerminalFailures.add(inputRetry.jobId);
+
+      try {
+        const current = await input.repository.getById(inputRetry.jobId);
+        if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${inputRetry.jobId}`);
+        if (isGlwExecutionQuarantined(current)) {
+          throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+        }
+
+        const exactIdentity = current.organizationId === inputRetry.request.organizationId
+          && current.siteId === inputRetry.request.siteId
+          && current.productId === inputRetry.request.productId
+          && current.state === inputRetry.request.stateName
+          && current.city === inputRetry.request.cityName
+          && normalizeCanonicalPath(current.slug) === normalizeCanonicalPath(inputRetry.request.canonicalPath)
+          && current.publicationIntent === "draft"
+          && current.requestedPublicationMode === "draft";
+        if (!exactIdentity) {
+          throw new GlwExecutionResultError("Terminal retry request does not match the exact persisted job identity.");
+        }
+
+        const retryHistory = normalizeRetryHistory(current.qaChecks);
+        const existingRetry = retryHistory.find((entry) =>
+          entry.retryRequestId === retryRequestId
+          && entry.previousExecutionId === expectedFailedExecutionId);
+
+        if (existingRetry?.newExecutionId && current.externalExecutionId === existingRetry.newExecutionId) {
+          return current;
+        }
+
+        if (current.status === "DISPATCHED" || current.status === "DISCOVERING_EXECUTION" || current.status === "RUNNING") {
+          throw new GlwExecutionResultError("A terminal retry cannot start while an execution is already active for this job.");
+        }
+
+        if (current.status !== "FAILED") {
+          throw new GlwExecutionResultError("Only a terminal failed execution can be retried in place.");
+        }
+        if (!current.externalExecutionId) {
+          throw new GlwExecutionResultError("Terminal retry requires an existing external execution identity.");
+        }
+        if (current.externalExecutionId !== expectedFailedExecutionId) {
+          throw new GlwExecutionResultError("Retry request executionId does not match the exact persisted failed execution.");
+        }
+        if (current.generatedDraft) {
+          throw new GlwExecutionResultError("Terminal retry is blocked because a generated draft already exists.");
+        }
+        if (current.wordpressObjectId || current.wordpressStatus === "publish" || current.wordpressUrl) {
+          throw new GlwExecutionResultError("Terminal retry is blocked because downstream WordPress side effects were detected.");
+        }
+
+        const failedSnapshot = await inputRetry.reader.readExecution(expectedFailedExecutionId);
+        if (failedSnapshot.executionId !== expectedFailedExecutionId) {
+          throw new GlwExecutionResultError("Retry execution snapshot identity mismatch.");
+        }
+        if (failedSnapshot.state === "RUNNING") {
+          throw new GlwExecutionResultError("Terminal retry is blocked because the previous external execution is still running.");
+        }
+        if (failedSnapshot.state === "SUCCESS") {
+          throw new GlwExecutionResultError("Terminal retry is blocked because the previous external execution succeeded.");
+        }
+
+        const timestamp = now();
+        const attemptNumber = retryHistory.length + 1;
+        const baseEntry = {
+          operation: "RETRY_FAILED_EXECUTION" as const,
+          retryRequestId,
+          attemptNumber,
+          previousExecutionId: expectedFailedExecutionId,
+          previousExecutionState: "FAILED" as const,
+          previousErrorMessage: failedSnapshot.errorMessage ?? null,
+          retriedAt: timestamp,
+        };
+
+        let response: GlwN8nDraftResponse;
+        try {
+          response = await input.dispatcher.dispatch(mapGenerationRequestToN8nDraft(inputRetry.jobId, inputRetry.request));
+        } catch (error) {
+          const failedEntry: GlwExecutionRetryHistoryEntry = {
+            ...baseEntry,
+            newExecutionId: null,
+            acceptedStatus: "dispatch_failed",
+          };
+          return input.repository.update(inputRetry.jobId, {
+            status: "FAILED",
+            errorCode: "RETRY_DISPATCH_FAILED",
+            errorMessage: redactGlwExecutionError(error),
+            qaChecks: {
+              ...(asReadonlyRecord(current.qaChecks) ?? {}),
+              executionRetryCurrent: failedEntry,
+              executionRetryHistory: [...retryHistory, failedEntry],
+            },
+            updatedAt: timestamp,
+            completedAt: timestamp,
+          });
+        }
+
+        const newExecutionId = optionalString(response.executionId);
+        if (!newExecutionId) {
+          throw new GlwExecutionResultError("Retry dispatch did not return an external execution identity.");
+        }
+        if (newExecutionId === expectedFailedExecutionId) {
+          throw new GlwExecutionResultError("Retry dispatch returned the same failed execution identity.");
+        }
+
+        const retryEntry: GlwExecutionRetryHistoryEntry = {
+          ...baseEntry,
+          newExecutionId,
+          acceptedStatus: response.kind === "accepted" ? response.status : response.status,
+        };
+
+        const dispatched = await input.repository.update(inputRetry.jobId, {
+          status: response.kind === "accepted"
+            ? (response.status === "running" ? "RUNNING" : "DISPATCHED")
+            : "RUNNING",
+          externalExecutionId: newExecutionId,
+          errorCode: null,
+          errorMessage: null,
+          completedAt: null,
+          dispatchedAt: timestamp,
+          qaChecks: {
+            ...(asReadonlyRecord(current.qaChecks) ?? {}),
+            executionRetryCurrent: retryEntry,
+            executionRetryHistory: [...retryHistory, retryEntry],
+          },
+          updatedAt: timestamp,
+        });
+
+        if (response.kind === "complete" || response.kind === "failed") {
+          return applyTerminalResult(dispatched.jobId, response);
+        }
+        return dispatched;
+      } finally {
+        retryingTerminalFailures.delete(inputRetry.jobId);
+      }
+    },
     async discoverExecution(
       jobId: string,
       reader: GlwN8nExecutionReader,
@@ -596,10 +1066,14 @@ export function createGlwDraftExecutionService(input: {
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      if (isGlwExecutionQuarantined(current)) {
+        throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+      }
       if (current.externalExecutionId) return current;
       if (!current.dispatchedAt) {
         throw new GlwExecutionResultError("Tracked GLW job has no dispatch boundary.");
       }
+      const dispatchedAt = current.dispatchedAt;
 
       current = await input.repository.update(jobId, {
         status: "DISCOVERING_EXECUTION",
@@ -609,7 +1083,7 @@ export function createGlwDraftExecutionService(input: {
         for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
           const executionIds = [...new Set(await reader.findExecutionIds({
             jobId: current.correlationId,
-            startedAt: current.dispatchedAt,
+            startedAt: dispatchedAt,
           }))];
           if (executionIds.length > 1) {
             const timestamp = now();
@@ -661,18 +1135,23 @@ export function createGlwDraftExecutionService(input: {
         delay?: (milliseconds: number) => Promise<void>;
       },
     ): Promise<GlwPageExecutionRecord> {
-      const maxAttempts = Math.min(Math.max(options?.maxAttempts ?? 30, 1), 60);
-      const intervalMs = Math.min(Math.max(options?.intervalMs ?? 2_000, 0), 5_000);
+      const maxAttempts = Math.min(Math.max(options?.maxAttempts ?? GLW_TERMINAL_READ_POLICY.maximumAttempts, 1), GLW_TERMINAL_READ_POLICY.maximumAttempts);
+      const intervalMs = Math.min(Math.max(options?.intervalMs ?? GLW_TERMINAL_READ_POLICY.intervalMs, 0), GLW_TERMINAL_READ_POLICY.intervalMs);
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      if (isGlwExecutionQuarantined(current)) {
+        throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+      }
+      if (current.status === "COMPLETE" || current.status === "FAILED" || current.status === "CONTENT_READY") return current;
       if (!current.externalExecutionId) {
         throw new GlwExecutionResultError("Tracked GLW job has no n8n execution identity.");
       }
+      const externalExecutionId = current.externalExecutionId;
 
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const snapshot = await reader.readExecution(current.externalExecutionId);
-        if (snapshot.executionId !== current.externalExecutionId) {
+        const snapshot = await reader.readExecution(externalExecutionId);
+        if (snapshot.executionId !== externalExecutionId) {
           throw new GlwExecutionResultError("n8n execution reader returned a mismatched identity.");
         }
         const terminal = normalizeGlwN8nExecutionResult({ snapshot, expectedJobId: current.jobId });
@@ -684,10 +1163,13 @@ export function createGlwDraftExecutionService(input: {
         if (attempt < maxAttempts - 1) await delay(intervalMs);
       }
 
+      const timeoutAt = now();
       return input.repository.update(current.jobId, {
+        status: "FAILED",
         errorCode: "POLL_TIMEOUT",
         errorMessage: "n8n execution did not reach a terminal state within the bounded polling window.",
-        updatedAt: now(),
+        updatedAt: timeoutAt,
+        completedAt: timeoutAt,
       });
     },
     async execute(request: GlwGenerationRequest): Promise<GlwPageExecutionRecord> {
@@ -714,9 +1196,10 @@ export function createGlwDraftExecutionService(input: {
         publicationIntent: "draft",
         status: "QUEUED",
         externalExecutionId: null,
-        wordpressObjectId: null,
+        wordpressObjectId: request.wordpressObjectId,
         wordpressUrl: null,
         wordpressStatus: null,
+        generatedDraft: null,
         errorCode: null,
         errorMessage: null,
         requestedPublicationMode: "draft",

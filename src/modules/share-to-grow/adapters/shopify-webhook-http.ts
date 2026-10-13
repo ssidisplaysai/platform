@@ -1,0 +1,151 @@
+import { AppendOnlyLedger } from "../ledger";
+import type { ShopifyEventType } from "./shopify-events";
+import { processRawShopifyOrder } from "./shopify-raw-processor";
+import { processShopifyCancellation, processShopifyRefund } from "./shopify-adjustments";
+
+export interface ShopifyWebhookHttpInput {
+  readonly rawBody: string;
+  readonly headers: Readonly<Record<string, string | undefined>>;
+  readonly secret: string;
+  readonly receivedAt: string;
+  readonly recruitedCreatorPartnerIds: readonly string[];
+  readonly ledger?: AppendOnlyLedger;
+}
+
+export interface ShopifyWebhookHttpResult {
+  readonly sourceEventId: string;
+  readonly replay: boolean;
+  readonly economicDisposition:
+    | "processed"
+    | "replay"
+    | "ignored_ineligible"
+    | "ignored_no_economics"
+    | "reversed"
+    | "partially_reversed"
+    | "reversed_with_brand_loss"
+    | "already_reversed"
+    | "manual_review_required";
+  readonly refund?: unknown;
+  readonly reason?: string;
+  readonly reversals?: readonly {
+    readonly ledgerEntryId: string;
+    readonly sourceEntryId: string;
+    readonly beneficiaryId: string;
+    readonly amountMinor: string;
+    readonly currency: string;
+  }[];
+  readonly selectedPartnerId?: string;
+  readonly lines: readonly {
+    readonly lineKey: string;
+    readonly ruleVersionId: string;
+    readonly allocations: readonly {
+      readonly beneficiaryId: string;
+      readonly amountMinor: string;
+      readonly currency: string;
+    }[];
+  }[];
+  readonly pendingEntitlements: readonly {
+    readonly entitlementId: string;
+    readonly beneficiaryId: string;
+    readonly amountMinor: string;
+    readonly currency: string;
+    readonly state: string;
+  }[];
+}
+
+function header(input: Readonly<Record<string, string | undefined>>, name: string): string | undefined {
+  return input[name] ?? input[name.toLowerCase()] ?? input[name.toUpperCase()];
+}
+
+function normalizeShopifyEventType(topic: string | undefined): ShopifyEventType {
+  switch (topic) {
+    case "orders/create":
+      return "order.created";
+    case "orders/paid":
+      return "order.paid";
+    case "orders/updated":
+      return "order.updated";
+    case "orders/cancelled":
+      return "order.cancelled";
+    case "refunds/create":
+      return "refund.created";
+    default:
+      throw new Error("UNSUPPORTED_SHOPIFY_WEBHOOK_TOPIC");
+  }
+}
+
+function isCancelledOrderUpdate(rawBody: string): boolean {
+  try {
+    const payload: unknown = JSON.parse(rawBody);
+    return typeof payload === "object"
+      && payload !== null
+      && typeof (payload as { cancelled_at?: unknown }).cancelled_at === "string";
+  } catch {
+    return false;
+  }
+}
+
+export async function processShopifyWebhookHttp(
+  input: ShopifyWebhookHttpInput,
+): Promise<ShopifyWebhookHttpResult> {
+  const signature = header(input.headers, "x-shopify-hmac-sha256");
+  const sourceEventId =
+    header(input.headers, "x-shopify-webhook-id")
+    ?? header(input.headers, "x-shopify-event-id");
+  const topic = header(input.headers, "x-shopify-topic");
+
+  if (!signature) throw new Error("MISSING_SHOPIFY_WEBHOOK_SIGNATURE");
+  if (!sourceEventId) throw new Error("MISSING_SHOPIFY_WEBHOOK_ID");
+
+  const eventType = normalizeShopifyEventType(topic);
+  const webhookEnvelope = { sourceEventId, eventType, rawBody: input.rawBody, signature, receivedAt: input.receivedAt };
+
+  const cancelledUpdate = eventType === "order.updated" && isCancelledOrderUpdate(input.rawBody);
+  if (eventType === "order.cancelled" || eventType === "refund.created" || cancelledUpdate) {
+    const adjustment = await (eventType !== "refund.created"
+      ? processShopifyCancellation({ webhook: webhookEnvelope, webhookSecret: input.secret })
+      : processShopifyRefund({ webhook: webhookEnvelope, webhookSecret: input.secret }));
+    return Object.freeze({
+      sourceEventId,
+      replay: adjustment.replay,
+      economicDisposition: adjustment.economicDisposition,
+      ...(adjustment.reason ? { reason: adjustment.reason } : {}),
+      ...(adjustment.refund ? { refund: adjustment.refund } : {}),
+      reversals: adjustment.reversals,
+      lines: Object.freeze([]),
+      pendingEntitlements: Object.freeze([]),
+    });
+  }
+
+  const result = await processRawShopifyOrder({
+    webhook: webhookEnvelope,
+    webhookSecret: input.secret,
+    qualifiedTouches: [],
+    recruitedCreatorPartnerIds: input.recruitedCreatorPartnerIds,
+    ledger: input.ledger ?? new AppendOnlyLedger(),
+  });
+
+  return Object.freeze({
+    sourceEventId,
+    replay: result.replay,
+    economicDisposition: result.economicDisposition,
+    ...(result.reason ? { reason: result.reason } : {}),
+    selectedPartnerId: result.attribution?.selectedPartnerId,
+    lines: Object.freeze(result.processedLines.map((line) => Object.freeze({
+      lineKey: line.lineKey,
+      ruleVersionId: line.ruleVersionId,
+      allocations: Object.freeze(line.allocations.map((allocation) => Object.freeze({
+        beneficiaryId: allocation.beneficiaryId,
+        amountMinor: allocation.amount.minor.toString(),
+        currency: allocation.amount.currency,
+      }))),
+    }))),
+    pendingEntitlements: Object.freeze(result.pendingEntitlements.map((entitlement) => Object.freeze({
+      entitlementId: entitlement.entitlementId,
+      beneficiaryId: entitlement.beneficiaryId,
+      amountMinor: entitlement.amountMinor.toString(),
+      currency: entitlement.currency,
+      state: entitlement.state,
+    }))),
+  });
+}

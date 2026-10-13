@@ -12,8 +12,14 @@ const GLW_SECTIONS: readonly GlwSection[] = [
   {
     id: "pages",
     title: "Pages",
-    description: "No pages are registered yet for the selected workspace.",
+    description: "Generate and review site-specific pages.",
     href: "/glw/pages",
+  },
+  {
+    id: "campaigns",
+    title: "Campaigns",
+    description: "Configure geography, throughput, images, and publication policy for production campaigns.",
+    href: "/glw/campaigns",
   },
   {
     id: "blogs",
@@ -23,17 +29,17 @@ const GLW_SECTIONS: readonly GlwSection[] = [
   {
     id: "images",
     title: "Images",
-    description: "No image generation profiles are connected in this baseline.",
+    description: "Generated media is handled through the certified site-authoritative media pipeline.",
   },
   {
     id: "publishing",
     title: "Publishing",
-    description: "No publishing targets are connected in this baseline.",
+    description: "Campaign publication authority is configured per campaign and remains gate-controlled.",
   },
   {
     id: "workflows",
     title: "Workflows",
-    description: "No GLW workflow automations are configured in this baseline.",
+    description: "GLW uses the existing bounded n8n generation execution path.",
   },
   {
     id: "sites",
@@ -88,13 +94,19 @@ export function GlwDashboard() {
           >
             Open Pages Center
           </Link>
+          <Link
+            href="/glw/campaigns"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+          >
+            Open Campaign Manager
+          </Link>
         </div>
       </header>
 
       <section>
         <h2 className="text-lg font-semibold text-white">GLW Foundations</h2>
         <p className="mt-1 text-sm text-zinc-400">
-          Current baseline reflects structural readiness only and does not fabricate operational metrics.
+          Campaign configuration is now available; activation and dispatch remain intentionally separate safety boundaries.
         </p>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {GLW_SECTIONS.map((section) => (
