@@ -353,5 +353,5 @@ Live production non-purchase handoff attempt findings:
 
 Updated live gate:
 
-- `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
-- publication remains blocked until production WordPress bridge deployment/activation and non-purchase Daniel handoff certification are complete
+- `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_ACCESS`
+- publication remains blocked until approved production deployment authority is available, then WordPress bridge deployment/activation and non-purchase Daniel handoff certification are complete

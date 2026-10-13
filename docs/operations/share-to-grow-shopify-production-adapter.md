@@ -2,7 +2,7 @@
 
 Date (UTC): 2026-10-13  
 Branch: `infra/genesis-staging-runtime-v1`  
-Phase status: `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
+Phase status: `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_ACCESS`
 
 ## Scope
 
@@ -179,7 +179,7 @@ No second ledger engine was introduced.
   - tracking identity: `tracking-stoner-gym-daniel-coffeen-v1`
   - canonical partner: `daniel-coffeen`
 
-### Production deployment audit (read-only)
+### Production deployment access audit (read-only)
 
 Observed production hosting signals:
 
@@ -192,7 +192,15 @@ Observed Shopify commerce host:
 - `shop.stonerusa.com` CNAME -> `shop.myshopify.com`
 - Shopify checkout redirect observed from `/checkout` -> `shop.app/checkout/...`
 
-Approved admin deployment channel (WordPress admin / SSH / SFTP / CI release path) was not available from this execution context, so production plugin install/activation and backup creation could not be performed here.
+Deployment-channel probe results:
+
+- `wp-admin` endpoint exists and is auth-gated:
+  - `/wp-admin/` -> `302` to `/wp-login.php?...`
+  - `/wp-login.php` -> `200` login form
+- no approved authenticated WordPress admin session/credentials were available in this execution context
+- no approved SSH/SFTP/WP-CLI/hosting-panel connector path was available in this execution context
+
+Therefore deployment authority is currently unavailable.
 
 ### Live durable route result
 
@@ -289,13 +297,14 @@ Page Factory:
 
 ## Final Status
 
-`SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
+`SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_ACCESS`
 
 Blocking reason:
 
-- software adapter is certified in source, but production WordPress plugin deployment/activation on `stonerusa.com` has not been completed via an approved production admin channel.
-- therefore durable Daniel route, live token verification, persistence, and Daniel metadata handoff into Shopify cart/checkout are not yet certifiable.
+- software adapter is certified in source, but no approved authenticated production deployment authority was available from this execution context.
+- therefore plugin backup/upload/activation and signing-secret wiring on production WordPress could not be executed.
+- durable Daniel route, live token verification, persistence, and Daniel metadata handoff into Shopify cart/checkout remain uncertifiable until access is provided.
 
 Next action:
 
-"Deploy and activate the STONER Share-to-Grow WordPress bridge on production (`stonerusa.com`) via approved admin/release path, certify `/q/daniel-coffeen` redirect + persistence + Daniel Shopify cart metadata in non-purchase flow, then proceed to webhook-binding phase."
+"Provide approved production WordPress deployment authority (WP admin session or approved SSH/SFTP/WP-CLI/host-panel path), then perform backup, upload/activate `stoner-share-to-grow`, wire signing secret server-side, and re-run live non-purchase Daniel handoff certification."

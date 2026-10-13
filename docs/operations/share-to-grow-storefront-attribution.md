@@ -310,6 +310,6 @@ Key observations:
 
 Current phase status:
 
-- `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_DEPLOYMENT`
-- blocker: production WordPress bridge deployment/activation on `stonerusa.com` not yet completed through approved admin/release channel
+- `SHARE_TO_GROW_LIVE_STOREFRONT_HANDOFF=BLOCKED_ACCESS`
+- blocker: no approved authenticated production deployment authority was available from this execution context
 - details: `docs/operations/share-to-grow-shopify-production-adapter.md`
