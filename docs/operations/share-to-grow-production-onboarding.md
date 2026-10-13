@@ -249,3 +249,15 @@ STG onboarding phase caused zero changes to:
 Next action:
 
 "Create Daniel's production referral/QR assets and prepare one controlled real-order acceptance test before opening broader collaborator traffic. Automated payouts remain disabled."
+
+## Follow-up: Daniel Referral Certification Gate
+
+Follow-up referral certification was executed and is currently blocked on storefront integration readiness:
+
+- result: `SHARE_TO_GROW_DANIEL_REFERRAL=BLOCKED_STOREFRONT_INTEGRATION`
+- canonical state remained unchanged (`revision=13`, same SHA/counters)
+- blocker summary:
+  - no dedicated production attribution-signing secret configured
+  - no certified production WordPress/Woo attribution capture + session persistence + checkout handoff deployment evidence
+- detailed evidence and acceptance plan:
+  - `docs/operations/share-to-grow-daniel-production-referral.md`
