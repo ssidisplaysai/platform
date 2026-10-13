@@ -24,10 +24,12 @@ function baseEvent(runId = "s2g-run-abc123") {
 
 function baseDeps(overrides = {}) {
   return {
+    nowEpochSeconds: () => 1760385600,
     async getRunAuthorization(runId) {
       return {
         runId,
         status: "APPROVED",
+        expiresAtEpoch: 1760386500,
         operatorArn: "arn:aws:sts::452630323448:assumed-role/SnapshotOperator/rober",
         readerRoleArn: "arn:aws:iam::452630323448:role/StagingSnapshotReaderRole",
       };
@@ -67,6 +69,7 @@ test("issues run-scoped reader session with fixed reconciliation tag", async () 
   assert.equal(response.statusCode, 200);
   assert.equal(body.outcome, "SESSION_ISSUED");
   assert.equal(body.scopePrefix, "exports/s2g-run-abc123/");
+  assert.equal(response.headers["Cache-Control"], "no-store");
   assert.equal(assumeInput.roleArn, "arn:aws:iam::452630323448:role/StagingSnapshotReaderRole");
   assert.deepEqual(assumeInput.tags, [{ Key: "reconciliation-run-id", Value: "s2g-run-abc123" }]);
 });
@@ -93,6 +96,7 @@ test("rejects unauthorized operator and cross-account caller", async () => {
           return {
             runId,
             status: "APPROVED",
+            expiresAtEpoch: 1760386500,
             operatorArn: "arn:aws:sts::452630323448:assumed-role/SnapshotOperator/another",
             readerRoleArn: "arn:aws:iam::452630323448:role/StagingSnapshotReaderRole",
           };
@@ -125,3 +129,22 @@ test("maps failures to sanitized fixed codes", () => {
   assert.equal(mapReaderBrokerFailureCode(new Error("oops")), "READER_BROKER_FAILED");
 });
 
+test("denies expired run authorization", async () => {
+  await assert.rejects(
+    issueReaderSession(baseEvent(), {
+      config: baseConfig(),
+      deps: baseDeps({
+        async getRunAuthorization(runId) {
+          return {
+            runId,
+            status: "APPROVED",
+            expiresAtEpoch: 1760385500,
+            operatorArn: "arn:aws:sts::452630323448:assumed-role/SnapshotOperator/rober",
+            readerRoleArn: "arn:aws:iam::452630323448:role/StagingSnapshotReaderRole",
+          };
+        },
+      }),
+    }),
+    /READER_BROKER_RUN_AUTHORIZATION_EXPIRED/,
+  );
+});

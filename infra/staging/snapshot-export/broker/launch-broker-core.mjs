@@ -52,6 +52,9 @@ function validateConfig(config) {
   if (required.some((key) => !config[key])) throw failure("BROKER_CONFIG_INVALID");
   if (!Array.isArray(config.subnets) || config.subnets.length === 0) throw failure("BROKER_CONFIG_INVALID");
   if (!Array.isArray(config.securityGroups) || config.securityGroups.length === 0) throw failure("BROKER_CONFIG_INVALID");
+  if (!Number.isInteger(config.claimTtlSeconds) || config.claimTtlSeconds < 30 || config.claimTtlSeconds > 900) {
+    throw failure("BROKER_CONFIG_INVALID");
+  }
   if (!config.approvedTaskDefinitionArn.includes("genesis-staging-snapshot-export:")) {
     throw failure("BROKER_TASK_DEFINITION_UNAPPROVED");
   }
@@ -73,6 +76,9 @@ export async function authorizeAndLaunchSnapshotExport(event, { config, deps }) 
   const authorization = await deps.getRunAuthorization(request.runId);
   if (!authorization) throw failure("BROKER_RUN_NOT_AUTHORIZED");
   if (authorization.status !== "APPROVED") throw failure("BROKER_RUN_NOT_APPROVED");
+  if (!Number.isInteger(authorization.expiresAtEpoch) || authorization.expiresAtEpoch <= deps.nowEpochSeconds()) {
+    throw failure("BROKER_RUN_AUTHORIZATION_EXPIRED");
+  }
   if (authorization.operatorArn !== invokerArn) throw failure("BROKER_OPERATOR_NOT_AUTHORIZED");
   if (authorization.approvedTaskDefinitionArn !== config.approvedTaskDefinitionArn) {
     throw failure("BROKER_TASK_DEFINITION_MISMATCH");
@@ -101,8 +107,9 @@ export async function authorizeAndLaunchSnapshotExport(event, { config, deps }) 
     requestNonce: request.requestNonce,
     invokerArn,
     claimedAt: deps.nowIso(),
+    claimExpiresAtEpoch: deps.nowEpochSeconds() + config.claimTtlSeconds,
   });
-  if (launchClaim?.status === "ALREADY_CLAIMED") {
+  if (launchClaim?.status === "ALREADY_LAUNCHED") {
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -112,8 +119,18 @@ export async function authorizeAndLaunchSnapshotExport(event, { config, deps }) 
       }),
     };
   }
+  if (launchClaim?.status === "CLAIM_IN_PROGRESS") {
+    return {
+      statusCode: 202,
+      body: JSON.stringify({
+        outcome: "CLAIM_IN_PROGRESS",
+        runId: request.runId,
+      }),
+    };
+  }
 
   const runTaskResponse = await deps.runTask({
+    clientToken: request.runId,
     cluster: config.stagingClusterArn,
     taskDefinition: config.approvedTaskDefinitionArn,
     launchType: "FARGATE",
@@ -169,6 +186,7 @@ export function mapLaunchBrokerFailureCode(error) {
     "BROKER_CROSS_ACCOUNT_DENIED",
     "BROKER_RUN_NOT_AUTHORIZED",
     "BROKER_RUN_NOT_APPROVED",
+    "BROKER_RUN_AUTHORIZATION_EXPIRED",
     "BROKER_OPERATOR_NOT_AUTHORIZED",
     "BROKER_TASK_DEFINITION_MISMATCH",
     "BROKER_TASK_DEFINITION_UNAPPROVED",
@@ -177,4 +195,3 @@ export function mapLaunchBrokerFailureCode(error) {
   ]);
   return known.has(code) ? code : "BROKER_FAILED";
 }
-

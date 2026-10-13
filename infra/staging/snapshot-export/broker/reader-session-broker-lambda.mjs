@@ -13,6 +13,7 @@ const config = Object.freeze({
 });
 
 const deps = {
+  nowEpochSeconds: () => Math.floor(Date.now() / 1000),
   async getRunAuthorization(runId) {
     const response = await ddb.send(new GetCommand({
       TableName: config.authorizationTableName,
@@ -37,8 +38,11 @@ export async function handler(event) {
   } catch (error) {
     return {
       statusCode: 400,
+      headers: {
+        "Cache-Control": "no-store",
+        Pragma: "no-cache",
+      },
       body: JSON.stringify({ outcome: "REJECTED", code: mapReaderBrokerFailureCode(error) }),
     };
   }
 }
-

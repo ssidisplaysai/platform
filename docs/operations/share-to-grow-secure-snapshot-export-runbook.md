@@ -64,15 +64,19 @@ Hard requirements:
    - run authorization record (`APPROVED` + operator binding),
    - exact approved task definition revision,
    - digest-pinned container image,
-   - fixed staging network config and `enableExecuteCommand=false`.
-5. Confirm launched task is in staging cluster/subnets/security group only.
-5. Read CloudWatch logs and verify only metadata appears:
+   - fixed staging network config and `enableExecuteCommand=false`,
+   - launch claim state (`APPROVED -> CLAIMED`) with short claim TTL to prevent concurrent duplicate launches.
+6. Retry behavior:
+   - if broker returns `CLAIM_IN_PROGRESS`, wait for claim TTL window and retry same `runId`,
+   - broker `RunTask` uses `clientToken=runId` so ambiguous retry cannot create duplicate tasks.
+7. Confirm launched task is in staging cluster/subnets/security group only.
+8. Read CloudWatch logs and verify only metadata appears:
    - runId
    - namespace
    - revision/schemaVersion/updatedAt
    - raw/canonical SHA256 hashes
    - collection counts
-6. Confirm snapshot objects written only under:
+9. Confirm snapshot objects written only under:
    - `exports/<reconciliation-run-id>/postgres.snapshot.json`
    - `exports/<reconciliation-run-id>/filesystem.snapshot.json`
 
@@ -80,9 +84,13 @@ Hard requirements:
 
 1. Invoke reader broker URL with signed IAM request and `runId`.
 2. Broker validates operator-to-run binding and issues temporary credentials for reader role with server-controlled `reconciliation-run-id` session tag.
-2. Download objects into a protected local directory outside the repository.
-3. Verify local SHA256 hashes against exporter metadata.
-4. Do not upload raw snapshots to GitHub, CI artifacts, or chat outputs.
+3. Broker responses for credentials include `Cache-Control: no-store` and must never be persisted in shell history, ticket systems, or shared notes.
+4. Export credentials only into an ephemeral local shell/session; unset environment variables immediately after download:
+   - `unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN` (POSIX)
+   - `Remove-Item Env:AWS_ACCESS_KEY_ID, Env:AWS_SECRET_ACCESS_KEY, Env:AWS_SESSION_TOKEN` (PowerShell)
+5. Download objects into a protected local directory outside the repository.
+6. Verify local SHA256 hashes against exporter metadata.
+7. Do not upload raw snapshots to GitHub, CI artifacts, or chat outputs.
 
 ## Dry-run reconciliation (two-pass determinism)
 

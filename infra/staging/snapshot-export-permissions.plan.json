@@ -110,7 +110,7 @@
   "launchBrokerControls": {
     "authorizationRecord": "SnapshotRunAuthorizationTable",
     "requiredFields": ["runId", "status=APPROVED", "operatorArn", "approvedTaskDefinitionArn", "readerRoleArn", "expiresAtEpoch"],
-    "idempotency": "claimRunLaunch conditional update on launchState; replay returns IDEMPOTENT_ALREADY_LAUNCHED",
+    "idempotency": "claimRunLaunch transitions APPROVED -> CLAIMED with claim TTL; RunTask uses clientToken=runId; replay returns CLAIM_IN_PROGRESS or IDEMPOTENT_ALREADY_LAUNCHED without duplicate launches",
     "overrideProtection": "broker rejects caller-supplied ECS cluster/taskDefinition/overrides and builds fixed run-task input server-side",
     "stagingNetwork": "fixed staging cluster/subnets/security groups; assignPublicIp=DISABLED; ECS Exec disabled"
   },

@@ -18,10 +18,12 @@ const config = Object.freeze({
   subnets: (process.env.STAGING_SUBNETS ?? "").split(",").map((value) => value.trim()).filter(Boolean),
   securityGroups: (process.env.STAGING_SECURITY_GROUPS ?? "").split(",").map((value) => value.trim()).filter(Boolean),
   authorizationTableName: process.env.AUTHORIZATION_TABLE_NAME ?? "",
+  claimTtlSeconds: Number.parseInt(process.env.LAUNCH_CLAIM_TTL_SECONDS ?? "180", 10),
 });
 
 const deps = {
   nowIso: () => new Date().toISOString(),
+  nowEpochSeconds: () => Math.floor(Date.now() / 1000),
   async getRunAuthorization(runId) {
     const response = await ddb.send(new GetCommand({
       TableName: config.authorizationTableName,
@@ -30,21 +32,26 @@ const deps = {
     }));
     return response.Item ?? null;
   },
-  async claimRunLaunch({ runId, requestNonce, invokerArn, claimedAt }) {
+  async claimRunLaunch({ runId, requestNonce, invokerArn, claimedAt, claimExpiresAtEpoch }) {
     try {
       await ddb.send(new UpdateCommand({
         TableName: config.authorizationTableName,
         Key: { runId },
-        UpdateExpression: "SET claimNonce = :nonce, claimInvokerArn = :invokerArn, claimAt = :claimedAt",
+        UpdateExpression:
+          "SET launchState = :claimed, claimNonce = :nonce, claimInvokerArn = :invokerArn, claimAt = :claimedAt, claimExpiresAtEpoch = :claimExpiresAtEpoch",
         ExpressionAttributeValues: {
+          ":claimed": "CLAIMED",
           ":nonce": requestNonce,
           ":invokerArn": invokerArn,
           ":claimedAt": claimedAt,
+          ":claimExpiresAtEpoch": claimExpiresAtEpoch,
           ":approved": "APPROVED",
           ":launched": "LAUNCHED",
+          ":claimedState": "CLAIMED",
+          ":nowEpoch": Math.floor(Date.now() / 1000),
         },
         ConditionExpression:
-          "attribute_exists(runId) AND (#status = :approved) AND (attribute_not_exists(launchState) OR launchState <> :launched)",
+          "attribute_exists(runId) AND (#status = :approved) AND (attribute_not_exists(launchState) OR (launchState = :claimedState AND (attribute_not_exists(claimExpiresAtEpoch) OR claimExpiresAtEpoch < :nowEpoch)))",
         ExpressionAttributeNames: {
           "#status": "status",
         },
@@ -54,7 +61,10 @@ const deps = {
     } catch (error) {
       if (error?.name === "ConditionalCheckFailedException") {
         const current = await this.getRunAuthorization(runId);
-        return { status: "ALREADY_CLAIMED", launchTaskArn: current?.launchTaskArn ?? null };
+        if (current?.launchState === "LAUNCHED") {
+          return { status: "ALREADY_LAUNCHED", launchTaskArn: current?.launchTaskArn ?? null };
+        }
+        return { status: "CLAIM_IN_PROGRESS" };
       }
       throw error;
     }
@@ -74,8 +84,9 @@ const deps = {
         ":state": "LAUNCHED",
         ":taskArn": taskArn,
         ":launchAt": launchedAt,
+        ":claimedState": "CLAIMED",
       },
-      ConditionExpression: "attribute_exists(runId)",
+      ConditionExpression: "attribute_exists(runId) AND launchState = :claimedState",
     }));
   },
 };

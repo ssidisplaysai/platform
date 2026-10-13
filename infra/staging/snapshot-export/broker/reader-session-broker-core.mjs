@@ -43,6 +43,9 @@ export async function issueReaderSession(event, { config, deps }) {
   const authorization = await deps.getRunAuthorization(request.runId);
   if (!authorization) throw failure("READER_BROKER_RUN_NOT_AUTHORIZED");
   if (authorization.status !== "APPROVED") throw failure("READER_BROKER_RUN_NOT_APPROVED");
+  if (!Number.isInteger(authorization.expiresAtEpoch) || authorization.expiresAtEpoch <= deps.nowEpochSeconds()) {
+    throw failure("READER_BROKER_RUN_AUTHORIZATION_EXPIRED");
+  }
   if (authorization.operatorArn !== invokerArn) throw failure("READER_BROKER_OPERATOR_NOT_AUTHORIZED");
   if (authorization.readerRoleArn !== config.readerRoleArn) throw failure("READER_BROKER_ROLE_MISMATCH");
 
@@ -59,6 +62,10 @@ export async function issueReaderSession(event, { config, deps }) {
   }
   return {
     statusCode: 200,
+    headers: {
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
+    },
     body: JSON.stringify({
       outcome: "SESSION_ISSUED",
       runId: request.runId,
@@ -85,10 +92,10 @@ export function mapReaderBrokerFailureCode(error) {
     "READER_BROKER_CROSS_ACCOUNT_DENIED",
     "READER_BROKER_RUN_NOT_AUTHORIZED",
     "READER_BROKER_RUN_NOT_APPROVED",
+    "READER_BROKER_RUN_AUTHORIZATION_EXPIRED",
     "READER_BROKER_OPERATOR_NOT_AUTHORIZED",
     "READER_BROKER_ROLE_MISMATCH",
     "READER_BROKER_STS_FAILED",
   ]);
   return known.has(code) ? code : "READER_BROKER_FAILED";
 }
-

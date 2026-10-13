@@ -192,6 +192,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
       TASK_CONTAINER_NAME: "StagingSnapshotExport",
       STAGING_SUBNETS: cdk.Fn.join(",", stagingSubnets.valueAsList),
       STAGING_SECURITY_GROUPS: cdk.Fn.join(",", stagingSecurityGroups.valueAsList),
+      LAUNCH_CLAIM_TTL_SECONDS: "180",
     },
   });
   const launchBrokerUrl = launchBrokerFn.addFunctionUrl({
