@@ -1020,43 +1020,48 @@ Final classification:
 
 - `SHARE_TO_GROW_PRODUCTION_WOO_CANARY=PASS`
 
-## Share-to-Grow Production Canary Governance + Real Onboarding Readiness (Read-Only)
+## Share-to-Grow Production Canary Governance + Real Onboarding Readiness (Completed)
 
 - Window (UTC): `2026-10-13T03:13:00Z` -> `2026-10-13T03:40:00Z`
-- Objective: classify canary governance state, quantify payout exposure, verify real Woo separation, and define onboarding-readiness baseline without mutation.
-- Result: `SHARE_TO_GROW_CANARY_GOVERNANCE=BLOCKED_LIVE_CANARY_BALANCE`
+- Objective: classify canary governance state, quantify payout exposure, verify real Woo separation, and define onboarding-readiness baseline; execute canonical balancing mutation if exposure remains.
+- Result: `SHARE_TO_GROW_CANARY_GOVERNANCE=PASS`
 
-### Read-Only Baseline
+### Baseline + Mutation Outcome
 
-- canonical state unchanged from canary completion:
+- baseline before mutation:
   - `schema_version=1`
   - `revision=7`
   - `updated_at=2026-10-13 02:54:11.43932+00`
-  - counts unchanged: participants/tracking/rules `0`, ledger `6`, receipts `6`, processed lines `3`, entitlements `3`, adjustments `3`
+  - counts: participants/tracking/rules `0`, ledger `6`, receipts `6`, processed lines `3`, entitlements `3`, adjustments `3`
+- canonical state after balancing mutation:
+  - `schema_version=1`
+  - `revision=8`
+  - `updated_at=2026-10-13 03:24:30.33174+00`
+  - counts: participants/tracking/rules `0`, ledger `7`, receipts `7`, processed lines `3`, entitlements `3`, adjustments `4`
 - no ECS/ALB/IAM/secret/task-definition changes
 
 ### Governance Inventory + Economics
 
 Canary inventory remained isolated under `sourceEventId` prefix `s2g-prod-canary-20261013`:
 
-- receipts: `6`
+- receipts: `7`
 - processed lines: `3`
-- ledger entries: `6` (`3` earnings, `3` reversals)
-- payout entitlements: `3` (`1 pending`, `2 reversed`)
-- commerce adjustments: `3`
+- ledger entries: `7` (`3` earnings, `4` reversals)
+- payout entitlements: `3` (`0 pending`, `3 reversed`)
+- commerce adjustments: `4`
 
 Economic computation from persisted records:
 
 - gross earnings: `11100` minor
-- gross reversals: `7400` minor
-- net ledger: `3700` minor
+- gross reversals: `11100` minor
+- net ledger: `0` minor
 - cumulative brand loss: `1300` minor
 - possible payable exposure:
-  - pending `3700`
+  - pending `0`
   - cleared `0`
   - payable `0`
   - paid `0`
-  - aggregate `3700` minor
+  - aggregate `0` minor
 
 ### Real Woo Event Separation
 
@@ -1066,16 +1071,18 @@ Economic computation from persisted records:
 
 ### Governance Class + Strategy
 
-Governance class: `B` (isolated canary provenance, but live payable exposure remains).
+Governance class: `A` (isolated canary provenance with zero possible payable exposure).
 
 Selected strategy: preserve immutable canary lineage and neutralize the remaining balance through canonical reversal.
 
-Mutation execution in this phase: `NO` (read-only by design).
+Mutation execution in this phase: `YES` (canonical signed Woo refund).
 
-Proposed next mutation (not yet executed):
+Executed mutation:
 
-- one signed canary refund against order `91013003` / line `9101300301` for `3700` minor
-- expected effect: entitlement `entitlement:...91013003...` transitions `pending -> reversed`; aggregate possible payable becomes `0`
+- sourceEventId `s2g-prod-canary-20261013-o3-r1`
+- adjustmentId `refund:91013003:9101300391`
+- line `9101300301` cumulative refund `3700` minor
+- realized effect: entitlement `entitlement:...91013003...` transitioned `pending -> reversed`; aggregate possible payable is `0`
 
 ### Real Onboarding Readiness Baseline (No Record Creation)
 
@@ -1104,7 +1111,14 @@ Source-derived schema requirements confirmed for next onboarding phase:
 - no payout provider invocation/transfers
 - no Page Factory drift
 - no secret exposure
+- post-mutation checks:
+  - ECS `1/1/0`, rollout `COMPLETED`
+  - target `healthy`
+  - health `200`
+  - unsigned Woo POST `401`
+  - alarms in `ALARM`: `0`
+  - RDS `available`, `MultiAZ=true`, `PendingModifiedValues={}`
 
 Final classification:
 
-- `SHARE_TO_GROW_CANARY_GOVERNANCE=BLOCKED_LIVE_CANARY_BALANCE`
+- `SHARE_TO_GROW_CANARY_GOVERNANCE=PASS`

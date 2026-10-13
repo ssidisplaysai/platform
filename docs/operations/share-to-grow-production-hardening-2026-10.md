@@ -968,26 +968,27 @@ Final classification update:
 - Automated payouts remained disabled.
 - No Page Factory drift (`PAGE_FACTORY_DRIFT_RISK=NO`).
 
-## Share-to-Grow Production Canary Governance + Real Onboarding Readiness (Read-Only)
+## Share-to-Grow Production Canary Governance + Real Onboarding Readiness (Completed)
 
-- Classification: `SHARE_TO_GROW_CANARY_GOVERNANCE=BLOCKED_LIVE_CANARY_BALANCE`
+- Classification: `SHARE_TO_GROW_CANARY_GOVERNANCE=PASS`
 - Scope:
-  - read-only canonical inventory and payout exposure computation
+  - canonical inventory and payout exposure computation
   - verify real production Woo event separation from canary namespace
-  - define onboarding schema baseline only (no record creation)
+  - execute one canonical balancing mutation to remove live canary payable exposure
+  - define onboarding schema baseline (no onboarding record creation yet)
 
 ### Key Evidence
 
-- Canonical state remained unchanged from post-canary baseline:
-  - `schema_version=1`, `revision=7`, `updated_at=2026-10-13 02:54:11.43932+00`
-  - counts: participants/tracking/rules `0`; ledger `6`; receipts `6`; lines `3`; entitlements `3`; adjustments `3`
+- Canonical state after balancing mutation:
+  - `schema_version=1`, `revision=8`, `updated_at=2026-10-13 03:24:30.33174+00`
+  - counts: participants/tracking/rules `0`; ledger `7`; receipts `7`; lines `3`; entitlements `3`; adjustments `4`
 - Canary provenance marker coverage:
   - all receipts carry prefix `s2g-prod-canary-20261013`
 - Economic exposure:
   - gross earnings `11100` minor
-  - gross reversals `7400` minor
-  - net ledger `3700` minor
-  - possible payable `3700` minor (`pending=3700`, `cleared=0`, `payable=0`, `paid=0`)
+  - gross reversals `11100` minor
+  - net ledger `0` minor
+  - possible payable `0` minor (`pending=0`, `cleared=0`, `payable=0`, `paid=0`)
   - cumulative brand loss `1300` minor
 - Real Woo separation:
   - non-canary Woo events `0`
@@ -995,12 +996,18 @@ Final classification update:
 
 ### Governance Outcome
 
-- Governance class: `B` (isolated canary lineage with remaining live payable exposure)
+- Governance class: `A` (isolated canary lineage with zero possible payable exposure)
 - Selected strategy: preserve canary lineage and neutralize exposure with canonical reversal
-- Mutation executed in this phase: `NO` (read-only)
-- Proposed next mutation (not executed):
+- Mutation executed in this phase: `YES`
   - signed canary refund for order `91013003`, line `9101300301`, `3700` minor cumulative reversal
-  - expected result: last pending canary entitlement becomes `reversed`; possible payable becomes `0`
+  - persisted as receipt `s2g-prod-canary-20261013-o3-r1` and adjustment `refund:91013003:9101300391`
+  - result: last pending canary entitlement became `reversed`; possible payable is `0`
+- Post-mutation runtime checks:
+  - ECS steady `1/1/0`, rollout `COMPLETED`
+  - target healthy, health endpoint `200`
+  - unsigned Woo POST remains auth rejected (`401`)
+  - STG alarms in `ALARM`: `0`
+  - RDS `available`, `MultiAZ=true`, no pending modifications
 
 ### Onboarding Readiness Baseline
 

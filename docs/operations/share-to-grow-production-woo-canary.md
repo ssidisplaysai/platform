@@ -211,17 +211,22 @@ No STG-caused changes to:
 
 `PAGE_FACTORY_DRIFT_RISK=NO`
 
-## Governance Follow-Up (Read-Only Audit)
+## Governance Follow-Up (Audit + Canonical Balance Neutralization)
 
-Post-certification governance audit result:
+Post-certification governance and balancing result:
 
 - canary provenance marker available via `sourceEventId` prefix `s2g-prod-canary-20261013`
 - non-canary Woo receipts: `0`
 - `REAL_PRODUCTION_WOO_EVENTS=0` (excluding canary namespace)
-- remaining canary payable exposure: `3700` minor (`$37.00`) from one `pending` entitlement (`orderId=91013003`)
+- remaining canary payable exposure: `0` minor (`$0.00`)
+- canary balancing mutation recorded:
+  - new receipt `s2g-prod-canary-20261013-o3-r1`
+  - new adjustment `refund:91013003:9101300391`
+  - one additional reversal `-3700` minor
+  - `entitlement:...91013003...` now `reversed`
 
-Governance class: `B` (isolated canary lineage with live payable balance).
+Governance class: `A` (isolated canary lineage with zero possible payable exposure).
 
-Selected governance strategy: preserve canary lineage and neutralize live exposure using canonical reversal (not executed in this read-only phase).
+Selected governance strategy: preserve canary lineage and neutralize live exposure using canonical reversal (executed).
 
 See `docs/operations/share-to-grow-production-canary-governance.md` for the full inventory, economics, classification logic, and onboarding readiness baseline.
