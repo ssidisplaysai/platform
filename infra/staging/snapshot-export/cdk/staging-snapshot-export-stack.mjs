@@ -49,6 +49,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
       prefix: "exports/",
       expiration: cdk.Duration.days(artifactRetentionDays),
       noncurrentVersionExpiration: cdk.Duration.days(artifactRetentionDays),
+      abortIncompleteMultipartUploadAfter: cdk.Duration.days(1),
     }],
   });
 
@@ -112,9 +113,41 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
   }));
 
   const readerRole = new iam.Role(stack, "StagingSnapshotReaderRole", {
-    assumedBy: new iam.ArnPrincipal(readerPrincipalArn.valueAsString),
+    assumedBy: new iam.ArnPrincipal(readerPrincipalArn.valueAsString).withConditions({
+      StringLike: {
+        "aws:RequestTag/reconciliation-run-id": "[a-z0-9][a-z0-9-]{5,63}",
+      },
+      "ForAllValues:StringEquals": {
+        "aws:TagKeys": ["reconciliation-run-id"],
+      },
+    }),
     description: "Read-only role for retrieving run-scoped encrypted snapshot artifacts.",
   });
+  readerRole.assumeRolePolicy.addStatements(new iam.PolicyStatement({
+    sid: "AllowSessionTaggingForRunScopedRead",
+    effect: iam.Effect.ALLOW,
+    principals: [new iam.ArnPrincipal(readerPrincipalArn.valueAsString)],
+    actions: ["sts:TagSession"],
+    conditions: {
+      StringLike: {
+        "aws:RequestTag/reconciliation-run-id": "[a-z0-9][a-z0-9-]{5,63}",
+      },
+      "ForAllValues:StringEquals": {
+        "aws:TagKeys": ["reconciliation-run-id"],
+      },
+    },
+  }));
+  readerRole.addToPolicy(new iam.PolicyStatement({
+    sid: "DenyMissingRunIdSessionTag",
+    effect: iam.Effect.DENY,
+    actions: ["s3:GetObject", "s3:ListBucket", "kms:Decrypt"],
+    resources: ["*"],
+    conditions: {
+      Null: {
+        "aws:PrincipalTag/reconciliation-run-id": "true",
+      },
+    },
+  }));
   readerRole.addToPolicy(new iam.PolicyStatement({
     sid: "ReadRunScopedArtifactsOnly",
     effect: iam.Effect.ALLOW,
@@ -137,6 +170,12 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
     effect: iam.Effect.ALLOW,
     actions: ["kms:Decrypt", "kms:DescribeKey"],
     resources: [snapshotKey.keyArn],
+    conditions: {
+      StringLike: {
+        "kms:EncryptionContext:aws:s3:arn":
+          `${snapshotBucket.bucketArn}/exports/\${aws:PrincipalTag/reconciliation-run-id}/*`,
+      },
+    },
   }));
 
   const operatorRole = new iam.Role(stack, "StagingSnapshotOperatorRole", {
@@ -150,6 +189,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
     resources: ["arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-snapshot-export:*"],
     conditions: {
       ArnEquals: { "ecs:cluster": stagingClusterArn.valueAsString },
+      Bool: { "ecs:enable-execute-command": "false" },
     },
   }));
   operatorRole.addToPolicy(new iam.PolicyStatement({
@@ -181,4 +221,3 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
 
   return stack;
 }
-

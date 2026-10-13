@@ -55,3 +55,54 @@ test("uploader returns only sanitized S3 put metadata", async () => {
   assert.equal(result.serverSideEncryption, "aws:kms");
 });
 
+test("maps S3 and KMS access denied failures to fixed codes", async () => {
+  await assert.rejects(
+    uploadSnapshotWithAwsCli({
+      bucket: "genesis-staging-s2g-snapshot-artifacts-452630323448-us-west-2",
+      key: "exports/s2g-run-001/filesystem.snapshot.json",
+      bodyText: "{\"schemaVersion\":1}",
+      kmsKeyArn: "arn:aws:kms:us-west-2:452630323448:key/12345678-1234-1234-1234-1234567890ab",
+      runId: "s2g-run-001",
+      awsExecFileSync() {
+        const error = new Error("upload failed");
+        error.stderr = "An error occurred (AccessDenied) when calling PutObject";
+        throw error;
+      },
+    }),
+    /S3_ACCESS_DENIED/,
+  );
+
+  await assert.rejects(
+    uploadSnapshotWithAwsCli({
+      bucket: "genesis-staging-s2g-snapshot-artifacts-452630323448-us-west-2",
+      key: "exports/s2g-run-001/filesystem.snapshot.json",
+      bodyText: "{\"schemaVersion\":1}",
+      kmsKeyArn: "arn:aws:kms:us-west-2:452630323448:key/12345678-1234-1234-1234-1234567890ab",
+      runId: "s2g-run-001",
+      awsExecFileSync() {
+        const error = new Error("upload failed");
+        error.stderr = "AccessDenied by KMS policy";
+        throw error;
+      },
+    }),
+    /KMS_ACCESS_DENIED/,
+  );
+});
+
+test("maps precondition failures to overwrite collision code", async () => {
+  await assert.rejects(
+    uploadSnapshotWithAwsCli({
+      bucket: "genesis-staging-s2g-snapshot-artifacts-452630323448-us-west-2",
+      key: "exports/s2g-run-001/filesystem.snapshot.json",
+      bodyText: "{\"schemaVersion\":1}",
+      kmsKeyArn: "arn:aws:kms:us-west-2:452630323448:key/12345678-1234-1234-1234-1234567890ab",
+      runId: "s2g-run-001",
+      awsExecFileSync() {
+        const error = new Error("upload failed");
+        error.stderr = "PreconditionFailed";
+        throw error;
+      },
+    }),
+    /S3_OBJECT_ALREADY_EXISTS/,
+  );
+});

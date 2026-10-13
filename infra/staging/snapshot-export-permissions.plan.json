@@ -1,6 +1,7 @@
 {
   "status": "approved-not-applied",
   "scope": "staging-only-share-to-grow-snapshot-export",
+  "provisioningReadiness": "NOT_READY",
   "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
   "taskDefinitionFamily": "genesis-staging-snapshot-export",
   "namespace": "share-to-grow-repository",
@@ -54,6 +55,42 @@
       ]
     }
   ],
+  "databaseRoleProvisioningRequirements": {
+    "roleName": "genesis_share_to_grow_snapshot_reader",
+    "database": "genesis_staging",
+    "requiredGrants": [
+      "CONNECT ON DATABASE genesis_staging",
+      "USAGE ON SCHEMA public",
+      "SELECT ON TABLE public.genesis_foundation_state"
+    ],
+    "requiredRevokes": [
+      "REVOKE CREATE ON SCHEMA public",
+      "REVOKE ALL ON ALL TABLES IN SCHEMA public",
+      "REVOKE ALL ON ALL SEQUENCES IN SCHEMA public",
+      "REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public"
+    ],
+    "prohibitedCapabilities": [
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "TRUNCATE",
+      "CREATE",
+      "ALTER",
+      "DROP",
+      "GRANT OPTION",
+      "CREATEROLE",
+      "SUPERUSER",
+      "BYPASSRLS",
+      "REPLICATION"
+    ],
+    "mustUseDedicatedSecret": "SNAPSHOT_DB_READER_SECRET_ARN"
+  },
+  "currentBlockers": [
+    {
+      "code": "ECS_OVERRIDE_IMMUTABILITY_UNRESOLVED",
+      "description": "Direct ecs:RunTask allows caller-controlled container overrides that can redirect destinations. Provisioning requires a controlled launch broker that strips overrides and signs allowed run parameters."
+    }
+  ],
   "requiredApprovalsBeforeApply": [
     "Security architecture review",
     "IAM least-privilege review",
@@ -61,4 +98,3 @@
     "Staging change window approval"
   ]
 }
-

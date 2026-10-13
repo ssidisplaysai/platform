@@ -15,6 +15,28 @@
 - `StagingSnapshotOperatorRole`
   - Launches only approved staging one-off export task definitions.
   - May pass only approved staging execution/task roles.
+
+## Required database reader role (provision separately)
+
+Provision a dedicated PostgreSQL role and secret for snapshot export only:
+
+```sql
+-- create role/login and bind only to staging database (separate approval required)
+CREATE ROLE genesis_share_to_grow_snapshot_reader LOGIN PASSWORD '<managed-by-secrets-manager>';
+REVOKE ALL ON DATABASE genesis_staging FROM genesis_share_to_grow_snapshot_reader;
+GRANT CONNECT ON DATABASE genesis_staging TO genesis_share_to_grow_snapshot_reader;
+\c genesis_staging
+REVOKE ALL ON SCHEMA public FROM genesis_share_to_grow_snapshot_reader;
+GRANT USAGE ON SCHEMA public TO genesis_share_to_grow_snapshot_reader;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM genesis_share_to_grow_snapshot_reader;
+GRANT SELECT ON TABLE public.genesis_foundation_state TO genesis_share_to_grow_snapshot_reader;
+ALTER ROLE genesis_share_to_grow_snapshot_reader NOSUPERUSER NOCREATEROLE NOCREATEDB NOREPLICATION NOBYPASSRLS;
+```
+
+Hard requirements:
+- exporter task must use `SNAPSHOT_DB_READER_SECRET_ARN` only,
+- `DB_USERNAME` must equal `genesis_share_to_grow_snapshot_reader`,
+- exporter refuses to run if username mismatch is detected.
 - `StagingSnapshotExporterRole`
   - Reads staging sources and uploads encrypted artifacts.
 - `StagingSnapshotReaderRole`
@@ -26,6 +48,14 @@
 2. IAM least-privilege review approved.
 3. Staging-only stack diff reviewed.
 4. Explicit sign-off that no production stack updates are included.
+5. Controlled launch broker design approval (see blocker below).
+
+## Current blocker: ECS override immutability
+
+Direct `ecs:RunTask` permits caller-supplied container overrides. To prevent destination redirection and run-parameter tampering, provisioning remains blocked until one of the following is approved:
+
+1. Launch broker (Lambda/Step Function) that accepts validated run ID only, strips overrides, and invokes `RunTask` with fixed parameters.
+2. Equivalent control proving immutable task command/environment at launch time.
 
 ## Snapshot acquisition and encrypted export
 
@@ -66,6 +96,7 @@
 ## Logging and audit requirements
 
 - Keep CloudWatch logs metadata-only.
+- Exporter failure logs must emit fixed failure codes only (no raw exception payloads).
 - Enforce TLS and SSE-KMS for all snapshot artifact writes.
 - Keep artifacts under short retention lifecycle.
 - Track execution events in CloudTrail management events and S3 data-event plan.
@@ -73,6 +104,7 @@
 ## Artifact expiration and cleanup
 
 - Bucket lifecycle expiration applies to `exports/` prefix.
+- Expiration is not cryptographic erasure; backup/cached replicas may persist transiently per AWS internals.
 - Local snapshot files must be deleted after report completion.
 - Retain only sanitized manifests and metadata required for audit.
 
@@ -86,4 +118,3 @@ Stop immediately if any of the following occur:
 - overwrite attempt detected,
 - raw financial records appear in logs,
 - revision drift during acquisition.
-

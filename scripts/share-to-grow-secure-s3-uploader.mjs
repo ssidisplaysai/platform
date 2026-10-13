@@ -80,7 +80,20 @@ export async function uploadSnapshotWithAwsCli({
       expectedBucketOwner,
       runId,
     });
-    const output = awsExecFileSync("aws", args, { encoding: "utf8" });
+    let output;
+    try {
+      output = awsExecFileSync("aws", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    } catch (error) {
+      const stderr = typeof error?.stderr === "string" ? error.stderr : "";
+      if (stderr.includes("AccessDenied")) {
+        if (stderr.includes("kms") || stderr.includes("KMS")) throw new Error("KMS_ACCESS_DENIED");
+        throw new Error("S3_ACCESS_DENIED");
+      }
+      if (stderr.includes("PreconditionFailed") || stderr.includes("412")) {
+        throw new Error("S3_OBJECT_ALREADY_EXISTS");
+      }
+      throw new Error("S3_UPLOAD_FAILED");
+    }
     const parsed = JSON.parse(output);
     return {
       eTag: parsed.ETag ?? null,
@@ -92,4 +105,3 @@ export async function uploadSnapshotWithAwsCli({
     await rm(tempDir, { recursive: true, force: true });
   }
 }
-
