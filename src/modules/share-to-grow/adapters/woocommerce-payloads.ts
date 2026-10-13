@@ -65,12 +65,58 @@ function requiredCost(meta: Readonly<Record<string, string | undefined>>, key: s
   return wooDecimalToMinor(value);
 }
 
+function optionalCost(meta: Readonly<Record<string, string | undefined>>, key: string): bigint {
+  const value = meta[key];
+  if (value === undefined) return 0n;
+  return wooDecimalToMinor(value);
+}
+
 export const GENESIS_WOOCOMMERCE_LINE_META = Object.freeze({
   cogs: "_genesis_cogs",
   inboundFreightDuty: "_genesis_inbound_freight_duty",
   fulfillmentPackaging: "_genesis_fulfillment_packaging",
   paymentProcessing: "_genesis_payment_processing",
 });
+
+export const GENESIS_WOOCOMMERCE_ORDER_COST_META = Object.freeze({
+  customerShippingRevenue: "_genesis_customer_shipping_revenue",
+  outboundShippingLabelActual: "_genesis_outbound_shipping_label_actual",
+  outboundShippingLabelEstimate: "_genesis_outbound_shipping_label_estimate",
+  orderFulfillmentPackagingActual: "_genesis_order_fulfillment_packaging_actual",
+  paymentProcessingActual: "_genesis_payment_processing_fee_actual",
+});
+
+function allocateOrderMinorAcrossLines(input: {
+  totalMinor: bigint;
+  weights: readonly bigint[];
+  errorCode: string;
+}): readonly bigint[] {
+  if (input.totalMinor === 0n) return Object.freeze(input.weights.map(() => 0n));
+  const totalWeight = input.weights.reduce((sum, weight) => sum + weight, 0n);
+  if (totalWeight <= 0n) throw new Error(input.errorCode);
+
+  const sign = input.totalMinor < 0n ? -1n : 1n;
+  const absoluteTotal = input.totalMinor < 0n ? -input.totalMinor : input.totalMinor;
+  const allocations = input.weights.map((weight, index) => {
+    const weighted = absoluteTotal * weight;
+    const base = weighted / totalWeight;
+    const remainder = weighted % totalWeight;
+    return { index, base, remainder };
+  });
+
+  const allocated = allocations.reduce((sum, line) => sum + line.base, 0n);
+  let remainderMinor = absoluteTotal - allocated;
+  allocations.sort((left, right) => Number(right.remainder - left.remainder) || left.index - right.index);
+  for (const line of allocations) {
+    if (remainderMinor <= 0n) break;
+    line.base += 1n;
+    remainderMinor -= 1n;
+  }
+
+  const out = new Array<bigint>(input.weights.length).fill(0n);
+  for (const line of allocations) out[line.index] = line.base * sign;
+  return Object.freeze(out);
+}
 
 export interface ParsedWooCommerceOrderPayload {
   readonly order: WooCommerceOrderSnapshot;
@@ -80,6 +126,7 @@ export interface ParsedWooCommerceOrderPayload {
 export function parseWooCommerceOrderPayload(input: {
   rawBody: string;
   organizationId: string;
+  allowEstimatedOutboundShippingLabel?: boolean;
 }): ParsedWooCommerceOrderPayload {
   let raw: unknown;
   try { raw = JSON.parse(input.rawBody); } catch { throw new Error("INVALID_WOOCOMMERCE_JSON"); }
@@ -94,7 +141,19 @@ export function parseWooCommerceOrderPayload(input: {
     throw new Error("MISSING_WOOCOMMERCE_LINE_ITEMS");
   }
 
-  const lines: WooCommerceLineSnapshot[] = payload.line_items.map((rawLine) => {
+  const orderMeta = metaRecord(payload);
+  const customerShippingRevenueMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.customerShippingRevenue);
+  const outboundShippingLabelActualMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.outboundShippingLabelActual);
+  const outboundShippingLabelEstimateMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.outboundShippingLabelEstimate);
+  const outboundShippingLabelMinor = outboundShippingLabelActualMinor !== 0n
+    ? outboundShippingLabelActualMinor
+    : input.allowEstimatedOutboundShippingLabel
+      ? outboundShippingLabelEstimateMinor
+      : 0n;
+  const orderFulfillmentPackagingMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.orderFulfillmentPackagingActual);
+  const orderPaymentProcessingMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.paymentProcessingActual);
+
+  const linesPre = payload.line_items.map((rawLine) => {
     const line = object(rawLine, "INVALID_WOOCOMMERCE_LINE_ITEM");
     const meta = lineMeta(line);
     const quantity = integerValue(line.quantity, "INVALID_WOOCOMMERCE_QUANTITY");
@@ -111,12 +170,50 @@ export function parseWooCommerceOrderPayload(input: {
       // Bridge cost metadata is per unit; normalize to line totals.
       cogsMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.cogs) * BigInt(quantity),
       inboundFreightDutyMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty) * BigInt(quantity),
-      fulfillmentPackagingMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging) * BigInt(quantity),
-      paymentProcessingMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing) * BigInt(quantity),
+      fulfillmentPackagingMinor: optionalCost(meta, GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging) * BigInt(quantity),
+      paymentProcessingMinor: optionalCost(meta, GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing) * BigInt(quantity),
     });
   });
 
-  const orderMeta = metaRecord(payload);
+  const lineFulfillmentMinor = linesPre.reduce((sum, line) => sum + line.fulfillmentPackagingMinor, 0n);
+  if (orderFulfillmentPackagingMinor !== 0n && lineFulfillmentMinor !== 0n) {
+    throw new Error("DOUBLE_COUNT_WOOCOMMERCE_FULFILLMENT_PACKAGING");
+  }
+  const linePaymentMinor = linesPre.reduce((sum, line) => sum + line.paymentProcessingMinor, 0n);
+  if (orderPaymentProcessingMinor !== 0n && linePaymentMinor !== 0n) {
+    throw new Error("DOUBLE_COUNT_WOOCOMMERCE_PAYMENT_PROCESSING");
+  }
+
+  const allocationWeights = linesPre.map((line) => line.grossMerchandiseMinor - line.discountMinor);
+  const customerShippingByLine = allocateOrderMinorAcrossLines({
+    totalMinor: customerShippingRevenueMinor,
+    weights: allocationWeights,
+    errorCode: "INVALID_WOOCOMMERCE_SHIPPING_REVENUE_ALLOCATION_BASIS",
+  });
+  const outboundShippingByLine = allocateOrderMinorAcrossLines({
+    totalMinor: outboundShippingLabelMinor,
+    weights: allocationWeights,
+    errorCode: "INVALID_WOOCOMMERCE_SHIPPING_LABEL_ALLOCATION_BASIS",
+  });
+  const orderFulfillmentByLine = allocateOrderMinorAcrossLines({
+    totalMinor: orderFulfillmentPackagingMinor,
+    weights: allocationWeights,
+    errorCode: "INVALID_WOOCOMMERCE_FULFILLMENT_ALLOCATION_BASIS",
+  });
+  const orderPaymentByLine = allocateOrderMinorAcrossLines({
+    totalMinor: orderPaymentProcessingMinor,
+    weights: allocationWeights,
+    errorCode: "INVALID_WOOCOMMERCE_PAYMENT_ALLOCATION_BASIS",
+  });
+
+  const lines: WooCommerceLineSnapshot[] = linesPre.map((line, index) => Object.freeze({
+    ...line,
+    customerShippingRevenueMinor: customerShippingByLine[index],
+    outboundShippingLabelMinor: outboundShippingByLine[index],
+    fulfillmentPackagingMinor: line.fulfillmentPackagingMinor + orderFulfillmentByLine[index],
+    paymentProcessingMinor: line.paymentProcessingMinor + orderPaymentByLine[index],
+  }));
+
   return Object.freeze({
     order: Object.freeze({
       orderId: idValue(payload.id, "MISSING_WOOCOMMERCE_ORDER_ID"),

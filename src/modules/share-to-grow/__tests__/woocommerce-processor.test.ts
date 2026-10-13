@@ -40,6 +40,29 @@ function order() {
   };
 }
 
+function twoUnitOrderWithShipping() {
+  return {
+    orderId: "665",
+    organizationId: "stoner",
+    currency: "USD",
+    convertedAt: "2026-10-13T07:45:09Z",
+    lines: [{
+      lineItemId: "11",
+      productId: "stoner-gym-performance-tee",
+      quantity: 2,
+      grossMerchandiseMinor: 12000n,
+      customerShippingRevenueMinor: 900n,
+      discountMinor: 0n,
+      refundMinor: 0n,
+      cogsMinor: 3600n,
+      inboundFreightDutyMinor: 200n,
+      outboundShippingLabelMinor: 900n,
+      fulfillmentPackagingMinor: 200n,
+      paymentProcessingMinor: 400n,
+    }],
+  };
+}
+
 describe("WooCommerce end-to-end processor", () => {
   beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
@@ -108,6 +131,29 @@ describe("WooCommerce end-to-end processor", () => {
     expect(ledger.balanceMinor("stoner")).toBe(1850n);
     expect(ledger.balanceMinor("daniel")).toBe(1850n);
     expect(result.pendingEntitlements).toHaveLength(2);
+  });
+
+  test("two-unit Daniel direct order applies direct rule once per canonical line", async () => {
+    const w = webhook("woo-daniel-665");
+    const ledger = new AppendOnlyLedger();
+    const result = await processWooCommerceOrder({
+      webhook: w.envelope,
+      webhookSecret: w.secret,
+      order: twoUnitOrderWithShipping(),
+      orderMeta: {
+        [GENESIS_WOOCOMMERCE_ORDER_META.canonicalPartnerId]: "daniel-coffeen",
+        [GENESIS_WOOCOMMERCE_ORDER_META.trackingIdentityId]: "tracking-stoner-gym-daniel-coffeen-v1",
+      },
+      qualifiedTouches: [],
+      recruitedCreatorPartnerIds: [],
+      ledger,
+    });
+
+    expect(result.processedLines).toHaveLength(1);
+    expect(result.processedLines[0]?.lineKey).toBe("woocommerce:665:11");
+    expect(result.processedLines[0]?.ruleVersionId).toBe("stoner-gym-daniel-direct-v1");
+    expect(ledger.balanceMinor("stoner")).toBe(3800n);
+    expect(ledger.balanceMinor("daniel")).toBe(3800n);
   });
 
   test("organic order remains 100 percent STONER", async () => {

@@ -1,5 +1,6 @@
 import {
   GENESIS_WOOCOMMERCE_LINE_META,
+  GENESIS_WOOCOMMERCE_ORDER_COST_META,
   parseWooCommerceOrderPayload,
   parseWooCommerceRefundPayload,
   wooDecimalToMinor,
@@ -62,6 +63,7 @@ describe("WooCommerce raw payload parsing", () => {
         meta_data: lineMeta,
       }],
     });
+
     const parsed = parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" });
     const line = parsed.order.lines[0];
     expect(line.grossMerchandiseMinor).toBe(12000n);
@@ -70,6 +72,109 @@ describe("WooCommerce raw payload parsing", () => {
     expect(line.fulfillmentPackagingMinor).toBe(400n);
     expect(line.paymentProcessingMinor).toBe(400n);
     expect(parsed.orderMeta._genesis_partner_id).toBe("daniel-coffeen");
+  });
+
+  test("allocates order-level shipping revenue and actual fees across lines without double counting", () => {
+    const rawBody = JSON.stringify({
+      id: 9001,
+      currency: "USD",
+      date_paid_gmt: "2026-10-13T07:45:09Z",
+      meta_data: [
+        { key: "_genesis_partner_id", value: "daniel-coffeen" },
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.customerShippingRevenue, value: "10.00" },
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.outboundShippingLabelActual, value: "8.00" },
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.orderFulfillmentPackagingActual, value: "4.00" },
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.paymentProcessingActual, value: "3.00" },
+      ],
+      line_items: [
+        {
+          id: 11,
+          product_id: 646,
+          quantity: 2,
+          subtotal: "120.00",
+          total: "120.00",
+          meta_data: [
+            { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
+            { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+          ],
+        },
+        {
+          id: 12,
+          product_id: 647,
+          quantity: 1,
+          subtotal: "60.00",
+          total: "60.00",
+          meta_data: [
+            { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
+            { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+          ],
+        },
+      ],
+    });
+    const parsed = parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" });
+    const [first, second] = parsed.order.lines;
+    expect(first.customerShippingRevenueMinor! + second.customerShippingRevenueMinor!).toBe(1000n);
+    expect(first.outboundShippingLabelMinor! + second.outboundShippingLabelMinor!).toBe(800n);
+    expect(first.fulfillmentPackagingMinor + second.fulfillmentPackagingMinor).toBe(400n);
+    expect(first.paymentProcessingMinor + second.paymentProcessingMinor).toBe(300n);
+  });
+
+  test("uses configurable shipping-label estimate fallback only when explicitly enabled", () => {
+    const rawBody = JSON.stringify({
+      id: 9002,
+      currency: "USD",
+      date_paid_gmt: "2026-10-13T07:45:09Z",
+      meta_data: [
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.outboundShippingLabelEstimate, value: "9.00" },
+      ],
+      line_items: [{
+        id: 11,
+        product_id: 646,
+        quantity: 1,
+        subtotal: "60.00",
+        total: "60.00",
+        meta_data: [
+          { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging, value: "2.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing, value: "2.00" },
+        ],
+      }],
+    });
+    const disabled = parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" });
+    expect(disabled.order.lines[0].outboundShippingLabelMinor).toBe(0n);
+
+    const enabled = parseWooCommerceOrderPayload({
+      rawBody,
+      organizationId: "stoner",
+      allowEstimatedOutboundShippingLabel: true,
+    });
+    expect(enabled.order.lines[0].outboundShippingLabelMinor).toBe(900n);
+  });
+
+  test("fails closed when order-level and per-line actuals would double count", () => {
+    const rawBody = JSON.stringify({
+      id: 9003,
+      currency: "USD",
+      date_paid_gmt: "2026-10-13T07:45:09Z",
+      meta_data: [
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.paymentProcessingActual, value: "2.00" },
+      ],
+      line_items: [{
+        id: 11,
+        product_id: 646,
+        quantity: 1,
+        subtotal: "60.00",
+        total: "60.00",
+        meta_data: [
+          { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing, value: "2.00" },
+        ],
+      }],
+    });
+    expect(() => parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" }))
+      .toThrow("DOUBLE_COUNT_WOOCOMMERCE_PAYMENT_PROCESSING");
   });
 
   test("fails closed when canonical Genesis cost inputs are missing", () => {
