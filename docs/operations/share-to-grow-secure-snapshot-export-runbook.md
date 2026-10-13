@@ -46,6 +46,19 @@ Hard requirements:
 - `StagingSnapshotReaderRole`
   - Reads run-scoped encrypted artifacts and decrypts them locally.
 
+## Dedicated staging DB admin task boundary (draft)
+
+- Use a dedicated one-off task family for DB admin diagnostics/provisioning design:
+  - [s2g-db-role-provision-task-definition.template.json](../../infra/staging/s2g-db-role-provision-task-definition.template.json)
+  - [s2g-db-role-provision-permissions.plan.json](../../infra/staging/s2g-db-role-provision-permissions.plan.json)
+- The default command is diagnostic-only (`--diagnose-admin-readonly`) and requires:
+  - fixed staging host/database,
+  - `DB_ADMIN_USERNAME` + `DB_ADMIN_PASSWORD` from the exact staging RDS-managed admin secret,
+  - TLS CA verification,
+  - read-only transaction checks before metadata inspection.
+- Direct operator `ecs:RunTask` with caller overrides is considered unsafe for privileged DB operations.
+  Use a fixed-configuration launcher control plane for actual execution authorization.
+
 ## Deployment approval gate (before any apply)
 
 1. Security review approved for S3/KMS and retention controls.

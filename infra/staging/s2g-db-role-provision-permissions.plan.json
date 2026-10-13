@@ -1,0 +1,77 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-diagnostic-and-reader-role-provision",
+  "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+  "taskDefinitionFamily": "genesis-staging-s2g-db-role-provision",
+  "subnets": [
+    "subnet-0f303dea5f645e42d",
+    "subnet-00a0b287895a3b18c"
+  ],
+  "securityGroup": "sg-0687242229bc3a80e",
+  "assignPublicIp": "DISABLED",
+  "fargatePlatformVersion": "1.4.0",
+  "executionRole": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
+  "taskRole": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-task-role",
+  "adminSecretArn": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+  "newPermissions": [
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
+      "actions": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "resources": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP"
+      ],
+      "kmsDecryptRequired": false
+    }
+  ],
+  "existingPermissionsSufficient": [
+    {
+      "principal": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+      "actions": [
+        "ecs:RegisterTaskDefinition",
+        "ecs:DescribeTaskDefinition",
+        "ecs:DescribeTasks"
+      ],
+      "scope": "Existing deployment role permissions are sufficient for task-definition registration and diagnostics introspection."
+    }
+  ],
+  "launchControls": {
+    "directEcsRunTask": "unsafe-due-to-overrides",
+    "requiredControlPlane": "dedicated fixed-configuration launcher",
+    "recommendedLauncher": {
+      "type": "lambda",
+      "name": "genesis-staging-s2g-db-role-provision-launcher",
+      "auth": "AWS_IAM",
+      "operatorRole": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-operator-role",
+      "behavior": [
+        "Ignore caller taskDefinition/network/command overrides.",
+        "Run only approved task-definition revision supplied by server configuration.",
+        "Force no public IP, fixed cluster/subnets/security group.",
+        "Disallow ECS Exec."
+      ]
+    }
+  },
+  "modes": {
+    "diagnosticOnly": {
+      "script": "scripts/staging-s2g-db-role-provision.mjs --diagnose-admin-readonly",
+      "writesData": false
+    },
+    "provisioningPlannedNotExecuted": {
+      "script": "scripts/staging-s2g-db-role-provision.mjs --prepare-provisioning-sql",
+      "requiresApprovalToken": "S2G_DB_ROLE_PROVISIONING_APPROVAL=APPROVED_PHASE_A_DB_ROLE_PROVISIONING"
+    }
+  },
+  "provisioningBoundary": {
+    "allowedTargetRole": "genesis_share_to_grow_snapshot_reader",
+    "allowedDatabase": "genesis_staging",
+    "allowedTable": "public.genesis_foundation_state",
+    "forbidden": [
+      "arbitrary SQL from operators",
+      "production hostnames",
+      "additional role creation",
+      "schema/table mutations outside grants for target role"
+    ]
+  }
+}
