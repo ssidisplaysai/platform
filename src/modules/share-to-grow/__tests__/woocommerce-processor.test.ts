@@ -87,6 +87,29 @@ describe("WooCommerce end-to-end processor", () => {
     expect(ledger.balanceMinor("daniel")).toBe(BigInt(1850));
   });
 
+  test("canonical Daniel partner ID receives a 50/50 split", async () => {
+    const w = webhook("woo-daniel-canonical-1");
+    const ledger = new AppendOnlyLedger();
+    const result = await processWooCommerceOrder({
+      webhook: w.envelope,
+      webhookSecret: w.secret,
+      order: order(),
+      orderMeta: {
+        [GENESIS_WOOCOMMERCE_ORDER_META.canonicalPartnerId]: "daniel-coffeen",
+        [GENESIS_WOOCOMMERCE_ORDER_META.trackingIdentityId]: "tracking-stoner-gym-daniel-coffeen-v1",
+      },
+      qualifiedTouches: [],
+      recruitedCreatorPartnerIds: [],
+      ledger,
+    });
+
+    expect(result.attribution?.selectedPartnerId).toBe("daniel-coffeen");
+    expect(result.processedLines[0]?.ruleVersionId).toBe("stoner-gym-daniel-direct-v1");
+    expect(ledger.balanceMinor("stoner")).toBe(1850n);
+    expect(ledger.balanceMinor("daniel")).toBe(1850n);
+    expect(result.pendingEntitlements).toHaveLength(2);
+  });
+
   test("organic order remains 100 percent STONER", async () => {
     const w = webhook("woo-organic-1");
     const ledger = new AppendOnlyLedger();
