@@ -7,7 +7,7 @@ import {
 } from "./share-to-grow-snapshot-export-lib.mjs";
 import { readPostgresShareToGrowSnapshot } from "./share-to-grow-postgres-snapshot-exporter.mjs";
 import { readFilesystemShareToGrowSnapshot } from "./share-to-grow-efs-snapshot-exporter.mjs";
-import { uploadSnapshotWithAwsCli } from "./share-to-grow-secure-s3-uploader.mjs";
+import { uploadSnapshotToS3 } from "./share-to-grow-secure-s3-uploader.mjs";
 
 function usage() {
   throw new Error(
@@ -83,7 +83,7 @@ export async function runSnapshotExport(argv, environment = process.env, depende
   const createPool = dependencies.createPool ?? ((config) => new Pool(config));
   const readPostgres = dependencies.readPostgresShareToGrowSnapshot ?? readPostgresShareToGrowSnapshot;
   const readFilesystem = dependencies.readFilesystemShareToGrowSnapshot ?? readFilesystemShareToGrowSnapshot;
-  const uploadSnapshot = dependencies.uploadSnapshotWithAwsCli ?? uploadSnapshotWithAwsCli;
+  const uploadSnapshot = dependencies.uploadSnapshotToS3 ?? uploadSnapshotToS3;
   const pool = createPool({
     ...postgresClientConfig(environment),
     max: 1,

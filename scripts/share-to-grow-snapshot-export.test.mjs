@@ -72,7 +72,7 @@ test("returns sanitized report using injected read-only dependencies", async () 
           metadata: { ...snapshot.metadata, backend: "filesystem" },
         });
       },
-      uploadSnapshotWithAwsCli() {
+      uploadSnapshotToS3() {
         return Promise.resolve({ eTag: "\"1\"", versionId: "v1" });
       },
     },
@@ -95,4 +95,3 @@ for (const [message, code] of [
     assert.equal(mapErrorToFailureCode(new Error(message)), code);
   });
 }
-

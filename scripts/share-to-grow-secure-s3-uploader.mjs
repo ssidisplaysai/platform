@@ -1,7 +1,4 @@
-import { execFileSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const REQUIRED_SSE = "aws:kms";
 
@@ -20,7 +17,7 @@ function validateKmsKeyArn(kmsKeyArn) {
 export function buildPutObjectCommand({
   bucket,
   key,
-  filePath,
+  bodyText,
   kmsKeyArn,
   expectedBucketOwner,
   runId,
@@ -28,80 +25,64 @@ export function buildPutObjectCommand({
   validateBucketName(bucket);
   validateKmsKeyArn(kmsKeyArn);
   if (typeof key !== "string" || key.length === 0) throw new Error("S3_OBJECT_KEY_INVALID");
-  if (typeof filePath !== "string" || filePath.length === 0) throw new Error("S3_UPLOAD_FILE_PATH_INVALID");
+  if (typeof bodyText !== "string" || bodyText.length === 0) throw new Error("S3_UPLOAD_BODY_INVALID");
   if (typeof runId !== "string" || runId.length === 0) throw new Error("S3_UPLOAD_RUN_ID_REQUIRED");
 
-  const args = [
-    "s3api",
-    "put-object",
-    "--bucket",
-    bucket,
-    "--key",
-    key,
-    "--body",
-    filePath,
-    "--server-side-encryption",
-    REQUIRED_SSE,
-    "--ssekms-key-id",
-    kmsKeyArn,
-    "--if-none-match",
-    "*",
-    "--content-type",
-    "application/json",
-    "--metadata",
-    `run-id=${runId},namespace=share-to-grow-repository`,
-    "--output",
-    "json",
-  ];
-  if (expectedBucketOwner) {
-    args.push("--expected-bucket-owner", expectedBucketOwner);
-  }
-  return args;
+  const commandInput = {
+    Bucket: bucket,
+    Key: key,
+    Body: bodyText,
+    ServerSideEncryption: REQUIRED_SSE,
+    SSEKMSKeyId: kmsKeyArn,
+    IfNoneMatch: "*",
+    ContentType: "application/json",
+    Metadata: {
+      "run-id": runId,
+      namespace: "share-to-grow-repository",
+    },
+  };
+  if (expectedBucketOwner) commandInput.ExpectedBucketOwner = expectedBucketOwner;
+  return commandInput;
 }
 
-export async function uploadSnapshotWithAwsCli({
+export async function uploadSnapshotToS3({
   bucket,
   key,
   bodyText,
   kmsKeyArn,
   expectedBucketOwner,
   runId,
-  awsExecFileSync = execFileSync,
+  s3Client = new S3Client({}),
 }) {
-  const tempDir = await mkdtemp(join(tmpdir(), "s2g-snapshot-upload-"));
-  const tempFile = join(tempDir, "snapshot.json");
+  const input = buildPutObjectCommand({
+    bucket,
+    key,
+    bodyText,
+    kmsKeyArn,
+    expectedBucketOwner,
+    runId,
+  });
   try {
-    await writeFile(tempFile, bodyText, "utf8");
-    const args = buildPutObjectCommand({
-      bucket,
-      key,
-      filePath: tempFile,
-      kmsKeyArn,
-      expectedBucketOwner,
-      runId,
-    });
-    let output;
-    try {
-      output = awsExecFileSync("aws", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-    } catch (error) {
-      const stderr = typeof error?.stderr === "string" ? error.stderr : "";
-      if (stderr.includes("AccessDenied")) {
-        if (stderr.includes("kms") || stderr.includes("KMS")) throw new Error("KMS_ACCESS_DENIED");
-        throw new Error("S3_ACCESS_DENIED");
-      }
-      if (stderr.includes("PreconditionFailed") || stderr.includes("412")) {
-        throw new Error("S3_OBJECT_ALREADY_EXISTS");
-      }
-      throw new Error("S3_UPLOAD_FAILED");
-    }
-    const parsed = JSON.parse(output);
+    const output = await s3Client.send(new PutObjectCommand(input));
     return {
-      eTag: parsed.ETag ?? null,
-      versionId: parsed.VersionId ?? null,
-      serverSideEncryption: parsed.ServerSideEncryption ?? null,
-      sseKmsKeyId: parsed.SSEKMSKeyId ?? null,
+      eTag: output.ETag ?? null,
+      versionId: output.VersionId ?? null,
+      serverSideEncryption: output.ServerSideEncryption ?? null,
+      sseKmsKeyId: output.SSEKMSKeyId ?? null,
     };
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
+  } catch (error) {
+    const status = error?.$metadata?.httpStatusCode;
+    const name = typeof error?.name === "string" ? error.name : "";
+    const message = typeof error?.message === "string" ? error.message : "";
+    if (status === 412 || name === "PreconditionFailed" || message.includes("PreconditionFailed")) {
+      throw new Error("S3_OBJECT_ALREADY_EXISTS");
+    }
+    if (name === "KMSAccessDeniedException" || message.includes("KMS")) {
+      throw new Error("KMS_ACCESS_DENIED");
+    }
+    if (status === 403 || name === "AccessDenied" || message.includes("AccessDenied")) {
+      throw new Error("S3_ACCESS_DENIED");
+    }
+    throw new Error("S3_UPLOAD_FAILED");
   }
 }
