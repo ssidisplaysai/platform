@@ -108,10 +108,11 @@ export function parseWooCommerceOrderPayload(input: {
       grossMerchandiseMinor: gross,
       discountMinor: gross - net,
       refundMinor: 0n,
-      cogsMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.cogs),
-      inboundFreightDutyMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty),
-      fulfillmentPackagingMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging),
-      paymentProcessingMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing),
+      // Bridge cost metadata is per unit; normalize to line totals.
+      cogsMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.cogs) * BigInt(quantity),
+      inboundFreightDutyMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty) * BigInt(quantity),
+      fulfillmentPackagingMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging) * BigInt(quantity),
+      paymentProcessingMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing) * BigInt(quantity),
     });
   });
 
