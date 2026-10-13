@@ -1,0 +1,58 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-diagnostic-launcher",
+  "activationModel": {
+    "parameter": "LauncherActivationState",
+    "default": "DISABLED",
+    "allowedValues": ["DISABLED", "ENABLED"]
+  },
+  "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+  "approvedDiagnosticTaskFamily": "genesis-staging-s2g-db-role-provision",
+  "requiredTaskArnPattern": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-role-provision:<revision>",
+  "network": {
+    "subnets": ["subnet-0f303dea5f645e42d", "subnet-00a0b287895a3b18c"],
+    "securityGroups": ["sg-0687242229bc3a80e"],
+    "assignPublicIp": "DISABLED",
+    "enableExecuteCommand": false
+  },
+  "fixedCommand": [
+    "node",
+    "scripts/staging-s2g-db-role-provision.mjs",
+    "--diagnose-admin-readonly"
+  ],
+  "idempotency": {
+    "tableName": "genesis-staging-s2g-db-admin-diagnostic-launches",
+    "key": "runId",
+    "states": ["CLAIMED", "LAUNCHED"],
+    "clientToken": "runId"
+  },
+  "newRoles": [
+    {
+      "roleLogicalName": "DbAdminDiagnosticLauncherExecutionRole",
+      "purpose": "Runs launcher lambda and can only inspect/launch approved ECS task and track launch claims."
+    },
+    {
+      "roleName": "genesis-staging-s2g-db-role-provision-execution-role",
+      "purpose": "ECS execution role reading exact staging RDS admin secret only."
+    },
+    {
+      "roleName": "genesis-staging-s2g-db-role-provision-task-role",
+      "purpose": "No AWS API permissions; diagnostic queries only."
+    },
+    {
+      "roleLogicalName": "StagingS2gDbAdminDiagnosticOperatorRole",
+      "purpose": "Can invoke launcher URL only. No direct ECS/IAM authority."
+    }
+  ],
+  "secretBoundary": {
+    "approvedAdminSecretArn": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+    "allowedActions": ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+    "kmsDecryptRequired": false
+  },
+  "operatorRestrictions": [
+    "No direct ecs:RunTask permission",
+    "No direct iam:PassRole permission",
+    "No caller-supplied task/network/command overrides",
+    "No caller-supplied SQL or provisioning token"
+  ]
+}

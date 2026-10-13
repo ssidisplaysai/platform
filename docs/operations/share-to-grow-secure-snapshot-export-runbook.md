@@ -51,6 +51,10 @@ Hard requirements:
 - Use a dedicated one-off task family for DB admin diagnostics/provisioning design:
   - [s2g-db-role-provision-task-definition.template.json](../../infra/staging/s2g-db-role-provision-task-definition.template.json)
   - [s2g-db-role-provision-permissions.plan.json](../../infra/staging/s2g-db-role-provision-permissions.plan.json)
+- Use a dedicated launcher control plane for privileged diagnostic execution:
+  - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
+  - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
+  - [s2g-db-admin-launcher-permissions.plan.json](../../infra/staging/s2g-db-admin-launcher-permissions.plan.json)
 - The default command is diagnostic-only (`--diagnose-admin-readonly`) and requires:
   - fixed staging host/database,
   - `DB_ADMIN_USERNAME` + `DB_ADMIN_PASSWORD` from the exact staging RDS-managed admin secret,

@@ -1,12 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
-  buildProvisioningPlan,
-  generateCredentialHandoff,
+  parseDiagnosticModeArg,
   runAdminReadOnlyDiagnostic,
 } from "./staging-s2g-db-role-provision.mjs";
 
@@ -84,6 +81,16 @@ test("diagnostic mode rejects wrong host and wrong database", async () => {
   );
 });
 
+test("diagnostic mode parser accepts only diagnostic command", () => {
+  assert.doesNotThrow(() => parseDiagnosticModeArg(["--diagnose-admin-readonly"]));
+  assert.throws(() => parseDiagnosticModeArg([]), /USAGE_DIAGNOSTIC_ONLY/);
+  assert.throws(() => parseDiagnosticModeArg(["--prepare-provisioning-sql"]), /USAGE_DIAGNOSTIC_ONLY/);
+  assert.throws(
+    () => parseDiagnosticModeArg(["--diagnose-admin-readonly", "--sql", "SELECT 1"]),
+    /ARBITRARY_SQL_INPUT_REJECTED/,
+  );
+});
+
 test("diagnostic mode enforces private endpoint and read-only transaction", async () => {
   const client = diagnosticClient();
   const report = await runAdminReadOnlyDiagnostic(baseEnvironment, {
@@ -97,46 +104,29 @@ test("diagnostic mode enforces private endpoint and read-only transaction", asyn
   assert.ok(client.calls.some((call) => typeof call === "object" && call.sql === "BEGIN READ ONLY"));
 });
 
-test("provisioning plan requires independent authorization and rejects arbitrary SQL input", async () => {
-  assert.throws(() => buildProvisioningPlan(baseEnvironment), /PROVISIONING_AUTHORIZATION_REQUIRED/);
-  const plan = buildProvisioningPlan({
-    ...baseEnvironment,
-    S2G_DB_ROLE_PROVISIONING_APPROVAL: "APPROVED_PHASE_A_DB_ROLE_PROVISIONING",
-  });
-
-  test("script rejects arbitrary SQL argument injection", () => {
-    const result = spawnSync(process.execPath, [
-      "scripts/staging-s2g-db-role-provision.mjs",
-      "--prepare-provisioning-sql",
-      "--sql",
-      "SELECT 1",
-    ], {
+test("script rejects provisioning and credential-generation modes", () => {
+  for (const mode of ["--prepare-provisioning-sql", "--generate-reader-credential-handoff"]) {
+    const result = spawnSync(process.execPath, ["scripts/staging-s2g-db-role-provision.mjs", mode], {
       cwd: resolve(import.meta.dirname, ".."),
       env: baseEnvironment,
       encoding: "utf8",
     });
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /ARBITRARY_SQL_INPUT_REJECTED/);
-  });
-  assert.equal(plan.mode, "PROVISIONING_PLAN_ONLY");
-  assert.equal(plan.targetRole, "genesis_share_to_grow_snapshot_reader");
-  assert.ok(plan.sql.some((line) => line.includes("CREATE ROLE")));
-  assert.ok(plan.sql.every((line) => !/DROP|ALTER SYSTEM|COPY\s+PROGRAM/i.test(line)));
+    assert.match(result.stderr, /code=USAGE_DIAGNOSTIC_ONLY/);
+  }
 });
 
-test("credential handoff file is generated outside repository without printing password", async (t) => {
-  const tempDirectory = await mkdtemp(join(tmpdir(), "s2g-db-role-handoff-"));
-  t.after(() => rm(tempDirectory, { recursive: true, force: true }));
-  const output = join(tempDirectory, "reader-credential.json");
-  const result = await generateCredentialHandoff(output, baseEnvironment);
-  const body = JSON.parse(await readFile(output, "utf8"));
-  assert.equal(body.role, "genesis_share_to_grow_snapshot_reader");
-  assert.equal(body.database, "genesis_staging");
-  assert.match(body.password, /^[A-Za-z0-9_-]{40,}$/);
-  assert.equal(result.outputFile, resolve(output));
-  assert.equal(result.passwordSha256.length, 64);
-  if (process.platform !== "win32") {
-    const metadata = await stat(output);
-    assert.equal(metadata.mode & 0o777, 0o600);
-  }
+test("script rejects arbitrary SQL argument injection", () => {
+  const result = spawnSync(process.execPath, [
+    "scripts/staging-s2g-db-role-provision.mjs",
+    "--diagnose-admin-readonly",
+    "--sql",
+    "SELECT 1",
+  ], {
+    cwd: resolve(import.meta.dirname, ".."),
+    env: baseEnvironment,
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /code=ARBITRARY_SQL_INPUT_REJECTED/);
 });

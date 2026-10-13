@@ -59,6 +59,7 @@ test("permissions plan documents override-immutability controls and staging-only
   assert.equal(plan.launchControls.requiredControlPlane, "dedicated fixed-configuration launcher");
   assert.ok(plan.launchControls.recommendedLauncher.behavior.some((line) => line.includes("Ignore caller taskDefinition/network/command overrides")));
   assert.equal(plan.modes.diagnosticOnly.writesData, false);
+  assert.equal(plan.modes.provisioningPlannedNotExecuted.script, "DISABLED_IN_THIS_REVISION");
   assert.ok(plan.provisioningBoundary.forbidden.includes("arbitrary SQL from operators"));
   assert.ok(plan.newPermissions.every((entry) => !JSON.stringify(entry).includes("\"Resource\":\"*\"")));
 });

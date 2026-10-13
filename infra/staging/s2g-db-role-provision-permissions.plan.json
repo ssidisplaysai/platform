@@ -42,9 +42,9 @@
     "requiredControlPlane": "dedicated fixed-configuration launcher",
     "recommendedLauncher": {
       "type": "lambda",
-      "name": "genesis-staging-s2g-db-role-provision-launcher",
+      "name": "genesis-staging-s2g-db-admin-diagnostic-launcher",
       "auth": "AWS_IAM",
-      "operatorRole": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-operator-role",
+      "operatorRole": "arn:aws:iam::452630323448:role/StagingS2gDbAdminDiagnosticOperatorRole",
       "behavior": [
         "Ignore caller taskDefinition/network/command overrides.",
         "Run only approved task-definition revision supplied by server configuration.",
@@ -59,8 +59,8 @@
       "writesData": false
     },
     "provisioningPlannedNotExecuted": {
-      "script": "scripts/staging-s2g-db-role-provision.mjs --prepare-provisioning-sql",
-      "requiresApprovalToken": "S2G_DB_ROLE_PROVISIONING_APPROVAL=APPROVED_PHASE_A_DB_ROLE_PROVISIONING"
+      "script": "DISABLED_IN_THIS_REVISION",
+      "requiresSeparateImplementation": true
     }
   },
   "provisioningBoundary": {
