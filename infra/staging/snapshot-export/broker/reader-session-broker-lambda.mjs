@@ -7,6 +7,7 @@ const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const sts = new STSClient({});
 
 const config = Object.freeze({
+  brokerActivationState: process.env.BROKER_ACTIVATION_STATE ?? "DISABLED",
   expectedAccountId: process.env.EXPECTED_ACCOUNT_ID ?? "",
   readerRoleArn: process.env.READER_ROLE_ARN ?? "",
   authorizationTableName: process.env.AUTHORIZATION_TABLE_NAME ?? "",

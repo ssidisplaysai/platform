@@ -12,6 +12,8 @@ test("snapshot export permissions plan remains staging-scoped and non-deploying"
   assert.equal(plan.status, "approved-not-applied");
   assert.equal(plan.provisioningReadiness, "READY_WITH_APPROVAL_GATES");
   assert.equal(plan.scope, "staging-only-share-to-grow-snapshot-export");
+  assert.equal(plan.activationModel.parameter, "BrokerActivationState");
+  assert.equal(plan.activationModel.default, "DISABLED");
   assert.equal(plan.namespace, "share-to-grow-repository");
   assert.equal(plan.artifactStorage.retentionDays, 2);
   assert.equal(plan.databaseRoleProvisioningRequirements.roleName, "genesis_share_to_grow_snapshot_reader");
@@ -20,6 +22,8 @@ test("snapshot export permissions plan remains staging-scoped and non-deploying"
   assert.equal(plan.currentBlockers.length, 0);
   assert.equal(plan.launchBrokerControls.authorizationRecord, "SnapshotRunAuthorizationTable");
   assert.match(JSON.stringify(plan.launchBrokerControls), /overrideProtection/);
+  assert.match(JSON.stringify(plan.launchBrokerControls), /BROKER_DISABLED/);
+  assert.match(JSON.stringify(plan.readerBrokerControls), /READER_BROKER_DISABLED/);
   assert.ok(Array.isArray(plan.newRoles));
   assert.equal(plan.newRoles.length, 5);
   const raw = JSON.stringify(plan);

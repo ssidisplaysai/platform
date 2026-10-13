@@ -2,6 +2,11 @@
   "status": "approved-not-applied",
   "scope": "staging-only-share-to-grow-snapshot-export",
   "provisioningReadiness": "READY_WITH_APPROVAL_GATES",
+  "activationModel": {
+    "parameter": "BrokerActivationState",
+    "default": "DISABLED",
+    "allowedValues": ["DISABLED", "ENABLED"]
+  },
   "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
   "taskDefinitionFamily": "genesis-staging-snapshot-export",
   "namespace": "share-to-grow-repository",
@@ -112,7 +117,12 @@
     "requiredFields": ["runId", "status=APPROVED", "operatorArn", "approvedTaskDefinitionArn", "readerRoleArn", "expiresAtEpoch"],
     "idempotency": "claimRunLaunch transitions APPROVED -> CLAIMED with claim TTL; RunTask uses clientToken=runId; replay returns CLAIM_IN_PROGRESS or IDEMPOTENT_ALREADY_LAUNCHED without duplicate launches",
     "overrideProtection": "broker rejects caller-supplied ECS cluster/taskDefinition/overrides and builds fixed run-task input server-side",
-    "stagingNetwork": "fixed staging cluster/subnets/security groups; assignPublicIp=DISABLED; ECS Exec disabled"
+    "stagingNetwork": "fixed staging cluster/subnets/security groups; assignPublicIp=DISABLED; ECS Exec disabled",
+    "disabledMode": "BROKER_DISABLED rejects all requests before authorization/side effects; enabled-only ecs/iam permissions are conditionally attached"
+  },
+  "readerBrokerControls": {
+    "disabledMode": "READER_BROKER_DISABLED rejects all requests before authorization/side effects; enabled-only sts assume/tag permissions are conditionally attached",
+    "enabledMode": "requires approved unexpired run, exact operator binding, exact reader role match, and run-scoped session tag issuance"
   },
   "requiredApprovalsBeforeApply": [
     "Security architecture review",

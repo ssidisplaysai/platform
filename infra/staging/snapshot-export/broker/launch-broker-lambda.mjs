@@ -11,6 +11,7 @@ const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const ecs = new ECSClient({});
 
 const config = Object.freeze({
+  brokerActivationState: process.env.BROKER_ACTIVATION_STATE ?? "DISABLED",
   expectedAccountId: process.env.EXPECTED_ACCOUNT_ID ?? "",
   stagingClusterArn: process.env.STAGING_CLUSTER_ARN ?? "",
   approvedTaskDefinitionArn: process.env.APPROVED_TASK_DEFINITION_ARN ?? "",

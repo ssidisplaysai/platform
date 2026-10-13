@@ -27,7 +27,15 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
   });
   const approvedTaskDefinitionArn = new cdk.CfnParameter(stack, "ApprovedSnapshotTaskDefinitionArn", {
     type: "String",
+    default: "",
+    allowedPattern: "(^$)|(^arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-snapshot-export:[1-9][0-9]*$)",
     description: "Exact approved staging snapshot export task definition ARN including revision.",
+  });
+  const brokerActivationState = new cdk.CfnParameter(stack, "BrokerActivationState", {
+    type: "String",
+    default: "DISABLED",
+    allowedValues: ["DISABLED", "ENABLED"],
+    description: "Two-stage broker activation guard for snapshot export launch and reader session issuance.",
   });
   const stagingTaskExecutionRoleArn = new cdk.CfnParameter(stack, "StagingTaskExecutionRoleArn", {
     type: "String",
@@ -152,31 +160,40 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
     actions: ["dynamodb:GetItem", "dynamodb:UpdateItem"],
     resources: [snapshotAuthorizationTable.tableArn],
   }));
-  launchBrokerExecutionRole.addToPolicy(new iam.PolicyStatement({
-    sid: "RunApprovedStagingSnapshotTaskOnly",
-    effect: iam.Effect.ALLOW,
-    actions: ["ecs:RunTask"],
-    resources: [approvedTaskDefinitionArn.valueAsString],
-    conditions: {
-      ArnEquals: { "ecs:cluster": stagingClusterArn.valueAsString },
-      Bool: { "ecs:enable-execute-command": "false" },
-    },
-  }));
-  launchBrokerExecutionRole.addToPolicy(new iam.PolicyStatement({
-    sid: "DescribeApprovedTaskDefinitionOnly",
-    effect: iam.Effect.ALLOW,
-    actions: ["ecs:DescribeTaskDefinition"],
-    resources: [approvedTaskDefinitionArn.valueAsString],
-  }));
-  launchBrokerExecutionRole.addToPolicy(new iam.PolicyStatement({
-    sid: "PassOnlySnapshotTaskRoles",
-    effect: iam.Effect.ALLOW,
-    actions: ["iam:PassRole"],
-    resources: [exporterRole.roleArn, stagingTaskExecutionRoleArn.valueAsString],
-    conditions: {
-      StringEquals: { "iam:PassedToService": "ecs-tasks.amazonaws.com" },
-    },
-  }));
+  const brokerEnabledCondition = new cdk.CfnCondition(stack, "BrokerEnabledCondition", {
+    expression: cdk.Fn.conditionEquals(brokerActivationState.valueAsString, "ENABLED"),
+  });
+  const launchBrokerEnabledPolicy = new iam.Policy(stack, "SnapshotLaunchBrokerEnabledPolicy", {
+    roles: [launchBrokerExecutionRole],
+    statements: [
+      new iam.PolicyStatement({
+        sid: "RunApprovedStagingSnapshotTaskOnly",
+        effect: iam.Effect.ALLOW,
+        actions: ["ecs:RunTask"],
+        resources: [approvedTaskDefinitionArn.valueAsString],
+        conditions: {
+          ArnEquals: { "ecs:cluster": stagingClusterArn.valueAsString },
+          Bool: { "ecs:enable-execute-command": "false" },
+        },
+      }),
+      new iam.PolicyStatement({
+        sid: "DescribeApprovedTaskDefinitionOnly",
+        effect: iam.Effect.ALLOW,
+        actions: ["ecs:DescribeTaskDefinition"],
+        resources: [approvedTaskDefinitionArn.valueAsString],
+      }),
+      new iam.PolicyStatement({
+        sid: "PassOnlySnapshotTaskRoles",
+        effect: iam.Effect.ALLOW,
+        actions: ["iam:PassRole"],
+        resources: [exporterRole.roleArn, stagingTaskExecutionRoleArn.valueAsString],
+        conditions: {
+          StringEquals: { "iam:PassedToService": "ecs-tasks.amazonaws.com" },
+        },
+      }),
+    ],
+  });
+  launchBrokerEnabledPolicy.node.defaultChild.cfnOptions.condition = brokerEnabledCondition;
 
   const launchBrokerFn = new lambda.Function(stack, "SnapshotLaunchBrokerFunction", {
     runtime: lambda.Runtime.NODEJS_22_X,
@@ -193,6 +210,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
       STAGING_SUBNETS: cdk.Fn.join(",", stagingSubnets.valueAsList),
       STAGING_SECURITY_GROUPS: cdk.Fn.join(",", stagingSecurityGroups.valueAsList),
       LAUNCH_CLAIM_TTL_SECONDS: "180",
+      BROKER_ACTIVATION_STATE: brokerActivationState.valueAsString,
     },
   });
   const launchBrokerUrl = launchBrokerFn.addFunctionUrl({
@@ -278,20 +296,26 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
       },
     },
   }));
-  readerBrokerExecutionRole.addToPolicy(new iam.PolicyStatement({
-    sid: "AssumeReaderRoleWithRunTagOnly",
-    effect: iam.Effect.ALLOW,
-    actions: ["sts:AssumeRole", "sts:TagSession"],
-    resources: [readerRole.roleArn],
-    conditions: {
-      StringLike: {
-        "aws:RequestTag/reconciliation-run-id": "s2g-run-*",
-      },
-      "ForAllValues:StringEquals": {
-        "aws:TagKeys": ["reconciliation-run-id"],
-      },
-    },
-  }));
+  const readerBrokerEnabledPolicy = new iam.Policy(stack, "SnapshotReaderBrokerEnabledPolicy", {
+    roles: [readerBrokerExecutionRole],
+    statements: [
+      new iam.PolicyStatement({
+        sid: "AssumeReaderRoleWithRunTagOnly",
+        effect: iam.Effect.ALLOW,
+        actions: ["sts:AssumeRole", "sts:TagSession"],
+        resources: [readerRole.roleArn],
+        conditions: {
+          StringLike: {
+            "aws:RequestTag/reconciliation-run-id": "s2g-run-*",
+          },
+          "ForAllValues:StringEquals": {
+            "aws:TagKeys": ["reconciliation-run-id"],
+          },
+        },
+      }),
+    ],
+  });
+  readerBrokerEnabledPolicy.node.defaultChild.cfnOptions.condition = brokerEnabledCondition;
 
   const readerBrokerFn = new lambda.Function(stack, "SnapshotReaderSessionBrokerFunction", {
     runtime: lambda.Runtime.NODEJS_22_X,
@@ -303,6 +327,7 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
       EXPECTED_ACCOUNT_ID: cdk.Aws.ACCOUNT_ID,
       AUTHORIZATION_TABLE_NAME: snapshotAuthorizationTable.tableName,
       READER_ROLE_ARN: readerRole.roleArn,
+      BROKER_ACTIVATION_STATE: brokerActivationState.valueAsString,
     },
   });
   const readerBrokerUrl = readerBrokerFn.addFunctionUrl({
@@ -313,28 +338,34 @@ export function createStagingSnapshotExportStack(app, id = "GenesisStagingSnapsh
     assumedBy: new iam.ArnPrincipal(operatorPrincipalArn.valueAsString),
     description: "Restricted operator role for invoking snapshot broker APIs only.",
   });
-  operatorRole.addToPolicy(new iam.PolicyStatement({
-    sid: "InvokeSnapshotLaunchBrokerOnly",
-    effect: iam.Effect.ALLOW,
-    actions: ["lambda:InvokeFunctionUrl"],
-    resources: [launchBrokerFn.functionArn],
-    conditions: {
-      StringEquals: {
-        "lambda:FunctionUrlAuthType": "AWS_IAM",
-      },
-    },
-  }));
-  operatorRole.addToPolicy(new iam.PolicyStatement({
-    sid: "InvokeSnapshotReaderBrokerOnly",
-    effect: iam.Effect.ALLOW,
-    actions: ["lambda:InvokeFunctionUrl"],
-    resources: [readerBrokerFn.functionArn],
-    conditions: {
-      StringEquals: {
-        "lambda:FunctionUrlAuthType": "AWS_IAM",
-      },
-    },
-  }));
+  const operatorEnabledPolicy = new iam.Policy(stack, "StagingSnapshotOperatorEnabledPolicy", {
+    roles: [operatorRole],
+    statements: [
+      new iam.PolicyStatement({
+        sid: "InvokeSnapshotLaunchBrokerOnly",
+        effect: iam.Effect.ALLOW,
+        actions: ["lambda:InvokeFunctionUrl"],
+        resources: [launchBrokerFn.functionArn],
+        conditions: {
+          StringEquals: {
+            "lambda:FunctionUrlAuthType": "AWS_IAM",
+          },
+        },
+      }),
+      new iam.PolicyStatement({
+        sid: "InvokeSnapshotReaderBrokerOnly",
+        effect: iam.Effect.ALLOW,
+        actions: ["lambda:InvokeFunctionUrl"],
+        resources: [readerBrokerFn.functionArn],
+        conditions: {
+          StringEquals: {
+            "lambda:FunctionUrlAuthType": "AWS_IAM",
+          },
+        },
+      }),
+    ],
+  });
+  operatorEnabledPolicy.node.defaultChild.cfnOptions.condition = brokerEnabledCondition;
 
   new cdk.CfnOutput(stack, "SnapshotArtifactBucketName", { value: snapshotBucket.bucketName });
   new cdk.CfnOutput(stack, "SnapshotArtifactKmsKeyArn", { value: snapshotKey.keyArn });

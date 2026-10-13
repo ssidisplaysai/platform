@@ -41,6 +41,10 @@ function parseBody(event) {
 
 function validateConfig(config) {
   if (!config || typeof config !== "object") throw failure("BROKER_CONFIG_INVALID");
+  if (config.brokerActivationState !== "DISABLED" && config.brokerActivationState !== "ENABLED") {
+    throw failure("BROKER_CONFIG_INVALID");
+  }
+  if (config.brokerActivationState === "DISABLED") return;
   const required = [
     "expectedAccountId",
     "stagingClusterArn",
@@ -68,6 +72,7 @@ function ensureStagingArns(config) {
 
 export async function authorizeAndLaunchSnapshotExport(event, { config, deps }) {
   validateConfig(config);
+  if (config.brokerActivationState === "DISABLED") throw failure("BROKER_DISABLED");
   ensureStagingArns(config);
   const request = parseBody(event);
   const invokerArn = parseInvokerArn(event);
@@ -182,6 +187,7 @@ export function mapLaunchBrokerFailureCode(error) {
     "BROKER_RUN_ID_INVALID",
     "BROKER_OVERRIDES_REJECTED",
     "BROKER_CONFIG_INVALID",
+    "BROKER_DISABLED",
     "BROKER_PRODUCTION_RESOURCE_REJECTED",
     "BROKER_CROSS_ACCOUNT_DENIED",
     "BROKER_RUN_NOT_AUTHORIZED",

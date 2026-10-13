@@ -4,6 +4,7 @@ import { issueReaderSession, mapReaderBrokerFailureCode } from "../snapshot-expo
 
 function baseConfig() {
   return {
+    brokerActivationState: "ENABLED",
     expectedAccountId: "452630323448",
     readerRoleArn: "arn:aws:iam::452630323448:role/StagingSnapshotReaderRole",
   };
@@ -63,6 +64,33 @@ test("issues run-scoped reader session with fixed reconciliation tag", async () 
         },
       };
     },
+  });
+
+  test("rejects all requests when reader broker activation is disabled", async () => {
+    await assert.rejects(
+      issueReaderSession(baseEvent(), {
+        config: { ...baseConfig(), brokerActivationState: "DISABLED" },
+        deps: baseDeps({
+          async getRunAuthorization() {
+            assert.fail("authorization lookup must not run when reader broker is disabled");
+          },
+          async assumeRole() {
+            assert.fail("assumeRole must not run when reader broker is disabled");
+          },
+        }),
+      }),
+      /READER_BROKER_DISABLED/,
+    );
+  });
+
+  test("fails closed for invalid activation state configuration", async () => {
+    await assert.rejects(
+      issueReaderSession(baseEvent(), {
+        config: { ...baseConfig(), brokerActivationState: "MAYBE" },
+        deps: baseDeps(),
+      }),
+      /READER_BROKER_CONFIG_INVALID/,
+    );
   });
   const response = await issueReaderSession(baseEvent(), { config: baseConfig(), deps });
   const body = JSON.parse(response.body);

@@ -7,6 +7,7 @@ import {
 
 function baseConfig() {
   return {
+    brokerActivationState: "ENABLED",
     expectedAccountId: "452630323448",
     stagingClusterArn: "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
     approvedTaskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-snapshot-export:7",
@@ -84,6 +85,40 @@ test("launches task with fixed network and command overrides only from broker", 
     "--run-id",
     "s2g-run-abc123",
   ]);
+});
+
+test("rejects all requests when broker activation is disabled", async () => {
+  const deps = baseDeps({
+    async getRunAuthorization() {
+      assert.fail("authorization lookup must not run when broker is disabled");
+    },
+    async claimRunLaunch() {
+      assert.fail("claim must not run when broker is disabled");
+    },
+    async describeTaskDefinition() {
+      assert.fail("task definition describe must not run when broker is disabled");
+    },
+    async runTask() {
+      assert.fail("runTask must not run when broker is disabled");
+    },
+  });
+
+  test("fails closed for invalid activation state configuration", async () => {
+    await assert.rejects(
+      authorizeAndLaunchSnapshotExport(baseEvent(), {
+        config: { ...baseConfig(), brokerActivationState: "MAYBE" },
+        deps: baseDeps(),
+      }),
+      /BROKER_CONFIG_INVALID/,
+    );
+  });
+  await assert.rejects(
+    authorizeAndLaunchSnapshotExport(baseEvent(), {
+      config: { ...baseConfig(), brokerActivationState: "DISABLED" },
+      deps,
+    }),
+    /BROKER_DISABLED/,
+  );
 });
 
 test("rejects caller-controlled overrides and alternate ECS targets", async () => {

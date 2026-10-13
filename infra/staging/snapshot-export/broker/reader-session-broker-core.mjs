@@ -35,6 +35,10 @@ function parseBody(event) {
 }
 
 export async function issueReaderSession(event, { config, deps }) {
+  if (config?.brokerActivationState !== "DISABLED" && config?.brokerActivationState !== "ENABLED") {
+    throw failure("READER_BROKER_CONFIG_INVALID");
+  }
+  if (config.brokerActivationState === "DISABLED") throw failure("READER_BROKER_DISABLED");
   if (!config?.expectedAccountId || !config?.readerRoleArn) throw failure("READER_BROKER_CONFIG_INVALID");
   const request = parseBody(event);
   const invokerArn = parseInvokerArn(event);
@@ -89,6 +93,7 @@ export function mapReaderBrokerFailureCode(error) {
     "READER_BROKER_RUN_ID_INVALID",
     "READER_BROKER_OVERRIDE_REJECTED",
     "READER_BROKER_CONFIG_INVALID",
+    "READER_BROKER_DISABLED",
     "READER_BROKER_CROSS_ACCOUNT_DENIED",
     "READER_BROKER_RUN_NOT_AUTHORIZED",
     "READER_BROKER_RUN_NOT_APPROVED",

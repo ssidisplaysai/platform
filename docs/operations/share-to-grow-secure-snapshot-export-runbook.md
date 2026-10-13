@@ -54,6 +54,16 @@ Hard requirements:
 4. Explicit sign-off that no production stack updates are included.
 5. Broker authorization-record governance approved (who can create/approve run records and TTL policy).
 
+## Two-stage broker activation
+
+- `BrokerActivationState=DISABLED` (default bootstrap state):
+  - launch broker rejects all requests with `BROKER_DISABLED`,
+  - reader broker rejects all requests with `READER_BROKER_DISABLED`,
+  - enabled-only broker permissions are not attached.
+- `BrokerActivationState=ENABLED` (separately approved activation state):
+  - requires exact approved snapshot task ARN with family `genesis-staging-snapshot-export` and revision,
+  - enables broker launch/reader invocation and enabled-only ECS/STS permissions.
+
 ## Snapshot acquisition and encrypted export
 
 1. Assume `StagingSnapshotOperatorRole`.

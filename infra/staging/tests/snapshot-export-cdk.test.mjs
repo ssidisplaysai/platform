@@ -51,6 +51,27 @@ test("synthesized IAM policies remain least privilege for exporter/reader/operat
   assert.doesNotMatch(json, /genesis-production-artifacts-452630323448-us-west-2/);
 });
 
+test("defines two-stage BrokerActivationState with disabled default and enabled-only policies", () => {
+  const template = synthTemplate();
+  const json = JSON.stringify(template);
+  assert.match(json, /"BrokerActivationState"/);
+  assert.match(json, /"Default":"DISABLED"/);
+  assert.match(json, /"AllowedValues":\["DISABLED","ENABLED"\]/);
+  assert.match(json, /"BrokerEnabledCondition"/);
+  assert.match(json, /"Condition":"BrokerEnabledCondition"/);
+  assert.match(json, /SnapshotLaunchBrokerEnabledPolicy/);
+  assert.match(json, /SnapshotReaderBrokerEnabledPolicy/);
+  assert.match(json, /StagingSnapshotOperatorEnabledPolicy/);
+});
+
+test("allows empty ApprovedSnapshotTaskDefinitionArn for disabled bootstrap and strict family revision pattern", () => {
+  const template = synthTemplate();
+  const json = JSON.stringify(template);
+  assert.match(json, /"ApprovedSnapshotTaskDefinitionArn"/);
+  assert.match(json, /"Default":""/);
+  assert.match(json, /genesis-staging-snapshot-export:\[1-9\]\[0-9\]\*/);
+});
+
 test("reader trust policy requires run-scoped session tags", () => {
   const template = synthTemplate();
   const json = JSON.stringify(template);
