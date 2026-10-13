@@ -81,6 +81,15 @@ Authoritative Woo verification requires:
 
 When unavailable, order financial processing fails closed with `WOOCOMMERCE_ORDER_VERIFICATION_UNAVAILABLE`.
 
+### Staging secret wiring
+
+Staging runtime configuration expects these Secrets Manager entries:
+
+- `genesis/staging/woocommerce-api-consumer-key`
+- `genesis/staging/woocommerce-api-consumer-secret`
+
+Both values must come from a WooCommerce REST API key pair scoped to staging and granted **Read** permission only. These credentials are supplied to ECS through task-definition secret references (never plaintext environment values).
+
 ## Validation
 
 - targeted Woo integrity tests (new + existing): pass

@@ -54,6 +54,8 @@ VPC_ID="vpc-05035503df7e142d6"
 ECR_REPO="genesis-staging-runtime"
 LOG_GROUP="/genesis/staging/web"
 SECRET_NAME="genesis/staging/woocommerce-webhook-secret"
+WOOCOMMERCE_API_CONSUMER_KEY_SECRET_NAME="genesis/staging/woocommerce-api-consumer-key"
+WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME="genesis/staging/woocommerce-api-consumer-secret"
 EXEC_ROLE_NAME="genesis-staging-execution-role"
 TASK_ROLE_NAME="genesis-staging-task-role"
 EFS_NAME="genesis-staging-persistence"
@@ -66,7 +68,7 @@ WEBHOOK_RULE_PRIORITY=10
 AUTH_RULE_PRIORITY=11
 CONTAINER_NAME="GenesisWebRuntime"
 
-for v in "$ECR_REPO" "$LOG_GROUP" "$SECRET_NAME" "$EXEC_ROLE_NAME" "$TASK_ROLE_NAME" "$EFS_NAME" "$STAGING_SERVICE" "$STAGING_TG_NAME"; do
+for v in "$ECR_REPO" "$LOG_GROUP" "$SECRET_NAME" "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_NAME" "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME" "$EXEC_ROLE_NAME" "$TASK_ROLE_NAME" "$EFS_NAME" "$STAGING_SERVICE" "$STAGING_TG_NAME"; do
   case "$v" in *production*) echo "Refusing production-named target: $v" >&2; exit 1;; esac
 done
 
@@ -113,9 +115,10 @@ lookup_ap_id() {
   aws efs describe-access-points --file-system-id "$fs" \
     --query "AccessPoints[?Tags[?Key=='Name'&&Value=='${EFS_NAME}']]|[0].AccessPointId" --output text | sed 's/^None$//'
 }
-lookup_secret_arn() {
+lookup_secret_arn_by_name() {
+  local secret_name="$1"
   local result
-  if result="$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --query ARN --output text 2>&1)"; then
+  if result="$(aws secretsmanager describe-secret --secret-id "$secret_name" --query ARN --output text 2>&1)"; then
     printf '%s\n' "$result"
   else
     case "$result" in
@@ -123,6 +126,10 @@ lookup_secret_arn() {
       *) echo "$result" >&2; return 1 ;;
     esac
   fi
+}
+
+lookup_secret_arn() {
+  lookup_secret_arn_by_name "$SECRET_NAME"
 }
 
 lookup_sg_id() {
@@ -156,14 +163,16 @@ render_taskdef() {
   : "${IMAGE_URI_WITH_DIGEST:?}" "${GIT_COMMIT:?}"
   EXECUTION_ROLE_ARN="$EXEC_ROLE_ARN"
   WEBHOOK_SECRET_ARN="$(lookup_secret_arn)"
+  WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN="$(lookup_secret_arn_by_name "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_NAME")"
+  WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN="$(lookup_secret_arn_by_name "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME")"
   EFS_FILE_SYSTEM_ID="$(lookup_efs_id)"
   EFS_ACCESS_POINT_ID="$(lookup_ap_id "$EFS_FILE_SYSTEM_ID")"
   for r in "$TASK_ROLE_NAME" "$EXEC_ROLE_NAME"; do aws iam get-role --role-name "$r" >/dev/null 2>&1 || { echo "role $r missing; run Genesis Staging Infrastructure (apply) first" >&2; exit 1; }; done
-  export TASK_ROLE_ARN EXECUTION_ROLE_ARN WEBHOOK_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID
-  for v in WEBHOOK_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID; do
+  export TASK_ROLE_ARN EXECUTION_ROLE_ARN WEBHOOK_SECRET_ARN WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID
+  for v in WEBHOOK_SECRET_ARN WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID; do
     [ -n "${!v}" ] || { echo "$v unresolved; run Genesis Staging Infrastructure (apply) first" >&2; exit 1; }
   done
-  envsubst '${IMAGE_URI_WITH_DIGEST} ${GIT_COMMIT} ${TASK_ROLE_ARN} ${EXECUTION_ROLE_ARN} ${WEBHOOK_SECRET_ARN} ${EFS_FILE_SYSTEM_ID} ${EFS_ACCESS_POINT_ID}' \
+  envsubst '${IMAGE_URI_WITH_DIGEST} ${GIT_COMMIT} ${TASK_ROLE_ARN} ${EXECUTION_ROLE_ARN} ${WEBHOOK_SECRET_ARN} ${WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN} ${WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN} ${EFS_FILE_SYSTEM_ID} ${EFS_ACCESS_POINT_ID}' \
     < "$HERE/task-definition.template.json" \
   | jq --argjson rows "$CLASSIFIED" '
       (.containerDefinitions[0]) as $c
@@ -307,6 +316,14 @@ if [ -z "$SECRET_ARN" ] || [ "$SECRET_ARN" = "None" ]; then
 else
   log "secret $SECRET_NAME exists (value untouched)"
 fi
+WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN="$(lookup_secret_arn_by_name "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_NAME")"
+if [ -z "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN" ] || [ "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN" = "None" ]; then
+  log "secret $WOOCOMMERCE_API_CONSUMER_KEY_SECRET_NAME missing; create with Woo read-only consumer key before deployment"
+fi
+WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN="$(lookup_secret_arn_by_name "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME")"
+if [ -z "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" ] || [ "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" = "None" ]; then
+  log "secret $WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME missing; create with Woo read-only consumer secret before deployment"
+fi
 
 # ---- Staging task execution role (production roles are not modified) --------
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
@@ -335,7 +352,7 @@ else
   esac
 fi
 mutate aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" --arg extra "$COPIED_SECRET_ARNS" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:([$a] + ($extra | split("\n") | map(select(length>0))))}]}')"
+SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" --arg consumerKey "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN" --arg consumerSecret "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" --arg extra "$COPIED_SECRET_ARNS" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:(([ $a, $consumerKey, $consumerSecret ] | map(select(length>0))) + ($extra | split("\n") | map(select(length>0))))}]}')"
 mutate aws iam put-role-policy --role-name "$EXEC_ROLE_NAME" --policy-name staging-webhook-secret-read --policy-document "$SECRET_POLICY"
 
 # ---- EFS (staging-only persistence bridge) ----------------------------------
