@@ -2,7 +2,7 @@
 /**
  * Plugin Name: STONER Share-to-Grow Attribution Bridge
  * Description: Verifies Genesis attribution tokens, persists attribution, supports durable collaborator routes, and writes canonical metadata when Woo checkout is active.
- * Version: 1.0.0
+ * Version: 1.0.1
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
