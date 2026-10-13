@@ -265,12 +265,21 @@ No Page Factory modifications:
 
 Blocking reason:
 
-- production storefront (`stonerusa.com`) is not yet certified as Woo-backed, while required attribution handoff target is Woo checkout/order metadata.
-- live production deployment/activation path for the new bridge was not completed in this phase.
+- production architecture certification later confirmed a hybrid production path (WordPress landing + Shopify cart/checkout/order authority), not a Woo-primary checkout path.
+- live production deployment/activation for attribution handoff into the Shopify order authority was not completed in this phase.
 
 Next action:
 
-1. Confirm authoritative production commerce stack target (Woo vs Shopify).
-2. If Woo is target, deploy/activate the bridge via approved production WordPress path.
-3. Re-run non-purchase landing, invalid-token matrix, persistence, and checkout metadata certification.
-4. Then execute one controlled real Woo order under Daniel referral.
+1. Use the certified production architecture in `docs/operations/share-to-grow-production-commerce-architecture.md`.
+2. Implement certified hybrid WordPress->Shopify attribution handoff on production path.
+3. Re-run non-purchase landing, invalid-token matrix, persistence, and checkout metadata certification on the production Shopify path.
+4. Then execute one controlled real production order under Daniel referral.
+
+## Follow-up: Production Commerce Architecture Certification
+
+Read-only architecture certification completed after this phase:
+
+- result: `SHARE_TO_GROW_PRODUCTION_COMMERCE_ARCHITECTURE=PASS`
+- classification: `HYBRID` (WordPress landing shell + Shopify cart/checkout/order authority)
+- current Woo webhook real-order authority status: `CURRENT_WOO_WEBHOOK_CAN_RECEIVE_REAL_STONER_ORDER=NO`
+- details: `docs/operations/share-to-grow-production-commerce-architecture.md`

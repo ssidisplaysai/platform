@@ -320,3 +320,12 @@ And provisioned dedicated signing secret:
 
 Current blocker remains deployment/certification on the actual production storefront path.  
 See `docs/operations/share-to-grow-storefront-attribution.md` for full evidence and final phase status.
+
+## Follow-up Architecture Certification Status
+
+Subsequent read-only production architecture certification established:
+
+- `SHARE_TO_GROW_PRODUCTION_COMMERCE_ARCHITECTURE=PASS`
+- production commerce classification: `HYBRID` (WordPress landing + Shopify cart/checkout/order authority)
+- implication for Daniel referral: do not publish until WordPress capture -> Shopify metadata handoff is production-certified
+- details: `docs/operations/share-to-grow-production-commerce-architecture.md`
