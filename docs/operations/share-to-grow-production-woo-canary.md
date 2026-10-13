@@ -210,3 +210,18 @@ No STG-caused changes to:
 - PF DNS/DB grants/monitoring/source
 
 `PAGE_FACTORY_DRIFT_RISK=NO`
+
+## Governance Follow-Up (Read-Only Audit)
+
+Post-certification governance audit result:
+
+- canary provenance marker available via `sourceEventId` prefix `s2g-prod-canary-20261013`
+- non-canary Woo receipts: `0`
+- `REAL_PRODUCTION_WOO_EVENTS=0` (excluding canary namespace)
+- remaining canary payable exposure: `3700` minor (`$37.00`) from one `pending` entitlement (`orderId=91013003`)
+
+Governance class: `B` (isolated canary lineage with live payable balance).
+
+Selected governance strategy: preserve canary lineage and neutralize live exposure using canonical reversal (not executed in this read-only phase).
+
+See `docs/operations/share-to-grow-production-canary-governance.md` for the full inventory, economics, classification logic, and onboarding readiness baseline.

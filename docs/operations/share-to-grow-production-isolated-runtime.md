@@ -1019,3 +1019,92 @@ Page Factory drift:
 Final classification:
 
 - `SHARE_TO_GROW_PRODUCTION_WOO_CANARY=PASS`
+
+## Share-to-Grow Production Canary Governance + Real Onboarding Readiness (Read-Only)
+
+- Window (UTC): `2026-10-13T03:13:00Z` -> `2026-10-13T03:40:00Z`
+- Objective: classify canary governance state, quantify payout exposure, verify real Woo separation, and define onboarding-readiness baseline without mutation.
+- Result: `SHARE_TO_GROW_CANARY_GOVERNANCE=BLOCKED_LIVE_CANARY_BALANCE`
+
+### Read-Only Baseline
+
+- canonical state unchanged from canary completion:
+  - `schema_version=1`
+  - `revision=7`
+  - `updated_at=2026-10-13 02:54:11.43932+00`
+  - counts unchanged: participants/tracking/rules `0`, ledger `6`, receipts `6`, processed lines `3`, entitlements `3`, adjustments `3`
+- no ECS/ALB/IAM/secret/task-definition changes
+
+### Governance Inventory + Economics
+
+Canary inventory remained isolated under `sourceEventId` prefix `s2g-prod-canary-20261013`:
+
+- receipts: `6`
+- processed lines: `3`
+- ledger entries: `6` (`3` earnings, `3` reversals)
+- payout entitlements: `3` (`1 pending`, `2 reversed`)
+- commerce adjustments: `3`
+
+Economic computation from persisted records:
+
+- gross earnings: `11100` minor
+- gross reversals: `7400` minor
+- net ledger: `3700` minor
+- cumulative brand loss: `1300` minor
+- possible payable exposure:
+  - pending `3700`
+  - cleared `0`
+  - payable `0`
+  - paid `0`
+  - aggregate `3700` minor
+
+### Real Woo Event Separation
+
+- non-canary Woo receipts: `0`
+- non-canary receipts across all sources: `0`
+- `REAL_PRODUCTION_WOO_EVENTS=0`
+
+### Governance Class + Strategy
+
+Governance class: `B` (isolated canary provenance, but live payable exposure remains).
+
+Selected strategy: preserve immutable canary lineage and neutralize the remaining balance through canonical reversal.
+
+Mutation execution in this phase: `NO` (read-only by design).
+
+Proposed next mutation (not yet executed):
+
+- one signed canary refund against order `91013003` / line `9101300301` for `3700` minor
+- expected effect: entitlement `entitlement:...91013003...` transitions `pending -> reversed`; aggregate possible payable becomes `0`
+
+### Real Onboarding Readiness Baseline (No Record Creation)
+
+Production onboarding objects remain empty:
+
+- collaboration participants: `0`
+- tracking identities: `0`
+- economic rule versions: `0`
+
+Source-derived schema requirements confirmed for next onboarding phase:
+
+- `CollaborationParticipantRecord`
+- `TrackingIdentityReferenceRecord`
+- `EconomicRuleVersion`
+- attribution policy anchor `stoner-gym-attribution-30d-v1` (`windowDays=30`)
+- payout policy anchor `stoner-gym-standard-30d-v1` (`clearingDays=30`)
+- deterministic Woo metadata keys:
+  - `_genesis_touch_id`
+  - `_genesis_tracking_identity_id`
+  - `_genesis_partner_id`
+  - `_genesis_campaign_id`
+
+### Safety/Boundary Assertions
+
+- payouts remain disabled
+- no payout provider invocation/transfers
+- no Page Factory drift
+- no secret exposure
+
+Final classification:
+
+- `SHARE_TO_GROW_CANARY_GOVERNANCE=BLOCKED_LIVE_CANARY_BALANCE`
