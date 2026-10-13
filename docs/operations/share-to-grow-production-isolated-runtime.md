@@ -674,3 +674,158 @@ External DNS propagation and ACM validation completed, then final gate checks we
 Final classification update:
 
 - `SHARE_TO_GROW_HEALTH_ONLY_INGRESS=PASS`
+
+## Share-to-Grow Production Woo Secret + Authentication Certification (Completed)
+
+- Window (UTC): `2026-10-13T01:40:00Z` -> `2026-10-13T02:12:00Z`
+- Objective: provision production Woo webhook secret + runtime binding and certify authentication behavior while keeping public Woo ingress blocked.
+- Result: `SHARE_TO_GROW_WOO_AUTHENTICATION=PASS`
+
+### Pre-Gate Snapshot
+
+- Service: `genesis-share-to-grow-production` at `1/1/0`, rollout `COMPLETED`
+- Task definition pre-state: `genesis-share-to-grow-production:1`
+- Target health pre-state: `healthy`
+- Health endpoint pre-state: `200` (`{"status":"ok"}`)
+- Public Woo route pre-state: GET/POST `/api/share-to-grow/woocommerce/webhook` -> `404`
+- Woo secret pre-state: absent (`ResourceNotFoundException`)
+- Task definition pre-state: no `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` binding
+- Canonical pre-state:
+  - `schema_version=1`, `revision=1`
+  - `updated_at=2026-10-12 14:46:21.214147+00`
+  - SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - all counts `0`
+
+### Woo Secret Creation
+
+- Name: `genesis/production/share-to-grow/woocommerce-webhook`
+- ARN: `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/woocommerce-webhook-dU3KMX`
+- VersionId: `4aeefdb8-1280-4373-a098-e1fb8090aca9`
+- Encryption: default Secrets Manager KMS key (no customer `KmsKeyId` set)
+- Tags:
+  - `Environment=production`
+  - `Application=GenesisShareToGrow`
+  - `Purpose=WooCommerceWebhookAuthentication`
+- Secret value exposure: none (value not printed/logged/documented)
+
+### Execution Role Scope Update
+
+- Role: `GenesisShareToGrowProductionExecutionRole`
+- Inline policy updated: `ShareToGrowDbSecretReadOnly`
+- Allowed resources (`secretsmanager:GetSecretValue`) limited to:
+  - `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/postgres-app-q3bH9z`
+  - `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/woocommerce-webhook-dU3KMX`
+- No wildcard grant added.
+
+IAM simulation matrix (execution role):
+
+- STG DB secret: `allowed`
+- STG Woo secret: `allowed`
+- PF DB secret: `implicitDeny`
+- PF OpenAI secret: `implicitDeny`
+- PF WordPress secret: `implicitDeny`
+- admin DB secret (`rds!db-*`): `implicitDeny`
+- staging DB secret: `implicitDeny`
+- staging Woo secret: `implicitDeny`
+- `Resource=*`: `implicitDeny`
+
+### Task Definition Revision and Service Rollout
+
+- Registered: `genesis-share-to-grow-production:2`
+- Diff from `:1` -> `:2`:
+  - added secret binding:
+    - `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` -> `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/woocommerce-webhook-dU3KMX`
+  - no other task-definition field changed
+- Image digest unchanged:
+  - `452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-share-to-grow-production@sha256:647cd0557ab9d4e18ff3ec422badde60697c435282583ba8fcab1ed27a0abe2a`
+- Service update:
+  - exactly one `UpdateService` to task definition `:2`
+  - old running task: `.../4b9cdd13448749cd942a864867ef5991`
+  - new running task: `.../34f21e9e6395455c86b8d3aeee4515f4`
+  - convergence: `172s`
+  - post-rollout state: `1/1/0`, `COMPLETED`, one deployment
+  - target health: `healthy` (`10.42.2.138:3000`, `us-west-2a`)
+  - health endpoint: `200`
+
+### Public Woo Route Remains Blocked
+
+- Post-rollout GET `/api/share-to-grow/woocommerce/webhook` -> `404`
+- Post-rollout POST `/api/share-to-grow/woocommerce/webhook` -> `404`
+- Application reached by blocked requests: `NO`
+- CloudWatch scan during verification window:
+  - webhook/woocommerce processing markers: `0`
+  - `WOOCOMMERCE_WEBHOOK_SECRET_NOT_CONFIGURED`: `0`
+
+### Internal Authentication Certification (No Public Ingress)
+
+Bounded one-off task executed with task definition `:2` (runtime has Woo secret bound) to validate HMAC behavior without invoking commerce processing:
+
+- one-off task: `arn:aws:ecs:us-west-2:452630323448:task/genesis-production/8530346a7f044790b17d82d7124a480b`
+- auth-only payload used (unsupported test fixture; no business command path)
+- results:
+  - missing signature -> authentication fail (`false`)
+  - malformed signature -> authentication fail (`false`)
+  - wrong signature -> authentication fail (`false`)
+  - correct HMAC SHA-256 signature (with configured production secret) -> authentication pass (`true`)
+- Source confirmation for constant-time path:
+  - `src/modules/share-to-grow/adapters/woocommerce-events.ts` imports `timingSafeEqual` and uses it in `verifyWooCommerceWebhookSignature`.
+
+### Canonical State and Mutation Guard
+
+Before/after auth certification:
+
+- `schema_version=1`
+- `revision=1`
+- `updated_at=2026-10-12 14:46:21.214147+00`
+- SHA-256 `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+- counts unchanged:
+  - participants `0`
+  - trackingIdentities `0`
+  - ruleVersions `0`
+  - ledgerEntries `0`
+  - sourceEventReceipts `0`
+  - processedCommerceLines `0`
+  - payoutEntitlements `0`
+  - commerceAdjustments `0`
+
+Business mutation during auth certification: `NO`
+
+### Secret Exposure Audit
+
+- Task definition stores ARN reference only (`valueFrom`), not plaintext.
+- CloudWatch logs checked for webhook-secret/config leaks: none.
+- Command output and documentation contain no secret plaintext.
+- Source tree contains no committed secret value.
+- `SECRET_EXPOSURE=NO`
+
+### 15-Minute Post-Change Stability
+
+- Window:
+  - start `2026-10-13T01:56:02.2275029Z`
+  - end `2026-10-13T02:11:28.1630934Z`
+  - duration `15.43m`
+- Across four samples:
+  - ECS stayed `1/1/0`, rollout `COMPLETED`
+  - target stayed `healthy`
+  - health endpoint stayed `200`
+  - public Woo POST stayed `404`
+  - STG alarms in `ALARM`: `0`
+  - persistence/db/secret errors: `0`
+  - no task restarts (same task ARN across window)
+  - RDS stayed `available`, `MultiAZ=true`, `PendingModifiedValues={}`
+
+### Woo / Payout / PF Boundary Status
+
+- `WOO_SECRET_READY=YES`
+- `WOO_AUTH_CERTIFIED=YES`
+- `WOO_PUBLIC_INGRESS_ENABLED=NO`
+- Woo events processed: `0`
+- `WOO_PRODUCTION_ENABLED=NO` (public ingress still blocked)
+- Automated payouts: disabled
+- `payoutEntitlements=0`
+- STG-caused Page Factory changes: none
+- `PAGE_FACTORY_DRIFT_RISK=NO`
+
+Final classification:
+
+- `SHARE_TO_GROW_WOO_AUTHENTICATION=PASS`

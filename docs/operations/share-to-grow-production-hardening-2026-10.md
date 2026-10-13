@@ -864,3 +864,56 @@ External DNS and ACM validation were completed, then certification was rerun.
 Final classification update:
 
 - `SHARE_TO_GROW_HEALTH_ONLY_INGRESS=PASS`
+
+## Share-to-Grow Production Woo Secret + Authentication (Completed)
+
+- Classification: `SHARE_TO_GROW_WOO_AUTHENTICATION=PASS`
+- Scope of change:
+  1. created dedicated production Woo webhook secret
+  2. narrowed STG execution role to DB secret + new Woo secret only
+  3. registered STG task definition `genesis-share-to-grow-production:2` with Woo secret binding
+  4. rolled STG service to `:2`
+  5. certified authentication behavior internally
+  6. preserved public Woo route block (`404`) and canonical immutability
+
+### Key Evidence
+
+- Secret:
+  - name `genesis/production/share-to-grow/woocommerce-webhook`
+  - ARN `arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/share-to-grow/woocommerce-webhook-dU3KMX`
+  - version `4aeefdb8-1280-4373-a098-e1fb8090aca9`
+  - tags `Environment=production`, `Application=GenesisShareToGrow`, `Purpose=WooCommerceWebhookAuthentication`
+  - plaintext exposure: none
+- IAM simulation:
+  - allow only STG DB + STG Woo secret
+  - PF DB/OpenAI/WordPress, admin DB, staging DB, staging Woo, and `*` all `implicitDeny`
+- Task definition diff `:1 -> :2`:
+  - only added `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` secret binding to new STG Woo secret ARN
+  - image digest unchanged
+- Service rollout:
+  - old task `.../4b9cdd13448749cd942a864867ef5991`
+  - new task `.../34f21e9e6395455c86b8d3aeee4515f4`
+  - convergence `172s`, steady `1/1/0`, rollout `COMPLETED`, target healthy
+- Public Woo route remains blocked:
+  - GET/POST `/api/share-to-grow/woocommerce/webhook` -> `404`
+  - no matching Woo processing logs
+- Internal auth certification (bounded, no public ingress):
+  - missing signature rejected
+  - malformed signature rejected
+  - wrong signature rejected
+  - correct HMAC signature accepted
+  - source-level constant-time verification path confirmed (`timingSafeEqual`)
+- Canonical state unchanged before/after:
+  - `schema_version=1`, `revision=1`, same `updated_at`
+  - SHA-256 unchanged: `7fb069e69fc7c273bec8b11df502066ec07bb19f391252018d5ea051afc829ea`
+  - all canonical counts remain zero
+- Stability window (`15.43m`): all 4 samples healthy; alarms `0 ALARM`; no DB/persistence/secret retrieval failures; RDS `available`, `MultiAZ=true`.
+
+### Safety Posture After Phase
+
+- `WOO_SECRET_READY=YES`
+- `WOO_AUTH_CERTIFIED=YES`
+- `WOO_PUBLIC_INGRESS_ENABLED=NO`
+- Woo events processed: `0`
+- Payouts: disabled; no side effects
+- Page Factory drift: none (`PAGE_FACTORY_DRIFT_RISK=NO`)
