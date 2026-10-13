@@ -169,6 +169,7 @@ describe("WooCommerce raw payload parsing", () => {
         meta_data: [
           { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
           { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging, value: "2.00" },
           { key: GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing, value: "2.00" },
         ],
       }],
@@ -186,6 +187,53 @@ describe("WooCommerce raw payload parsing", () => {
     });
     expect(() => parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" }))
       .toThrow("MISSING_WOOCOMMERCE_COST");
+  });
+
+  test("fails when fulfillment/payment source is missing from both line and order scopes", () => {
+    const rawBody = JSON.stringify({
+      id: 9010,
+      currency: "USD",
+      date_paid_gmt: "2026-10-13T07:45:09Z",
+      line_items: [{
+        id: 11,
+        product_id: 646,
+        quantity: 1,
+        subtotal: "60.00",
+        total: "60.00",
+        meta_data: [
+          { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+        ],
+      }],
+    });
+    expect(() => parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" }))
+      .toThrow("MISSING_WOOCOMMERCE_COST_SOURCE");
+  });
+
+  test("accepts order-level fulfillment/payment as a single authoritative cost source", () => {
+    const rawBody = JSON.stringify({
+      id: 9011,
+      currency: "USD",
+      date_paid_gmt: "2026-10-13T07:45:09Z",
+      meta_data: [
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.orderFulfillmentPackagingActual, value: "4.00" },
+        { key: GENESIS_WOOCOMMERCE_ORDER_COST_META.paymentProcessingActual, value: "3.00" },
+      ],
+      line_items: [{
+        id: 11,
+        product_id: 646,
+        quantity: 2,
+        subtotal: "120.00",
+        total: "120.00",
+        meta_data: [
+          { key: GENESIS_WOOCOMMERCE_LINE_META.cogs, value: "18.00" },
+          { key: GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty, value: "1.00" },
+        ],
+      }],
+    });
+    const parsed = parseWooCommerceOrderPayload({ rawBody, organizationId: "stoner" });
+    expect(parsed.order.lines[0].fulfillmentPackagingMinor).toBe(400n);
+    expect(parsed.order.lines[0].paymentProcessingMinor).toBe(300n);
   });
 
   test("parses WooCommerce refund lines as positive refund amounts", () => {

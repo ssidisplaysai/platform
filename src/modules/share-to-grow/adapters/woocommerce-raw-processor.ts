@@ -8,6 +8,10 @@ import {
 import { evaluateWooCommerceOrderEligibility } from "./woocommerce-eligibility";
 import { verifyWooCommerceWebhookSignature } from "./woocommerce-events";
 import {
+  verifyWooCommerceOrderAuthoritatively,
+  type WooCommerceOrderVerifier,
+} from "./woocommerce-order-verification";
+import {
   ignoreIneligibleWooCommerceOrder,
   processWooCommerceOrder,
   type WooCommerceOrderProcessingResult,
@@ -20,6 +24,7 @@ export interface RawWooCommerceOrderProcessingInput {
   readonly qualifiedTouches: readonly AttributionTouch[];
   readonly recruitedCreatorPartnerIds: readonly string[];
   readonly ledger: AppendOnlyLedger;
+  readonly authoritativeOrderVerifier?: WooCommerceOrderVerifier;
 }
 
 /**
@@ -43,8 +48,18 @@ export async function processRawWooCommerceOrder(
     throw new Error("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
   }
 
+  const webhookFacts = parseWooCommerceOrderEligibilityFacts(input.webhook.rawBody);
+  const authoritative = await verifyWooCommerceOrderAuthoritatively({
+    webhookRawBody: input.webhook.rawBody,
+    webhookOrderId: webhookFacts.orderId,
+    verifier: input.authoritativeOrderVerifier ?? (
+      process.env.NODE_ENV === "test"
+        ? async ({ webhookRawBody }) => ({ authoritativeRawBody: webhookRawBody })
+        : undefined
+    ),
+  });
   const eligibility = evaluateWooCommerceOrderEligibility(
-    parseWooCommerceOrderEligibilityFacts(input.webhook.rawBody),
+    parseWooCommerceOrderEligibilityFacts(authoritative.authoritativeRawBody),
   );
   if (!eligibility.eligible) {
     // Ineligible orders need no cost metadata; only the signed receipt is persisted.
@@ -56,7 +71,7 @@ export async function processRawWooCommerceOrder(
   }
 
   const parsed = parseWooCommerceOrderPayload({
-    rawBody: input.webhook.rawBody,
+    rawBody: authoritative.authoritativeRawBody,
     organizationId: STONER_GYM_REFERENCE.organizationId,
   });
 

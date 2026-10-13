@@ -71,6 +71,10 @@ function optionalCost(meta: Readonly<Record<string, string | undefined>>, key: s
   return wooDecimalToMinor(value);
 }
 
+function hasMeta(meta: Readonly<Record<string, string | undefined>>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(meta, key);
+}
+
 export const GENESIS_WOOCOMMERCE_LINE_META = Object.freeze({
   cogs: "_genesis_cogs",
   inboundFreightDuty: "_genesis_inbound_freight_duty",
@@ -142,6 +146,14 @@ export function parseWooCommerceOrderPayload(input: {
   }
 
   const orderMeta = metaRecord(payload);
+  const hasOrderFulfillmentPackaging = hasMeta(
+    orderMeta,
+    GENESIS_WOOCOMMERCE_ORDER_COST_META.orderFulfillmentPackagingActual,
+  );
+  const hasOrderPaymentProcessing = hasMeta(
+    orderMeta,
+    GENESIS_WOOCOMMERCE_ORDER_COST_META.paymentProcessingActual,
+  );
   const customerShippingRevenueMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.customerShippingRevenue);
   const outboundShippingLabelActualMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.outboundShippingLabelActual);
   const outboundShippingLabelEstimateMinor = optionalCost(orderMeta, GENESIS_WOOCOMMERCE_ORDER_COST_META.outboundShippingLabelEstimate);
@@ -160,6 +172,8 @@ export function parseWooCommerceOrderPayload(input: {
     const gross = wooDecimalToMinor(line.subtotal);
     const net = wooDecimalToMinor(line.total);
     if (net > gross) throw new Error("INVALID_WOOCOMMERCE_LINE_DISCOUNT");
+    const hasLineFulfillmentPackaging = hasMeta(meta, GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging);
+    const hasLinePaymentProcessing = hasMeta(meta, GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing);
     return Object.freeze({
       lineItemId: idValue(line.id, "MISSING_WOOCOMMERCE_LINE_ID"),
       productId: idValue(line.variation_id || line.product_id, "MISSING_WOOCOMMERCE_PRODUCT_ID"),
@@ -172,15 +186,24 @@ export function parseWooCommerceOrderPayload(input: {
       inboundFreightDutyMinor: requiredCost(meta, GENESIS_WOOCOMMERCE_LINE_META.inboundFreightDuty) * BigInt(quantity),
       fulfillmentPackagingMinor: optionalCost(meta, GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging) * BigInt(quantity),
       paymentProcessingMinor: optionalCost(meta, GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing) * BigInt(quantity),
+      hasLineFulfillmentPackaging,
+      hasLinePaymentProcessing,
     });
   });
 
+  if (!hasOrderFulfillmentPackaging && linesPre.some((line) => !line.hasLineFulfillmentPackaging)) {
+    throw new Error(`MISSING_WOOCOMMERCE_COST_SOURCE:${GENESIS_WOOCOMMERCE_LINE_META.fulfillmentPackaging}`);
+  }
+  if (!hasOrderPaymentProcessing && linesPre.some((line) => !line.hasLinePaymentProcessing)) {
+    throw new Error(`MISSING_WOOCOMMERCE_COST_SOURCE:${GENESIS_WOOCOMMERCE_LINE_META.paymentProcessing}`);
+  }
+
   const lineFulfillmentMinor = linesPre.reduce((sum, line) => sum + line.fulfillmentPackagingMinor, 0n);
-  if (orderFulfillmentPackagingMinor !== 0n && lineFulfillmentMinor !== 0n) {
+  if (hasOrderFulfillmentPackaging && lineFulfillmentMinor !== 0n) {
     throw new Error("DOUBLE_COUNT_WOOCOMMERCE_FULFILLMENT_PACKAGING");
   }
   const linePaymentMinor = linesPre.reduce((sum, line) => sum + line.paymentProcessingMinor, 0n);
-  if (orderPaymentProcessingMinor !== 0n && linePaymentMinor !== 0n) {
+  if (hasOrderPaymentProcessing && linePaymentMinor !== 0n) {
     throw new Error("DOUBLE_COUNT_WOOCOMMERCE_PAYMENT_PROCESSING");
   }
 
@@ -207,7 +230,14 @@ export function parseWooCommerceOrderPayload(input: {
   });
 
   const lines: WooCommerceLineSnapshot[] = linesPre.map((line, index) => Object.freeze({
-    ...line,
+    lineItemId: line.lineItemId,
+    productId: line.productId,
+    quantity: line.quantity,
+    grossMerchandiseMinor: line.grossMerchandiseMinor,
+    discountMinor: line.discountMinor,
+    refundMinor: line.refundMinor,
+    cogsMinor: line.cogsMinor,
+    inboundFreightDutyMinor: line.inboundFreightDutyMinor,
     customerShippingRevenueMinor: customerShippingByLine[index],
     outboundShippingLabelMinor: outboundShippingByLine[index],
     fulfillmentPackagingMinor: line.fulfillmentPackagingMinor + orderFulfillmentByLine[index],

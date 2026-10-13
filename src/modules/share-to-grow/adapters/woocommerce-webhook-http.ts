@@ -2,6 +2,7 @@ import { AppendOnlyLedger } from "../ledger";
 import type { WooCommerceEventType } from "./woocommerce-events";
 import { processRawWooCommerceOrder } from "./woocommerce-raw-processor";
 import { processWooCommerceCancellation, processWooCommerceRefund } from "./woocommerce-adjustments";
+import type { WooCommerceOrderVerifier } from "./woocommerce-order-verification";
 
 export interface WooCommerceWebhookHttpInput {
   readonly rawBody: string;
@@ -10,6 +11,7 @@ export interface WooCommerceWebhookHttpInput {
   readonly receivedAt: string;
   readonly recruitedCreatorPartnerIds: readonly string[];
   readonly ledger?: AppendOnlyLedger;
+  readonly authoritativeOrderVerifier?: WooCommerceOrderVerifier;
 }
 
 export interface WooCommerceWebhookHttpResult {
@@ -124,6 +126,7 @@ export async function processWooCommerceWebhookHttp(
     qualifiedTouches: [],
     recruitedCreatorPartnerIds: input.recruitedCreatorPartnerIds,
     ledger: input.ledger ?? new AppendOnlyLedger(),
+    authoritativeOrderVerifier: input.authoritativeOrderVerifier,
   });
 
   return Object.freeze({

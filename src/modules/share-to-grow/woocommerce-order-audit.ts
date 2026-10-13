@@ -15,6 +15,7 @@ const WOOCOMMERCE_LINE_PREFIX = "woocommerce:";
 type AuditInput = {
   readonly orderId: number;
   readonly receiptId?: string;
+  readonly revision: number;
   readonly receipts: readonly SourceEventReceiptRecord[];
   readonly processedLines: readonly ProcessedCommerceLineRecord[];
   readonly ledgerEntries: readonly PersistedLedgerEntry[];
@@ -139,6 +140,13 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
         ? "linked-to-processed-line"
         : "caller-supplied-order-and-receipt",
     }));
+  const rawSourceReceipts = [...new Set([
+    ...linkedReceiptIds,
+    ...(selectedReceipt ? [selectedReceipt.sourceEventId] : []),
+  ])]
+    .map((receiptId) => receiptById.get(receiptId))
+    .filter((receipt): receipt is SourceEventReceiptRecord => receipt !== undefined)
+    .sort((left, right) => left.sourceEventId.localeCompare(right.sourceEventId));
 
   const refundedForLine = (lineKey: string): bigint => (input.adjustments ?? [])
     .filter((adjustment) => adjustment.kind === "refund")
@@ -240,7 +248,11 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
   });
 
   const orderLineKeys = new Set(processedLines.map((line) => line.lineKey));
-  const orderAdjustments = (input.adjustments ?? [])
+  const rawOrderAdjustments = (input.adjustments ?? [])
+    .filter((adjustment) => String(adjustment.orderId) === String(input.orderId)
+      || adjustment.lineRefunds.some((refund) => orderLineKeys.has(refund.lineKey)))
+    .sort((a, b) => a.adjustmentId.localeCompare(b.adjustmentId));
+  const orderAdjustments = rawOrderAdjustments
     .filter((adjustment) => String(adjustment.orderId) === String(input.orderId)
       || adjustment.lineRefunds.some((refund) => orderLineKeys.has(refund.lineKey)))
     .sort((a, b) => a.adjustmentId.localeCompare(b.adjustmentId))
@@ -282,6 +294,9 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
 
   return {
     order: { orderId: input.orderId },
+    repository: {
+      revision: input.revision,
+    },
     state,
     eventReceipts,
     processedLines: processedLineResults,
@@ -330,14 +345,22 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
         : null,
       dmp: "derived from persisted original allocation ledger entries; raw commerce economics are not stored",
     },
+    records: {
+      sourceEventReceipts: rawSourceReceipts,
+      processedCommerceLines: processedLines,
+      ledgerEntries: matchingLedger,
+      payoutEntitlements: matchingEntitlements,
+      commerceAdjustments: rawOrderAdjustments,
+    },
   };
 }
 
 export async function auditWooCommerceOrder(orderId: number, receiptId?: string) {
-  const { state } = await loadShareToGrowRepositorySnapshot();
+  const { state, revision } = await loadShareToGrowRepositorySnapshot();
   return buildWooCommerceOrderAudit({
     orderId,
     receiptId,
+    revision,
     receipts: state.sourceEventReceipts,
     processedLines: state.processedCommerceLines,
     ledgerEntries: state.ledgerEntries,
