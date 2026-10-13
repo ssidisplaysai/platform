@@ -19,6 +19,8 @@ final class Stoner_S2G_Attribution_Bridge {
 	const COOKIE_NAME           = 'genesis_share_to_grow_attribution';
 	const COOKIE_MAX_AGE        = 2592000; // 30 days.
 	const DEFAULT_ORGANIZATION  = 'stoner';
+	const DEFAULT_SHOPIFY_DESTINATION = 'https://shop.stonerusa.com/collections/all';
+	const QUERY_ROUTE_PREFIX    = 'q';
 	const META_TOUCH_ID         = '_genesis_touch_id';
 	const META_TRACKING_ID      = '_genesis_tracking_identity_id';
 	const META_PARTNER_ID       = '_genesis_partner_id';
@@ -27,6 +29,7 @@ final class Stoner_S2G_Attribution_Bridge {
 
 	public static function register() {
 		add_action( 'init', array( __CLASS__, 'capture_from_request' ), 20 );
+		add_action( 'template_redirect', array( __CLASS__, 'handle_durable_route' ), 1 );
 		add_action( 'woocommerce_checkout_create_order', array( __CLASS__, 'attach_order_metadata' ), 20, 2 );
 	}
 
@@ -80,6 +83,72 @@ final class Stoner_S2G_Attribution_Bridge {
 		$session = self::normalize_session( $token, $payload );
 		self::write_wc_session( $session );
 		self::write_cookie( $session );
+	}
+
+	public static function handle_durable_route() {
+		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
+			return;
+		}
+		$path = wp_parse_url( (string) $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+		if ( ! is_string( $path ) ) {
+			return;
+		}
+		$prefix = '/' . trim( self::QUERY_ROUTE_PREFIX, '/' ) . '/';
+		if ( 0 !== strpos( $path, $prefix ) ) {
+			return;
+		}
+		$slug = trim( substr( $path, strlen( $prefix ) ) );
+		if ( '' === $slug || false !== strpos( $slug, '/' ) ) {
+			return;
+		}
+
+		$identity = self::public_slug_map();
+		$entry = isset( $identity[ $slug ] ) && is_array( $identity[ $slug ] ) ? $identity[ $slug ] : null;
+		if ( null === $entry ) {
+			self::log( 'warning', 'durable attribution route slug unresolved', array( 'slug' => $slug ) );
+			return;
+		}
+
+		$secret = self::signing_secret();
+		if ( '' === $secret ) {
+			self::log( 'error', 'durable attribution route unavailable: signing secret missing', array( 'slug' => $slug ) );
+			return;
+		}
+
+		$destination = self::destination_url();
+		if ( '' === $destination ) {
+			self::log( 'error', 'durable attribution route unavailable: destination missing', array( 'slug' => $slug ) );
+			return;
+		}
+
+		$token = self::issue_token(
+			array(
+				'organizationId'     => self::expected_organization(),
+				'touchId'            => self::new_touch_id( $slug ),
+				'trackingIdentityId' => isset( $entry['trackingIdentityId'] ) ? (string) $entry['trackingIdentityId'] : '',
+				'canonicalPartnerId' => isset( $entry['canonicalPartnerId'] ) ? (string) $entry['canonicalPartnerId'] : '',
+				'campaignId'         => isset( $entry['campaignId'] ) ? (string) $entry['campaignId'] : '',
+				'issuedAt'           => gmdate( 'Y-m-d\TH:i:s\Z' ),
+				'expiresAt'          => gmdate( 'Y-m-d\TH:i:s\Z', time() + self::COOKIE_MAX_AGE ),
+			),
+			$secret
+		);
+		if ( is_wp_error( $token ) ) {
+			self::log( 'error', 'durable attribution route token generation failed', array(
+				'slug' => $slug,
+				'code' => $token->get_error_code(),
+			) );
+			return;
+		}
+
+		$redirect_url = add_query_arg(
+			array( self::QUERY_KEY => $token ),
+			$destination
+		);
+		wp_safe_redirect( $redirect_url, 302 );
+		if ( self::should_exit_after_redirect() ) {
+			exit;
+		}
 	}
 
 	public static function verify_token( $token, $secret, $now, $expected_organization ) {
@@ -169,6 +238,19 @@ final class Stoner_S2G_Attribution_Bridge {
 		return self::base64url_encode( $raw );
 	}
 
+	public static function issue_token( $payload, $secret ) {
+		if ( ! self::validate_payload( $payload ) ) {
+			return new WP_Error( 'INVALID_WORDPRESS_ATTRIBUTION_TOKEN', 'Token payload missing required fields.' );
+		}
+		$issued = strtotime( (string) $payload['issuedAt'] );
+		$expires = strtotime( (string) $payload['expiresAt'] );
+		if ( false === $issued || false === $expires || $expires <= $issued ) {
+			return new WP_Error( 'INVALID_WORDPRESS_ATTRIBUTION_TOKEN_TIME', 'Token timestamps are invalid.' );
+		}
+		$encoded = self::base64url_encode( wp_json_encode( $payload ) );
+		return $encoded . '.' . self::sign( $encoded, $secret );
+	}
+
 	private static function validate_payload( $payload ) {
 		$required = array(
 			'organizationId',
@@ -200,6 +282,33 @@ final class Stoner_S2G_Attribution_Bridge {
 			),
 			'storedAt' => gmdate( 'Y-m-d\TH:i:s\Z' ),
 		);
+	}
+
+	private static function destination_url() {
+		if ( defined( 'GENESIS_S2G_SHOPIFY_DESTINATION_URL' ) ) {
+			$configured = trim( (string) GENESIS_S2G_SHOPIFY_DESTINATION_URL );
+			if ( '' !== $configured ) {
+				return $configured;
+			}
+		}
+		return self::DEFAULT_SHOPIFY_DESTINATION;
+	}
+
+	private static function public_slug_map() {
+		if ( defined( 'GENESIS_S2G_PUBLIC_SLUG_MAP' ) && is_array( GENESIS_S2G_PUBLIC_SLUG_MAP ) ) {
+			return GENESIS_S2G_PUBLIC_SLUG_MAP;
+		}
+		return array(
+			'daniel-coffeen' => array(
+				'trackingIdentityId' => 'tracking-stoner-gym-daniel-coffeen-v1',
+				'canonicalPartnerId' => 'daniel-coffeen',
+				'campaignId'         => 'STONER-GYM-PRODUCTION',
+			),
+		);
+	}
+
+	private static function new_touch_id( $slug ) {
+		return 'touch-' . sanitize_key( (string) $slug ) . '-' . gmdate( 'YmdHis' );
 	}
 
 	private static function write_wc_session( $session ) {
@@ -272,5 +381,9 @@ final class Stoner_S2G_Attribution_Bridge {
 		if ( function_exists( 'wc_get_logger' ) ) {
 			wc_get_logger()->log( $level, $message, array( 'source' => 'stoner-share-to-grow' ) + $context );
 		}
+	}
+
+	private static function should_exit_after_redirect() {
+		return ! ( defined( 'GENESIS_S2G_TEST_MODE' ) && GENESIS_S2G_TEST_MODE );
 	}
 }

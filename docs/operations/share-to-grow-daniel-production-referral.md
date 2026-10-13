@@ -329,3 +329,16 @@ Subsequent read-only production architecture certification established:
 - production commerce classification: `HYBRID` (WordPress landing + Shopify cart/checkout/order authority)
 - implication for Daniel referral: do not publish until WordPress capture -> Shopify metadata handoff is production-certified
 - details: `docs/operations/share-to-grow-production-commerce-architecture.md`
+
+## Follow-up Hybrid Adapter Status
+
+Hybrid software implementation is now present in source:
+
+- WordPress durable route and capture/persistence support
+- Shopify adapter route/auth/normalization path with parity tests
+- dedicated production Shopify webhook secret prepared
+
+Daniel referral publication remains blocked pending live production storefront handoff certification:
+
+- `SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
+- details: `docs/operations/share-to-grow-shopify-production-adapter.md`

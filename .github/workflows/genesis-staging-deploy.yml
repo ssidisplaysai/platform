@@ -72,6 +72,7 @@ jobs:
       - name: Prove build contains webhook route
         run: |
           test -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
+          test -f .next/server/app/api/share-to-grow/shopify/webhook/route.js
           test -f .next/server/app/api/health/route.js
 
       - name: Build Docker image
@@ -106,6 +107,7 @@ jobs:
       - name: Prove pushed image contains webhook route
         run: |
           docker run --rm --entrypoint test genesis-staging-runtime:${{ env.GIT_SHA }} -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
+          docker run --rm --entrypoint test genesis-staging-runtime:${{ env.GIT_SHA }} -f .next/server/app/api/share-to-grow/shopify/webhook/route.js
 
       - name: Register task definition revision (production config copied only through the reviewed allowlist)
         id: taskdef

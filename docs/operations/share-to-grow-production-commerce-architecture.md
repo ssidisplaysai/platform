@@ -229,6 +229,21 @@ Explanation:
    - metadata survival into Shopify order payload preview path.
 6. Only after pass, run one controlled real order acceptance test under Daniel referral guardrails.
 
+## Follow-up Implementation Status
+
+Subsequent source implementation delivered the planned hybrid adapter surfaces:
+
+- dedicated Shopify webhook route in Genesis source
+- Shopify auth/idempotency/refund/cancel normalization path
+- WordPress durable route + WordPress -> Shopify attribution handoff helpers
+- production Shopify webhook secret created (not yet bound to live ECS task)
+
+Current gate after implementation:
+
+- `SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
+- reason: live production storefront deployment/activation and non-purchase handoff certification remain pending
+- details: `docs/operations/share-to-grow-shopify-production-adapter.md`
+
 ## Final Status
 
 `SHARE_TO_GROW_PRODUCTION_COMMERCE_ARCHITECTURE=PASS`

@@ -24,4 +24,5 @@ jobs:
       - name: Required routes exist in build output
         run: |
           test -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
+          test -f .next/server/app/api/share-to-grow/shopify/webhook/route.js
           test -f .next/server/app/api/health/route.js

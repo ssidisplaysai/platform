@@ -283,3 +283,16 @@ Read-only architecture certification completed after this phase:
 - classification: `HYBRID` (WordPress landing shell + Shopify cart/checkout/order authority)
 - current Woo webhook real-order authority status: `CURRENT_WOO_WEBHOOK_CAN_RECEIVE_REAL_STONER_ORDER=NO`
 - details: `docs/operations/share-to-grow-production-commerce-architecture.md`
+
+## Follow-up: Shopify Hybrid Adapter Implementation
+
+Hybrid bridge software implementation has now been completed in source:
+
+- WordPress durable route + token capture/persistence updates
+- WordPress -> Shopify metadata handoff helpers
+- Shopify webhook route + adapter normalization + auth + idempotency + refund/cancel parity tests
+
+Current status remains blocked on live production storefront deployment/handoff certification:
+
+- `SHARE_TO_GROW_SHOPIFY_BRIDGE=BLOCKED_STOREFRONT_HANDOFF`
+- details: `docs/operations/share-to-grow-shopify-production-adapter.md`

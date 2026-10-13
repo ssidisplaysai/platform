@@ -5,6 +5,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . '/' );
+define( 'GENESIS_S2G_TEST_MODE', true );
 
 $GLOBALS['t'] = array();
 
@@ -48,6 +49,8 @@ class Stub_WC_Context {
 	}
 }
 
+$GLOBALS['t']['redirect'] = null;
+
 function add_action( $hook, $cb, $priority = 10, $args = 1 ) {
 	$GLOBALS['t']['actions'][ $hook ] = array( $cb, $priority, $args );
 }
@@ -69,6 +72,20 @@ function is_ssl() {
 function WC() {
 	return $GLOBALS['t']['wc'];
 }
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( $url, $component );
+}
+function sanitize_key( $key ) {
+	$key = strtolower( (string) $key );
+	return preg_replace( '/[^a-z0-9_\-]/', '', $key );
+}
+function add_query_arg( $args, $url ) {
+	$separator = false !== strpos( $url, '?' ) ? '&' : '?';
+	return $url . $separator . http_build_query( $args );
+}
+function wp_safe_redirect( $url, $status = 302 ) {
+	$GLOBALS['t']['redirect'] = array( 'url' => $url, 'status' => $status );
+}
 
 require_once __DIR__ . '/../includes/class-stoner-s2g-attribution-bridge.php';
 
@@ -80,9 +97,11 @@ function reset_state() {
 		'actions' => array(),
 		'logs'    => array(),
 		'wc'      => new Stub_WC_Context(),
+		'redirect' => null,
 	);
 	$_GET = array();
 	$_COOKIE = array();
+	$_SERVER = array();
 }
 
 function make_token( $payload, $secret ) {
@@ -107,6 +126,7 @@ function check( $name, $condition ) {
 reset_state();
 Stoner_S2G_Attribution_Bridge::register();
 check( 'registers init capture hook', isset( $GLOBALS['t']['actions']['init'] ) );
+check( 'registers durable route hook', isset( $GLOBALS['t']['actions']['template_redirect'] ) );
 check( 'registers checkout metadata hook', isset( $GLOBALS['t']['actions']['woocommerce_checkout_create_order'] ) );
 
 $now = gmdate( 'Y-m-d\TH:i:s\Z', time() );
@@ -150,6 +170,14 @@ check( 'order meta touch key set', isset( $order->meta['_genesis_touch_id'] ) &&
 check( 'order meta tracking key set', isset( $order->meta['_genesis_tracking_identity_id'] ) && $order->meta['_genesis_tracking_identity_id'] === 'tracking-stoner-gym-daniel-coffeen-v1' );
 check( 'order meta partner key set', isset( $order->meta['_genesis_partner_id'] ) && $order->meta['_genesis_partner_id'] === 'daniel-coffeen' );
 check( 'order meta campaign key set', isset( $order->meta['_genesis_campaign_id'] ) && $order->meta['_genesis_campaign_id'] === 'STONER-GYM' );
+
+reset_state();
+putenv( 'GENESIS_S2G_ATTRIBUTION_SIGNING_SECRET=' . SECRET );
+$_SERVER['REQUEST_URI'] = '/q/daniel-coffeen';
+Stoner_S2G_Attribution_Bridge::handle_durable_route();
+$redirect = $GLOBALS['t']['redirect'];
+check( 'durable route redirects', is_array( $redirect ) && 302 === $redirect['status'] );
+check( 'durable route includes attribution query key', is_array( $redirect ) && false !== strpos( $redirect['url'], 'genesis_attribution=' ) );
 
 if ( 0 !== $failed ) {
 	echo "\n$passed passed, $failed failed\n";

@@ -1,6 +1,6 @@
 # STONER Share-to-Grow attribution bridge
 
-Server-side WordPress/WooCommerce bridge for Genesis attribution tokens.
+Server-side WordPress attribution bridge for Genesis tokens with Woo + Shopify handoff support.
 
 ## What it does
 
@@ -9,7 +9,11 @@ Server-side WordPress/WooCommerce bridge for Genesis attribution tokens.
 3. Persists attribution for 30 days:
    - Woo session key: `genesis_share_to_grow_attribution`
    - first-party cookie: `genesis_share_to_grow_attribution` (`Secure`, `HttpOnly`, `SameSite=Lax`)
-4. Writes canonical Genesis metadata on Woo order creation:
+4. Handles durable collaborator route:
+   - `/q/<public-slug>` (for example `/q/daniel-coffeen`)
+   - generates short-lived signed token server-side
+   - redirects to Shopify destination with `genesis_attribution`
+5. Writes canonical Genesis metadata on Woo order creation when Woo checkout is active:
    - `_genesis_touch_id`
    - `_genesis_tracking_identity_id`
    - `_genesis_partner_id`
@@ -45,6 +49,16 @@ The signing secret must be server-side only. Configure one of:
 Optional organization override:
 
 - `GENESIS_S2G_EXPECTED_ORGANIZATION` (defaults to `stoner`)
+
+Optional route destination override:
+
+- `GENESIS_S2G_SHOPIFY_DESTINATION_URL`
+
+Optional public slug map override:
+
+- `GENESIS_S2G_PUBLIC_SLUG_MAP` associative array:
+  - key = public slug
+  - value = `trackingIdentityId`, `canonicalPartnerId`, optional `campaignId`
 
 Never expose the secret in HTML, JS, logs, QR payloads, Git, or browser storage.
 
