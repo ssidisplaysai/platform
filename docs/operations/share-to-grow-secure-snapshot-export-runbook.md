@@ -101,7 +101,8 @@ Hard requirements:
     - validates table/condition/attribute types, fixed task-image-network-account-region bindings, STS operator ARN shape, `maxLaunchAttempts=1`, and <= 5-minute expiry window
     - refuses placeholder approval references and expired windows
     - requires fresh values for each authorized attempt:
-      - independent approval reference
+      - approval reference (for example, `INDEPENDENT_APPROVAL:<ref>` or `OWNER_APPROVAL:<ref>`)
+      - recorded approval source and UTC timestamp in the audit package
       - unpredictable `runId`
       - exact current operator STS assumed-role ARN
       - current `createdAtEpoch` and `expiresAtEpoch`
@@ -114,6 +115,10 @@ Hard requirements:
     - account-level `AdministratorAccess` can bypass this boundary unless operations are restricted to independently approved, least-privilege roles.
   - If no existing restricted IAM/SSO principal satisfies this boundary, deployment is blocked until a dedicated restricted principal is created and separately approved.
   - For the identity stack, `RestrictedCreatorSourcePrincipalArn` is required and intentionally has no default; do not substitute AdministratorAccess.
+  - Staging-only owner approval policy:
+    - For one-time, staging-only, metadata-read diagnostics, the project owner may approve a bounded run without a second human approver.
+    - This does not change technical controls: one-use authorization, restricted creator/operator paths, 5-minute expiry, no retries, immediate launcher disablement, and full audit evidence remain mandatory.
+    - This policy never authorizes production DB operations, snapshot activation, financial/ledger mutations, role creation, or privilege grants.
   - Proposed Identity Center permission set design for separate approval:
     - permission set name: `GenesisS2GDiagnosticAuthorizationCreator`
     - no managed policies
