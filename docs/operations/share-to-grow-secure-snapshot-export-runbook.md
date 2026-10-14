@@ -79,6 +79,9 @@ Hard requirements:
     - no automatic launcher retry once consumed
   - A `RunTask` throw or ambiguous result is recorded as `OUTCOME_UNKNOWN` where possible and remains consumed.
 - Administrative authorization creation boundary (separate action, separate role):
+  - Optional isolated identity stack for creator-boundary provisioning:
+    - [staging-s2g-db-admin-authorization-identity-stack.mjs](../../infra/staging/s2g-db-admin-authorization-identity/cdk/staging-s2g-db-admin-authorization-identity-stack.mjs)
+    - [s2g-db-admin-authorization-identity.plan.json](../../infra/staging/s2g-db-admin-authorization-identity.plan.json)
   - Use `StagingS2gDbAdminDiagnosticAuthorizationCreatorRole` only.
   - `AuthorizationCreatorPrincipalArn` must be explicitly supplied (no template default) and must:
     - be an account-local IAM role ARN in account `452630323448`,
@@ -95,6 +98,7 @@ Hard requirements:
   - Residual governance risk:
     - account-level `AdministratorAccess` can bypass this boundary unless operations are restricted to independently approved, least-privilege roles.
   - If no existing restricted IAM/SSO principal satisfies this boundary, deployment is blocked until a dedicated restricted principal is created and separately approved.
+  - For the identity stack, `RestrictedCreatorSourcePrincipalArn` is required and intentionally has no default; do not substitute AdministratorAccess.
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`

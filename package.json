@@ -24,6 +24,7 @@
     "preflight:create:s2g-db-admin-launcher": "node infra/staging/s2g-db-admin-launcher/cdk/validate-diagnostic-launcher-deployment.mjs --mode create --profile genesis-production --region us-west-2 --account-id 452630323448",
     "preflight:update:s2g-db-admin-launcher": "node infra/staging/s2g-db-admin-launcher/cdk/validate-diagnostic-launcher-deployment.mjs --mode update --profile genesis-production --region us-west-2 --account-id 452630323448 --stack-name GenesisStagingS2gDbAdminDiagnosticLauncherStack --snapshot-stack-name GenesisStagingSnapshotExportStack --expected-activation-state DISABLED --expected-approved-task-arn \"\"",
     "synth:staging:s2g-db-admin-diagnostic-prerequisites": "node infra/staging/s2g-db-admin-diagnostic-prerequisites/cdk/synth-staging-s2g-db-admin-diagnostic-prerequisites-template.mjs",
+    "synth:staging:s2g-db-admin-authorization-identity": "node infra/staging/s2g-db-admin-authorization-identity/cdk/synth-staging-s2g-db-admin-authorization-identity-template.mjs",
     "certify:glw": "node scripts/certify-glw.mjs",
     "glw:campaign-health": "npx tsx scripts/glw-campaign-health.mts",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",

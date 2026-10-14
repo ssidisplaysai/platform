@@ -1,0 +1,45 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-authorization-identity",
+  "stackName": "GenesisStagingS2gDbAdminAuthorizationIdentityStack",
+  "restrictedCreatorSourcePrincipal": {
+    "parameter": "RestrictedCreatorSourcePrincipalArn",
+    "required": true,
+    "mustBeSameAccount": "452630323448",
+    "mustNotEqual": [
+      "AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f"
+    ],
+    "notes": [
+      "Provide a dedicated non-admin role ARN controlled by federated temporary credentials.",
+      "Do not reuse launcher operator, launcher lambda execution, or snapshot operator principals."
+    ]
+  },
+  "authorizationWriterRole": {
+    "roleName": "genesis-staging-s2g-db-admin-authorization-writer-role",
+    "trustedByParameter": "RestrictedCreatorSourcePrincipalArn",
+    "allowedActions": [
+      "dynamodb:PutItem"
+    ],
+    "forbiddenActions": [
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Scan",
+      "ecs:RunTask",
+      "iam:PassRole",
+      "lambda:InvokeFunctionUrl",
+      "secretsmanager:GetSecretValue"
+    ],
+    "resource": "arn:aws:dynamodb:us-west-2:452630323448:table/genesis-staging-s2g-db-admin-diagnostic-launches",
+    "conditions": {
+      "ForAllValues:StringLikeIfExists": {
+        "dynamodb:LeadingKeys": [
+          "s2g-dbdiag-*"
+        ]
+      }
+    }
+  },
+  "residualGovernanceRisks": [
+    "IAM policy cannot enforce approval-ticket semantics, approver identity, task/image/network field correctness, or expiry business rules.",
+    "Application/process controls must validate authorization payload semantics before PutItem."
+  ]
+}
