@@ -19,6 +19,11 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
     type: "String",
     description: "IAM principal ARN allowed to assume the staging DB admin diagnostic operator role.",
   });
+  const operatorAssumerPrincipalArn = new cdk.CfnParameter(stack, "OperatorAssumerPrincipalArn", {
+    type: "String",
+    default: "",
+    description: "Restricted IAM principal ARN allowed to assume the staging DB admin diagnostic operator role. Leave empty to retain OperatorPrincipalArn trust.",
+  });
   const stagingClusterArn = new cdk.CfnParameter(stack, "StagingClusterArn", {
     type: "String",
     default: "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
@@ -99,6 +104,27 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
   const launcherEnabledCondition = new cdk.CfnCondition(stack, "LauncherEnabledCondition", {
     expression: cdk.Fn.conditionEquals(launcherActivationState.valueAsString, "ENABLED"),
   });
+  const operatorAssumerPrincipalProvidedCondition = new cdk.CfnCondition(stack, "OperatorAssumerPrincipalProvidedCondition", {
+    expression: cdk.Fn.conditionNot(cdk.Fn.conditionEquals(operatorAssumerPrincipalArn.valueAsString, "")),
+  });
+  new cdk.CfnRule(stack, "OperatorAssumerPrincipalMustNotBeAdministratorAccess", {
+    assertions: [
+      {
+        assert: cdk.Fn.conditionOr(
+          cdk.Fn.conditionEquals(operatorAssumerPrincipalArn.valueAsString, ""),
+          cdk.Fn.conditionNot(cdk.Fn.conditionContains([
+            operatorAssumerPrincipalArn.valueAsString,
+          ], "AWSReservedSSO_AdministratorAccess_")),
+        ),
+        assertDescription: "OperatorAssumerPrincipalArn must not be the AWSReservedSSO AdministratorAccess role.",
+      },
+    ],
+  });
+  const operatorTrustPrincipalArn = cdk.Token.asString(cdk.Fn.conditionIf(
+    operatorAssumerPrincipalProvidedCondition.logicalId,
+    operatorAssumerPrincipalArn.valueAsString,
+    operatorPrincipalArn.valueAsString,
+  ));
   const approvedNetworkIdentity = cdk.Fn.join("|", [
     stagingClusterArn.valueAsString,
     cdk.Fn.join(",", stagingSubnets.valueAsList),
@@ -168,7 +194,7 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
   });
 
   const operatorRole = new iam.Role(stack, "StagingS2gDbAdminDiagnosticOperatorRole", {
-    assumedBy: new iam.ArnPrincipal(operatorPrincipalArn.valueAsString),
+    assumedBy: new iam.ArnPrincipal(operatorTrustPrincipalArn),
     description: "Restricted role for invoking the S2G DB admin diagnostic launcher only.",
   });
   const operatorEnabledPolicy = new iam.Policy(stack, "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy", {

@@ -42,6 +42,18 @@ test("diagnostic launcher plan enforces disabled bootstrap and fixed launch boun
     role.roleName === "genesis-staging-s2g-db-admin-authorization-writer-role"));
   assert.ok(!plan.newRoles.some((role) =>
     role.roleLogicalName === "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole"));
+  assert.equal(plan.operatorTrustBoundary.operatorRoleLogicalName, "StagingS2gDbAdminDiagnosticOperatorRole");
+  assert.equal(plan.operatorTrustBoundary.legacyTrustedPrincipalParameter, "OperatorPrincipalArn");
+  assert.equal(plan.operatorTrustBoundary.restrictedTrustedPrincipalParameter, "OperatorAssumerPrincipalArn");
+  assert.equal(plan.operatorTrustBoundary.restrictedPermissionSetName, "GenesisS2GDiagOperator");
+  assert.deepEqual(plan.operatorTrustBoundary.restrictedPermissionSetScope.allowedActions, ["sts:AssumeRole"]);
+  assert.equal(
+    plan.operatorTrustBoundary.restrictedPermissionSetScope.allowedResource,
+    "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma",
+  );
+  assert.ok(plan.operatorTrustBoundary.restrictedPermissionSetScope.prohibitedDirectActions.includes("lambda:InvokeFunctionUrl"));
+  assert.ok(plan.operatorTrustBoundary.restrictedPermissionSetScope.prohibitedDirectActions.includes("dynamodb:PutItem"));
+  assert.equal(plan.operatorTrustBoundary.rolloutStages.length, 6);
   assert.ok(plan.operatorRestrictions.includes("No direct ecs:RunTask permission"));
   assert.ok(plan.operatorRestrictions.includes("No direct iam:PassRole permission"));
   assert.deepEqual(plan.secretBoundary.allowedActions, ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]);

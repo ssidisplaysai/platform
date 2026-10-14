@@ -92,6 +92,31 @@
       "purpose": "Canonical one-time authorization writer role provisioned outside the launcher stack."
     }
   ],
+  "operatorTrustBoundary": {
+    "operatorRoleLogicalName": "StagingS2gDbAdminDiagnosticOperatorRole",
+    "legacyTrustedPrincipalParameter": "OperatorPrincipalArn",
+    "restrictedTrustedPrincipalParameter": "OperatorAssumerPrincipalArn",
+    "restrictedPermissionSetName": "GenesisS2GDiagOperator",
+    "restrictedPermissionSetScope": {
+      "allowedActions": ["sts:AssumeRole"],
+      "allowedResource": "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma",
+      "prohibitedDirectActions": [
+        "lambda:InvokeFunctionUrl",
+        "ecs:RunTask",
+        "iam:PassRole",
+        "dynamodb:PutItem",
+        "secretsmanager:GetSecretValue"
+      ]
+    },
+    "rolloutStages": [
+      "Create restricted permission set GenesisS2GDiagOperator.",
+      "Assign the permission set to the approved Identity Center user.",
+      "Verify provisioned AWSReservedSSO role ARN for restricted operator source identity.",
+      "Prepare launcher stack update setting OperatorAssumerPrincipalArn to the verified restricted source role ARN.",
+      "Deploy trust update under separate approval while launcher remains DISABLED.",
+      "Verify restricted operator source role can assume operator role and AdministratorAccess source role can no longer assume operator role."
+    ]
+  },
   "secretBoundary": {
     "approvedAdminSecretArn": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
     "allowedActions": ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],

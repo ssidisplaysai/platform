@@ -16,6 +16,9 @@ test("synthesizes isolated diagnostic launcher stack with disabled bootstrap and
   assert.match(json, /DbAdminDiagnosticLauncherFunction/);
   assert.match(json, /DbAdminDiagnosticLaunchTable/);
   assert.match(json, /"LauncherActivationState"/);
+  assert.match(json, /"OperatorAssumerPrincipalArn"/);
+  assert.match(json, /"OperatorAssumerPrincipalProvidedCondition"/);
+  assert.match(json, /"OperatorAssumerPrincipalMustNotBeAdministratorAccess"/);
   assert.match(json, /"Default":"DISABLED"/);
   assert.match(json, /"AllowedValues":\["DISABLED","ENABLED"\]/);
   assert.match(json, /"ApprovedDiagnosticTaskDefinitionArn"/);
@@ -62,4 +65,12 @@ test("launcher IAM enforces fixed invoke path and excludes direct operator ecs p
 test("launcher stack does not include duplicate authorization creator parameter", () => {
   const template = synthTemplate();
   assert.equal(template.Parameters.AuthorizationCreatorPrincipalArn, undefined);
+});
+
+test("operator trust supports staged restricted principal parameterization", () => {
+  const template = synthTemplate();
+  assert.ok(template.Parameters.OperatorAssumerPrincipalArn);
+  assert.equal(template.Parameters.OperatorAssumerPrincipalArn.Default, "");
+  const operatorRole = template.Resources.StagingS2gDbAdminDiagnosticOperatorRoleE23E7075;
+  assert.equal(operatorRole.Properties.AssumeRolePolicyDocument.Statement[0].Principal.AWS["Fn::If"][0], "OperatorAssumerPrincipalProvidedCondition");
 });

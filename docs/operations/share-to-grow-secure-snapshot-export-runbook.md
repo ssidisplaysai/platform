@@ -105,6 +105,24 @@ Hard requirements:
     - no managed policies
     - inline policy: `sts:AssumeRole` only to `arn:aws:iam::452630323448:role/genesis-staging-s2g-db-admin-authorization-writer-role`
     - assignment required to an explicitly approved USER/GROUP (not auto-selected).
+- Operator assume-role trust hardening (staged rollout; separate approval required):
+  - Launcher stack now supports trust-source parameterization for the operator role:
+    - `OperatorPrincipalArn` (legacy trust source, currently deployed),
+    - `OperatorAssumerPrincipalArn` (future restricted trust source, default empty for no-op rollout).
+  - When `OperatorAssumerPrincipalArn` is supplied, operator-role trust pivots to that restricted source principal.
+  - Guardrail: `OperatorAssumerPrincipalArn` must not reference `AWSReservedSSO_AdministratorAccess`.
+  - Proposed restricted operator permission set (not yet provisioned):
+    - name: `GenesisS2GDiagOperator`
+    - allowed action: `sts:AssumeRole` only
+    - allowed resource: `arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma`
+    - no direct Lambda/ECS/IAM/DynamoDB/SecretsManager/RDS permissions.
+  - Required staged sequence:
+    1) create restricted permission set,
+    2) assign to approved user,
+    3) capture provisioned AWSReservedSSO role ARN,
+    4) prepare launcher trust update with `OperatorAssumerPrincipalArn`,
+    5) deploy trust update under separate approval while launcher remains `DISABLED`,
+    6) verify restricted source can assume operator role and AdministratorAccess source no longer can.
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`
