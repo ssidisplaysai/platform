@@ -50,9 +50,30 @@ test("launcher IAM enforces fixed invoke path and excludes direct operator ecs p
     resource?.Type === "AWS::IAM::Policy"
     && resource?.Properties?.PolicyDocument?.Statement?.some((statement) => statement?.Sid === "InvokeDbAdminDiagnosticLauncherOnly"));
   assert.ok(operatorPolicy);
-  const operatorActions = operatorPolicy.Properties.PolicyDocument.Statement
-    .flatMap((statement) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+  const operatorStatements = operatorPolicy.Properties.PolicyDocument.Statement;
+  const operatorActions = operatorStatements.flatMap((statement) =>
+    (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+  assert.ok(operatorActions.includes("lambda:InvokeFunctionUrl"));
+  assert.ok(operatorActions.includes("lambda:InvokeFunction"));
+  const invokeUrlStatement = operatorStatements.find((statement) =>
+    statement?.Sid === "InvokeDbAdminDiagnosticLauncherOnly");
+  assert.ok(invokeUrlStatement);
+  assert.deepEqual(invokeUrlStatement.Condition, {
+    StringEquals: {
+      "lambda:FunctionUrlAuthType": "AWS_IAM",
+    },
+  });
+  const invokeFunctionStatement = operatorStatements.find((statement) =>
+    statement?.Sid === "InvokeDbAdminDiagnosticLauncherFunctionOnlyViaUrl");
+  assert.ok(invokeFunctionStatement);
+  assert.deepEqual(invokeFunctionStatement.Condition, {
+    Bool: {
+      "lambda:InvokedViaFunctionUrl": "true",
+    },
+  });
+  assert.deepEqual(invokeUrlStatement.Resource, invokeFunctionStatement.Resource);
   assert.ok(!operatorActions.includes("dynamodb:PutItem"));
+  assert.ok(!operatorActions.includes("lambda:*"));
   assert.doesNotMatch(json, /StagingS2gDbAdminDiagnosticAuthorizationCreatorRole/);
   assert.doesNotMatch(json, /DbAdminDiagnosticAuthorizationCreatorRoleArn/);
   assert.doesNotMatch(json, /AuthorizationCreatorPrincipalArn/);

@@ -211,6 +211,17 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
           },
         },
       }),
+      new iam.PolicyStatement({
+        sid: "InvokeDbAdminDiagnosticLauncherFunctionOnlyViaUrl",
+        effect: iam.Effect.ALLOW,
+        actions: ["lambda:InvokeFunction"],
+        resources: [launcherFunction.functionArn],
+        conditions: {
+          Bool: {
+            "lambda:InvokedViaFunctionUrl": "true",
+          },
+        },
+      }),
     ],
   });
   operatorEnabledPolicy.node.defaultChild.cfnOptions.condition = launcherEnabledCondition;

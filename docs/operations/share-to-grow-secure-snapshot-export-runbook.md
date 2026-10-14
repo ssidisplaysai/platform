@@ -63,6 +63,10 @@ Hard requirements:
   - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
   - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
   - [s2g-db-admin-launcher-permissions.plan.json](../../infra/staging/s2g-db-admin-launcher-permissions.plan.json)
+  - When `LauncherActivationState=ENABLED`, operator invocation policy must include both:
+    - `lambda:InvokeFunctionUrl` with `StringEquals {"lambda:FunctionUrlAuthType":"AWS_IAM"}`
+    - `lambda:InvokeFunction` with `Bool {"lambda:InvokedViaFunctionUrl":"true"}`
+  - Both actions must remain scoped to the exact launcher function ARN and removed when `LauncherActivationState=DISABLED`.
 - DB admin launcher authorization model (single-use, fail-closed):
   - Launcher accepts only pre-created `AUTHORIZED` records; it cannot upsert unknown `runId`s.
   - Record contract requires:

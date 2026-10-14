@@ -125,6 +125,7 @@
   "operatorRestrictions": [
     "No direct ecs:RunTask permission",
     "No direct iam:PassRole permission",
+    "Function URL invocation requires lambda:InvokeFunctionUrl and lambda:InvokeFunction with lambda:InvokedViaFunctionUrl=true",
     "No caller-supplied task/network/command overrides",
     "No caller-supplied SQL or provisioning token"
   ]

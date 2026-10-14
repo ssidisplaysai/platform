@@ -55,6 +55,7 @@ test("authorization-writer policy allows only conditional PutItem on exact stagi
   assert.ok(!writerActions.includes("ecs:RunTask"));
   assert.ok(!writerActions.includes("iam:PassRole"));
   assert.ok(!writerActions.includes("lambda:InvokeFunctionUrl"));
+  assert.ok(!writerActions.includes("lambda:InvokeFunction"));
 });
 
 test("negative isolation: stack template does not reference launcher/runtime/production resources", () => {

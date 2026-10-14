@@ -56,5 +56,10 @@ test("diagnostic launcher plan enforces disabled bootstrap and fixed launch boun
   assert.equal(plan.operatorTrustBoundary.rolloutStages.length, 6);
   assert.ok(plan.operatorRestrictions.includes("No direct ecs:RunTask permission"));
   assert.ok(plan.operatorRestrictions.includes("No direct iam:PassRole permission"));
+  assert.ok(
+    plan.operatorRestrictions.includes(
+      "Function URL invocation requires lambda:InvokeFunctionUrl and lambda:InvokeFunction with lambda:InvokedViaFunctionUrl=true",
+    ),
+  );
   assert.deepEqual(plan.secretBoundary.allowedActions, ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]);
 });

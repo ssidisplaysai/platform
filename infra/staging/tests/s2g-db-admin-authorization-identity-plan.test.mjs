@@ -20,6 +20,7 @@ test("authorization identity plan enforces explicit restricted principal and min
   assert.ok(plan.authorizationWriterRole.forbiddenActions.includes("dynamodb:UpdateItem"));
   assert.ok(plan.authorizationWriterRole.forbiddenActions.includes("ecs:RunTask"));
   assert.ok(plan.authorizationWriterRole.forbiddenActions.includes("lambda:InvokeFunctionUrl"));
+  assert.ok(plan.authorizationWriterRole.forbiddenActions.includes("lambda:InvokeFunction"));
   assert.ok(
     plan.authorizationWriterRole.conditions["ForAllValues:StringLike"]["dynamodb:LeadingKeys"]
       .includes("s2g-dbdiag-*"),

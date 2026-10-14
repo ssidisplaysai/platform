@@ -26,6 +26,7 @@
       "dynamodb:Scan",
       "ecs:RunTask",
       "iam:PassRole",
+      "lambda:InvokeFunction",
       "lambda:InvokeFunctionUrl",
       "secretsmanager:GetSecretValue"
     ],
