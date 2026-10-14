@@ -88,6 +88,9 @@ Hard requirements:
     - differ from `OperatorPrincipalArn`,
     - not be `AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f`.
   - Role scope: `dynamodb:PutItem` on `genesis-staging-s2g-db-admin-diagnostic-launches` only.
+  - IAM condition scope for run IDs must be fail-closed:
+    - `ForAllValues:StringLike` on `dynamodb:LeadingKeys` with `s2g-dbdiag-*` (no `IfExists` suffix),
+    - plus `Null: {"dynamodb:LeadingKeys":"false"}` so missing key context does not pass.
   - Required write pattern (not yet deployed as writer service):
     - conditional put with `ConditionExpression=attribute_not_exists(runId)`
     - immutable launch scope fields listed above
@@ -99,6 +102,11 @@ Hard requirements:
     - account-level `AdministratorAccess` can bypass this boundary unless operations are restricted to independently approved, least-privilege roles.
   - If no existing restricted IAM/SSO principal satisfies this boundary, deployment is blocked until a dedicated restricted principal is created and separately approved.
   - For the identity stack, `RestrictedCreatorSourcePrincipalArn` is required and intentionally has no default; do not substitute AdministratorAccess.
+  - Proposed Identity Center permission set design for separate approval:
+    - permission set name: `GenesisS2GDiagnosticAuthorizationCreator`
+    - no managed policies
+    - inline policy: `sts:AssumeRole` only to `arn:aws:iam::452630323448:role/genesis-staging-s2g-db-admin-authorization-writer-role`
+    - assignment required to an explicitly approved USER/GROUP (not auto-selected).
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`

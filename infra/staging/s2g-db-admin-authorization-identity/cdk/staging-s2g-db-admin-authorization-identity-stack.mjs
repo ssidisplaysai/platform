@@ -43,8 +43,11 @@ export function createStagingS2gDbAdminAuthorizationIdentityStack(
     actions: ["dynamodb:PutItem"],
     resources: [diagnosticAuthorizationTableArn.valueAsString],
     conditions: {
-      "ForAllValues:StringLikeIfExists": {
+      "ForAllValues:StringLike": {
         "dynamodb:LeadingKeys": ["s2g-dbdiag-*"],
+      },
+      "Null": {
+        "dynamodb:LeadingKeys": "false",
       },
     },
   }));

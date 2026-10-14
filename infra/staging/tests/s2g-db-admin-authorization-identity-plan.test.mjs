@@ -21,8 +21,20 @@ test("authorization identity plan enforces explicit restricted principal and min
   assert.ok(plan.authorizationWriterRole.forbiddenActions.includes("ecs:RunTask"));
   assert.ok(plan.authorizationWriterRole.forbiddenActions.includes("lambda:InvokeFunctionUrl"));
   assert.ok(
-    plan.authorizationWriterRole.conditions["ForAllValues:StringLikeIfExists"]["dynamodb:LeadingKeys"]
+    plan.authorizationWriterRole.conditions["ForAllValues:StringLike"]["dynamodb:LeadingKeys"]
       .includes("s2g-dbdiag-*"),
   );
+  assert.equal(plan.authorizationWriterRole.conditions.Null["dynamodb:LeadingKeys"], "false");
+  assert.equal(plan.identityCenterPermissionSetDesign.name, "GenesisS2GDiagnosticAuthorizationCreator");
+  assert.deepEqual(plan.identityCenterPermissionSetDesign.managedPolicies, []);
+  assert.deepEqual(
+    plan.identityCenterPermissionSetDesign.inlinePolicy.Statement[0].Action,
+    ["sts:AssumeRole"],
+  );
+  assert.match(
+    plan.identityCenterPermissionSetDesign.inlinePolicy.Statement[0].Resource,
+    /genesis-staging-s2g-db-admin-authorization-writer-role$/,
+  );
+  assert.ok(plan.provisioningSequence.length >= 5);
   assert.ok(plan.residualGovernanceRisks.length > 0);
 });

@@ -36,8 +36,17 @@ test("authorization-writer policy allows only conditional PutItem on exact stagi
   const tableParameter = template.Parameters.DiagnosticAuthorizationTableArn;
   assert.ok(tableParameter);
   assert.match(tableParameter.AllowedPattern, /genesis-staging-s2g-db-admin-diagnostic-launches/);
-  assert.match(JSON.stringify(statement.Condition), /dynamodb:LeadingKeys/);
-  assert.match(JSON.stringify(statement.Condition), /s2g-dbdiag-\*/);
+  assert.deepEqual(
+    statement.Condition,
+    {
+      "ForAllValues:StringLike": {
+        "dynamodb:LeadingKeys": ["s2g-dbdiag-*"],
+      },
+      "Null": {
+        "dynamodb:LeadingKeys": "false",
+      },
+    },
+  );
   const writerActions = writerPolicy.Properties.PolicyDocument.Statement
     .flatMap((item) => (Array.isArray(item.Action) ? item.Action : [item.Action]));
   assert.ok(!writerActions.includes("dynamodb:UpdateItem"));
