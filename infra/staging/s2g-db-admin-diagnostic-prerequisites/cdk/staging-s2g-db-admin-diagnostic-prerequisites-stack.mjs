@@ -31,7 +31,7 @@ export function createStagingS2gDbAdminDiagnosticPrerequisitesStack(
 
   const diagnosticLogGroup = new logs.LogGroup(stack, "S2gDbAdminDiagnosticLogGroup", {
     logGroupName: "/genesis/staging/s2g-db-admin-diagnostic",
-    retention: logs.RetentionDays.THIRTY_DAYS,
+    retention: logs.RetentionDays.ONE_MONTH,
     removalPolicy: cdk.RemovalPolicy.RETAIN,
   });
 

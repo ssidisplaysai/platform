@@ -79,4 +79,5 @@ test("network, ECR, and logging controls match approved staging boundary", () =>
   assert.equal(repo.Properties.ImageTagMutability, "IMMUTABLE");
   assert.equal(repo.Properties.ImageScanningConfiguration.ScanOnPush, true);
   assert.equal(logGroup.Properties.LogGroupName, "/genesis/staging/s2g-db-admin-diagnostic");
+  assert.equal(logGroup.Properties.RetentionInDays, 30);
 });
