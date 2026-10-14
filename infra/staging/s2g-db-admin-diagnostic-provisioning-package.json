@@ -6,6 +6,34 @@
     "No ECS task execution in this package.",
     "No PostgreSQL role or grant mutations in this package."
   ],
+  "prerequisitesStack": {
+    "stackName": "GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack",
+    "type": "CREATE",
+    "templateCommand": "npm run synth:staging:s2g-db-admin-diagnostic-prerequisites > /tmp/genesis-staging-s2g-db-admin-diagnostic-prerequisites-template.json",
+    "resources": [
+      "genesis-staging-s2g-db-role-provision-execution-role",
+      "genesis-staging-s2g-db-role-provision-task-role",
+      "genesis-staging-s2g-db-admin-diagnostic-sg",
+      "RDS ingress 5432 from genesis-staging-s2g-db-admin-diagnostic-sg to sg-04aa58230942f9dc9",
+      "genesis-staging-s2g-db-admin-diagnostic ECR repository",
+      "/genesis/staging/s2g-db-admin-diagnostic CloudWatch log group"
+    ],
+    "createOnlyChangeSet": {
+      "prepareCommands": [
+        "aws cloudformation create-change-set --stack-name GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack --change-set-name <name> --change-set-type CREATE --template-body file:///tmp/genesis-staging-s2g-db-admin-diagnostic-prerequisites-template.json --capabilities CAPABILITY_NAMED_IAM --parameters ParameterKey=StagingVpcId,ParameterValue=vpc-05035503df7e142d6 ParameterKey=StagingRdsSecurityGroupId,ParameterValue=sg-04aa58230942f9dc9 ParameterKey=StagingRdsAdminSecretArn,ParameterValue=arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+        "aws cloudformation describe-change-set --stack-name GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack --change-set-name <name>"
+      ],
+      "expectedActions": [
+        "Add execution and task IAM roles (no updates to shared execution role)",
+        "Add dedicated diagnostic security group and exactly one RDS ingress rule",
+        "Add dedicated diagnostic ECR repository and CloudWatch log group"
+      ],
+      "prohibitedActions": [
+        "Any Modify/Delete/Replace action in existing stacks",
+        "Any resource outside GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack"
+      ]
+    }
+  },
   "phases": [
     {
       "id": "A",

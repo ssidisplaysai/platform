@@ -53,6 +53,11 @@ test("network boundary requires dedicated SG with zero ingress and scoped RDS eg
 
 test("provisioning package phases remain isolated and keep launcher disabled during task ARN update", async () => {
   const pack = await readJson("infra/staging/s2g-db-admin-diagnostic-provisioning-package.json");
+  assert.equal(pack.prerequisitesStack.stackName, "GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack");
+  assert.equal(pack.prerequisitesStack.type, "CREATE");
+  assert.equal(pack.prerequisitesStack.resources.length, 6);
+  assert.equal(pack.prerequisitesStack.createOnlyChangeSet.prepareCommands.length, 2);
+  assert.ok(pack.prerequisitesStack.createOnlyChangeSet.prohibitedActions.some((line) => line.includes("Modify/Delete/Replace")));
   assert.equal(pack.phases.length, 7);
   assert.deepEqual(pack.phases.map((phase) => phase.id), ["A", "B", "B1", "C", "D", "E", "F"]);
   const phaseF = pack.phases.find((phase) => phase.id === "F");

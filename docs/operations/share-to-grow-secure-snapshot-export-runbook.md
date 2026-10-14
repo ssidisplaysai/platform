@@ -54,6 +54,11 @@ Hard requirements:
   - [s2g-db-admin-diagnostic-network.plan.json](../../infra/staging/s2g-db-admin-diagnostic-network.plan.json)
   - [s2g-db-admin-diagnostic-image.plan.json](../../infra/staging/s2g-db-admin-diagnostic-image.plan.json)
   - [s2g-db-admin-diagnostic-provisioning-package.json](../../infra/staging/s2g-db-admin-diagnostic-provisioning-package.json)
+- Provision prerequisite infrastructure in an isolated CREATE-only stack:
+  - stack: `GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack`
+  - synth: `npm run synth:staging:s2g-db-admin-diagnostic-prerequisites`
+  - reviewed change set type: `CREATE` only (no execution without separate approval)
+  - template source: [staging-s2g-db-admin-diagnostic-prerequisites-stack.mjs](../../infra/staging/s2g-db-admin-diagnostic-prerequisites/cdk/staging-s2g-db-admin-diagnostic-prerequisites-stack.mjs)
 - Use a dedicated launcher control plane for privileged diagnostic execution:
   - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
   - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
