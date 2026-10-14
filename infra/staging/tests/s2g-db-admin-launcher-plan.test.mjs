@@ -32,6 +32,12 @@ test("diagnostic launcher plan enforces disabled bootstrap and fixed launch boun
   assert.deepEqual(plan.authorizationCreatorBoundary.allowedActions, ["dynamodb:PutItem"]);
   assert.equal(plan.authorizationCreatorBoundary.expirationSecondsDefault, 300);
   assert.equal(plan.authorizationCreatorBoundary.maxLaunchAttempts, 1);
+  assert.equal(plan.authorizationCreatorBoundary.authorizationCreatorPrincipalArnParameter, "AuthorizationCreatorPrincipalArn");
+  assert.equal(plan.authorizationCreatorBoundary.authorizationCreatorPrincipalArnDefault, "none-required");
+  assert.ok(plan.authorizationCreatorBoundary.authorizationCreatorPrincipalArnPattern.includes("role/<restricted-role>"));
+  assert.ok(plan.authorizationCreatorBoundary.forbiddenCreatorPrincipalArns.some((arn) =>
+    arn.includes("AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f")));
+  assert.ok(plan.authorizationCreatorBoundary.separationRules.includes("Creator principal must not equal operator principal"));
   assert.ok(plan.operatorRestrictions.includes("No direct ecs:RunTask permission"));
   assert.ok(plan.operatorRestrictions.includes("No direct iam:PassRole permission"));
   assert.deepEqual(plan.secretBoundary.allowedActions, ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]);

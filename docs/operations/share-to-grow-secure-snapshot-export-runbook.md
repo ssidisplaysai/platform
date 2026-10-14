@@ -80,6 +80,10 @@ Hard requirements:
   - A `RunTask` throw or ambiguous result is recorded as `OUTCOME_UNKNOWN` where possible and remains consumed.
 - Administrative authorization creation boundary (separate action, separate role):
   - Use `StagingS2gDbAdminDiagnosticAuthorizationCreatorRole` only.
+  - `AuthorizationCreatorPrincipalArn` must be explicitly supplied (no template default) and must:
+    - be an account-local IAM role ARN in account `452630323448`,
+    - differ from `OperatorPrincipalArn`,
+    - not be `AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f`.
   - Role scope: `dynamodb:PutItem` on `genesis-staging-s2g-db-admin-diagnostic-launches` only.
   - Required write pattern (not yet deployed as writer service):
     - conditional put with `ConditionExpression=attribute_not_exists(runId)`
@@ -90,6 +94,7 @@ Hard requirements:
     - `aws dynamodb put-item --table-name genesis-staging-s2g-db-admin-diagnostic-launches --item '<authorized-record-json>' --condition-expression 'attribute_not_exists(runId)'`
   - Residual governance risk:
     - account-level `AdministratorAccess` can bypass this boundary unless operations are restricted to independently approved, least-privilege roles.
+  - If no existing restricted IAM/SSO principal satisfies this boundary, deployment is blocked until a dedicated restricted principal is created and separately approved.
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`

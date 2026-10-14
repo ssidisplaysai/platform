@@ -32,6 +32,10 @@ test("launcher IAM enforces fixed invoke path and excludes direct operator ecs p
   assert.match(json, /CreateLaunchAuthorizationRecordOnly/);
   assert.match(json, /ApprovedDiagnosticImageDigest/);
   assert.match(json, /AuthorizationCreatorPrincipalArn/);
+  assert.match(json, /AuthorizationCreatorPrincipalMustDifferFromOperatorPrincipal/);
+  assert.match(json, /AuthorizationCreatorPrincipalMustNotBeAdministratorAccessRole/);
+  assert.match(json, /AuthorizationCreatorPrincipalArn must differ from OperatorPrincipalArn/);
+  assert.match(json, /must not be the AWSReservedSSO AdministratorAccess role/);
   assert.match(json, /LAUNCH_AUTH_SCHEMA_VERSION/);
   assert.match(json, /STAGING_DB_ADMIN_READONLY_DIAGNOSTIC/);
   assert.match(json, /AWS_IAM/);
@@ -55,4 +59,13 @@ test("launcher IAM enforces fixed invoke path and excludes direct operator ecs p
   assert.doesNotMatch(json, /GenesisRuntimeStack/);
   assert.doesNotMatch(json, /genesis-production-web/);
   assert.doesNotMatch(json, /genesis-share-to-grow-production/);
+});
+
+test("authorization creator principal is explicit, account-scoped, and not defaulted", () => {
+  const template = synthTemplate();
+  const parameter = template.Parameters.AuthorizationCreatorPrincipalArn;
+  assert.ok(parameter);
+  assert.equal(parameter.Type, "String");
+  assert.equal(parameter.Default, undefined);
+  assert.equal(parameter.AllowedPattern, "^arn:aws:iam::452630323448:role/[A-Za-z0-9+=,.@_\\/-]{1,128}$");
 });

@@ -73,8 +73,26 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
   });
   const authorizationCreatorPrincipalArn = new cdk.CfnParameter(stack, "AuthorizationCreatorPrincipalArn", {
     type: "String",
-    default: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f",
+    allowedPattern: "^arn:aws:iam::452630323448:role/[A-Za-z0-9+=,.@_\\/-]{1,128}$",
     description: "IAM principal ARN allowed to assume the staging diagnostic authorization-creator role.",
+  });
+  new cdk.CfnRule(stack, "AuthorizationCreatorPrincipalMustDifferFromOperatorPrincipal", {
+    assertions: [{
+      assert: cdk.Fn.conditionNot(cdk.Fn.conditionEquals(
+        authorizationCreatorPrincipalArn.valueAsString,
+        operatorPrincipalArn.valueAsString,
+      )),
+      assertDescription: "AuthorizationCreatorPrincipalArn must differ from OperatorPrincipalArn.",
+    }],
+  });
+  new cdk.CfnRule(stack, "AuthorizationCreatorPrincipalMustNotBeAdministratorAccessRole", {
+    assertions: [{
+      assert: cdk.Fn.conditionNot(cdk.Fn.conditionEquals(
+        authorizationCreatorPrincipalArn.valueAsString,
+        "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f",
+      )),
+      assertDescription: "AuthorizationCreatorPrincipalArn must not be the AWSReservedSSO AdministratorAccess role.",
+    }],
   });
 
   const launcherTable = new dynamodb.Table(stack, "DbAdminDiagnosticLaunchTable", {
