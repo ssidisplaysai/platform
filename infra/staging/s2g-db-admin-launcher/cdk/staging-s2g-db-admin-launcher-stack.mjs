@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER,
   S2G_DB_ADMIN_DIAGNOSTIC_FAMILY,
+  S2G_DB_ADMIN_DIAGNOSTIC_IMAGE_DIGEST,
 } from "../../s2g-db-admin-diagnostic-contract.mjs";
 
 const brokerAssetPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "broker");
@@ -27,6 +28,12 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
     default: "",
     allowedPattern: `(^$)|(^arn:aws:ecs:us-west-2:452630323448:task-definition/${S2G_DB_ADMIN_DIAGNOSTIC_FAMILY}:[1-9][0-9]*$)`,
     description: "Exact approved diagnostic task definition ARN including revision.",
+  });
+  const approvedDiagnosticImageDigest = new cdk.CfnParameter(stack, "ApprovedDiagnosticImageDigest", {
+    type: "String",
+    default: S2G_DB_ADMIN_DIAGNOSTIC_IMAGE_DIGEST,
+    allowedPattern: "^sha256:[a-f0-9]{64}$",
+    description: "Exact approved immutable image digest for the diagnostic task container.",
   });
   const launcherActivationState = new cdk.CfnParameter(stack, "LauncherActivationState", {
     type: "String",
@@ -64,6 +71,11 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
     type: "String",
     default: "genesis_staging",
   });
+  const authorizationCreatorPrincipalArn = new cdk.CfnParameter(stack, "AuthorizationCreatorPrincipalArn", {
+    type: "String",
+    default: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f",
+    description: "IAM principal ARN allowed to assume the staging diagnostic authorization-creator role.",
+  });
 
   const launcherTable = new dynamodb.Table(stack, "DbAdminDiagnosticLaunchTable", {
     tableName: "genesis-staging-s2g-db-admin-diagnostic-launches",
@@ -93,6 +105,11 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
   const launcherEnabledCondition = new cdk.CfnCondition(stack, "LauncherEnabledCondition", {
     expression: cdk.Fn.conditionEquals(launcherActivationState.valueAsString, "ENABLED"),
   });
+  const approvedNetworkIdentity = cdk.Fn.join("|", [
+    stagingClusterArn.valueAsString,
+    cdk.Fn.join(",", stagingSubnets.valueAsList),
+    cdk.Fn.join(",", stagingSecurityGroups.valueAsList),
+  ]);
 
   const launcherEnabledPolicy = new iam.Policy(stack, "DbAdminDiagnosticLauncherEnabledPolicy", {
     roles: [launcherExecutionRole],
@@ -137,14 +154,18 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
       EXPECTED_REGION: cdk.Aws.REGION,
       STAGING_CLUSTER_ARN: stagingClusterArn.valueAsString,
       APPROVED_DIAGNOSTIC_TASK_DEFINITION_ARN: approvedDiagnosticTaskDefinitionArn.valueAsString,
+      APPROVED_DIAGNOSTIC_IMAGE_DIGEST: approvedDiagnosticImageDigest.valueAsString,
       TASK_CONTAINER_NAME: S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER,
       STAGING_SUBNETS: cdk.Fn.join(",", stagingSubnets.valueAsList),
       STAGING_SECURITY_GROUPS: cdk.Fn.join(",", stagingSecurityGroups.valueAsList),
+      APPROVED_NETWORK_IDENTITY: approvedNetworkIdentity,
       EXPECTED_DATABASE_HOST: expectedDatabaseHost.valueAsString,
       EXPECTED_DATABASE_NAME: expectedDatabaseName.valueAsString,
       APPROVED_ADMIN_SECRET_ARN: approvedAdminSecretArn.valueAsString,
       LAUNCH_TABLE_NAME: launcherTable.tableName,
-      LAUNCH_CLAIM_TTL_SECONDS: "180",
+      LAUNCH_AUTH_SCHEMA_VERSION: "2026-10-13",
+      LAUNCH_AUTH_PURPOSE: "STAGING_DB_ADMIN_READONLY_DIAGNOSTIC",
+      LAUNCH_AUTH_MAX_ATTEMPTS: "1",
       LAUNCHER_ACTIVATION_STATE: launcherActivationState.valueAsString,
     },
   });
@@ -174,7 +195,19 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
   });
   operatorEnabledPolicy.node.defaultChild.cfnOptions.condition = launcherEnabledCondition;
 
+  const authorizationCreatorRole = new iam.Role(stack, "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole", {
+    assumedBy: new iam.ArnPrincipal(authorizationCreatorPrincipalArn.valueAsString),
+    description: "Restricted role for creating one-time staging DB admin diagnostic launch authorizations.",
+  });
+  authorizationCreatorRole.addToPolicy(new iam.PolicyStatement({
+    sid: "CreateLaunchAuthorizationRecordOnly",
+    effect: iam.Effect.ALLOW,
+    actions: ["dynamodb:PutItem"],
+    resources: [launcherTable.tableArn],
+  }));
+
   new cdk.CfnOutput(stack, "DbAdminDiagnosticLauncherOperatorRoleArn", { value: operatorRole.roleArn });
+  new cdk.CfnOutput(stack, "DbAdminDiagnosticAuthorizationCreatorRoleArn", { value: authorizationCreatorRole.roleArn });
   new cdk.CfnOutput(stack, "DbAdminDiagnosticLauncherUrl", { value: launcherUrl.url });
   new cdk.CfnOutput(stack, "DbAdminDiagnosticLaunchTableName", { value: launcherTable.tableName });
 

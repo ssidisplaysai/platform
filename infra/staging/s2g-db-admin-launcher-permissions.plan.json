@@ -11,19 +11,55 @@
   "requiredTaskArnPattern": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:<revision>",
   "network": {
     "subnets": ["subnet-0f303dea5f645e42d", "subnet-00a0b287895a3b18c"],
-    "securityGroups": ["sg-TO-BE-CREATED-s2g-db-admin-diagnostic"],
+    "securityGroups": ["sg-0e9dcd277642bdb63"],
+    "identity": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production|subnet-0f303dea5f645e42d,subnet-00a0b287895a3b18c|sg-0e9dcd277642bdb63",
     "assignPublicIp": "DISABLED",
     "enableExecuteCommand": false
   },
+  "approvedImageDigest": "sha256:4603f32f34be3dcf4c4c80fee1c521d2427fc95b54d6e031fb0fa868143be7b5",
   "fixedCommand": [
     "node",
     "scripts/staging-s2g-db-admin-diagnostic.mjs"
   ],
-  "idempotency": {
+  "authorization": {
     "tableName": "genesis-staging-s2g-db-admin-diagnostic-launches",
     "key": "runId",
-    "states": ["CLAIMED", "LAUNCHED"],
-    "clientToken": "runId"
+    "schemaVersion": "2026-10-13",
+    "purpose": "STAGING_DB_ADMIN_READONLY_DIAGNOSTIC",
+    "allowedStates": ["AUTHORIZED", "CLAIMED", "LAUNCHED", "LAUNCH_FAILED", "OUTCOME_UNKNOWN"],
+    "requiredAuthorizedFields": [
+      "runId",
+      "launchState",
+      "approvedDiagnosticTaskDefinitionArn",
+      "approvedClusterArn",
+      "approvedDiagnosticImageDigest",
+      "approvedNetworkIdentity",
+      "authorizedOperatorArn",
+      "authorizationCreatorArn",
+      "expectedAccountId",
+      "expectedRegion",
+      "createdAtEpoch",
+      "expiresAtEpoch",
+      "purpose",
+      "schemaVersion",
+      "maxLaunchAttempts"
+    ],
+    "claimTransition": {
+      "from": "AUTHORIZED",
+      "to": "CLAIMED",
+      "maxLaunchAttempts": 1,
+      "upsertAllowed": false
+    },
+    "clientToken": "runId",
+    "reclaimFromClaimedAfterTtl": false
+  },
+  "authorizationCreatorBoundary": {
+    "roleLogicalName": "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole",
+    "allowedActions": ["dynamodb:PutItem"],
+    "requiredConditionExpression": "attribute_not_exists(runId)",
+    "expirationSecondsDefault": 300,
+    "expirationSecondsMax": 300,
+    "maxLaunchAttempts": 1
   },
   "newRoles": [
     {
@@ -41,6 +77,10 @@
     {
       "roleLogicalName": "StagingS2gDbAdminDiagnosticOperatorRole",
       "purpose": "Can invoke launcher URL only. No direct ECS/IAM authority."
+    },
+    {
+      "roleLogicalName": "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole",
+      "purpose": "Can create one-time AUTHORIZED launch records only. No launcher invocation or ECS permissions."
     }
   ],
   "secretBoundary": {

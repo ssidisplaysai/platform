@@ -63,6 +63,33 @@ Hard requirements:
   - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
   - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
   - [s2g-db-admin-launcher-permissions.plan.json](../../infra/staging/s2g-db-admin-launcher-permissions.plan.json)
+- DB admin launcher authorization model (single-use, fail-closed):
+  - Launcher accepts only pre-created `AUTHORIZED` records; it cannot upsert unknown `runId`s.
+  - Record contract requires:
+    - `purpose=STAGING_DB_ADMIN_READONLY_DIAGNOSTIC`
+    - `schemaVersion=2026-10-13`
+    - exact approved task definition ARN, cluster ARN, image digest, and network identity
+    - exact authorized operator ARN
+    - `maxLaunchAttempts=1`
+    - short `expiresAtEpoch` (default 300 seconds in administrative procedure)
+  - Launcher consumes authorizations via atomic conditional transition:
+    - `AUTHORIZED -> CLAIMED -> (LAUNCHED | LAUNCH_FAILED | OUTCOME_UNKNOWN)`
+    - no transition back to `AUTHORIZED`
+    - no reclaim-from-`CLAIMED` behavior
+    - no automatic launcher retry once consumed
+  - A `RunTask` throw or ambiguous result is recorded as `OUTCOME_UNKNOWN` where possible and remains consumed.
+- Administrative authorization creation boundary (separate action, separate role):
+  - Use `StagingS2gDbAdminDiagnosticAuthorizationCreatorRole` only.
+  - Role scope: `dynamodb:PutItem` on `genesis-staging-s2g-db-admin-diagnostic-launches` only.
+  - Required write pattern (not yet deployed as writer service):
+    - conditional put with `ConditionExpression=attribute_not_exists(runId)`
+    - immutable launch scope fields listed above
+    - `maxLaunchAttempts=1`
+    - short expiry (`expiresAtEpoch` within 300 seconds of creation)
+  - Example CLI skeleton (for separately approved run only):
+    - `aws dynamodb put-item --table-name genesis-staging-s2g-db-admin-diagnostic-launches --item '<authorized-record-json>' --condition-expression 'attribute_not_exists(runId)'`
+  - Residual governance risk:
+    - account-level `AdministratorAccess` can bypass this boundary unless operations are restricted to independently approved, least-privilege roles.
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`

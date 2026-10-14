@@ -29,10 +29,29 @@ test("launcher IAM enforces fixed invoke path and excludes direct operator ecs p
   assert.match(json, /RunApprovedDiagnosticTaskOnly/);
   assert.match(json, /PassOnlyDedicatedDiagnosticTaskRoles/);
   assert.match(json, /InvokeDbAdminDiagnosticLauncherOnly/);
+  assert.match(json, /CreateLaunchAuthorizationRecordOnly/);
+  assert.match(json, /ApprovedDiagnosticImageDigest/);
+  assert.match(json, /AuthorizationCreatorPrincipalArn/);
+  assert.match(json, /LAUNCH_AUTH_SCHEMA_VERSION/);
+  assert.match(json, /STAGING_DB_ADMIN_READONLY_DIAGNOSTIC/);
   assert.match(json, /AWS_IAM/);
   assert.match(json, /Condition":"LauncherEnabledCondition"/);
   assert.doesNotMatch(json, /StagingS2gDbAdminDiagnosticOperatorRole[\s\S]*ecs:RunTask/);
   assert.doesNotMatch(json, /StagingS2gDbAdminDiagnosticOperatorRole[\s\S]*iam:PassRole/);
+  const launcherDefaultPolicy = Object.values(template.Resources).find((resource) =>
+    resource?.Type === "AWS::IAM::Policy"
+    && resource?.Properties?.PolicyDocument?.Statement?.some((statement) => statement?.Sid === "ReadAndClaimDiagnosticLaunch"));
+  assert.ok(launcherDefaultPolicy);
+  const launcherActions = launcherDefaultPolicy.Properties.PolicyDocument.Statement
+    .flatMap((statement) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+  assert.ok(!launcherActions.includes("dynamodb:PutItem"));
+  const operatorPolicy = Object.values(template.Resources).find((resource) =>
+    resource?.Type === "AWS::IAM::Policy"
+    && resource?.Properties?.PolicyDocument?.Statement?.some((statement) => statement?.Sid === "InvokeDbAdminDiagnosticLauncherOnly"));
+  assert.ok(operatorPolicy);
+  const operatorActions = operatorPolicy.Properties.PolicyDocument.Statement
+    .flatMap((statement) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+  assert.ok(!operatorActions.includes("dynamodb:PutItem"));
   assert.doesNotMatch(json, /GenesisRuntimeStack/);
   assert.doesNotMatch(json, /genesis-production-web/);
   assert.doesNotMatch(json, /genesis-share-to-grow-production/);
