@@ -67,6 +67,7 @@ test("provisioning package phases remain isolated and keep launcher disabled dur
 test("diagnostic dockerfile enforces pinned base digest and dedicated entrypoint", async () => {
   const dockerfile = await readText("infra/staging/Dockerfile.s2g-db-admin-diagnostic");
   assert.match(dockerfile, /NODE_RUNTIME_BASE must be pinned to an immutable digest/);
+  assert.match(dockerfile, /DISTROLESS_RUNTIME_BASE must be pinned to an immutable digest/);
   assert.match(dockerfile, /ENTRYPOINT \["node", "scripts\/staging-s2g-db-admin-diagnostic\.mjs"\]/);
   assert.doesNotMatch(dockerfile, /aws cli|awscli/i);
 });

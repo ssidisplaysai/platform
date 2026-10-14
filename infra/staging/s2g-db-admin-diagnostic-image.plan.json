@@ -14,13 +14,15 @@
       "scripts/staging-s2g-db-admin-diagnostic.mjs"
     ],
     "includesFilesOnly": [
+      "infra/staging/s2g-db-admin-diagnostic-runtime/package.json",
+      "infra/staging/s2g-db-admin-diagnostic-runtime/package-lock.json",
       "scripts/staging-s2g-db-admin-diagnostic.mjs",
       "scripts/s2g-db-admin-diagnostic-lib.mjs",
       "scripts/postgres-connection.mjs",
       "scripts/postgres-ca-preflight.mjs",
       "infra/staging/certificates/aws-rds-global-bundle.pem"
     ],
-    "nonRootUser": "node",
+    "nonRootUser": "65532:65532",
     "rootFilesystemReadOnly": true
   },
   "publishEvidence": {

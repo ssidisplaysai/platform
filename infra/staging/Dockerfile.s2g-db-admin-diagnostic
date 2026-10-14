@@ -1,11 +1,18 @@
 # syntax=docker/dockerfile:1.7
 ARG NODE_RUNTIME_BASE=node:22-bookworm-slim
-FROM ${NODE_RUNTIME_BASE}
+ARG DISTROLESS_RUNTIME_BASE=gcr.io/distroless/nodejs22-debian13:nonroot
+
+FROM ${NODE_RUNTIME_BASE} AS deps
 ARG NODE_RUNTIME_BASE
+ARG DISTROLESS_RUNTIME_BASE
 
 RUN case "$NODE_RUNTIME_BASE" in \
   *@sha256:*) ;; \
   *) echo "NODE_RUNTIME_BASE must be pinned to an immutable digest (e.g. node:22-bookworm-slim@sha256:...)." >&2; exit 1 ;; \
+esac
+RUN case "$DISTROLESS_RUNTIME_BASE" in \
+  *@sha256:*) ;; \
+  *) echo "DISTROLESS_RUNTIME_BASE must be pinned to an immutable digest (e.g. gcr.io/distroless/nodejs22-debian13:nonroot@sha256:...)." >&2; exit 1 ;; \
 esac
 
 WORKDIR /app
@@ -14,15 +21,26 @@ ENV NODE_ENV=production \
     TMPDIR=/tmp \
     CI=true
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+COPY infra/staging/s2g-db-admin-diagnostic-runtime/package.json ./package.json
+COPY infra/staging/s2g-db-admin-diagnostic-runtime/package-lock.json ./package-lock.json
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
+  && npm cache clean --force
 
-COPY scripts/staging-s2g-db-admin-diagnostic.mjs /app/scripts/staging-s2g-db-admin-diagnostic.mjs
-COPY scripts/s2g-db-admin-diagnostic-lib.mjs /app/scripts/s2g-db-admin-diagnostic-lib.mjs
-COPY scripts/postgres-connection.mjs /app/scripts/postgres-connection.mjs
-COPY scripts/postgres-ca-preflight.mjs /app/scripts/postgres-ca-preflight.mjs
-COPY infra/staging/certificates/aws-rds-global-bundle.pem /app/certs/rds-global-bundle.pem
+FROM ${DISTROLESS_RUNTIME_BASE}
+ARG DISTROLESS_RUNTIME_BASE
 
-RUN chown -R node:node /app
-USER node
+WORKDIR /app
+ENV NODE_ENV=production \
+    HOME=/tmp \
+    TMPDIR=/tmp \
+    CI=true
+
+COPY --from=deps --chown=65532:65532 /app/node_modules /app/node_modules
+COPY --chown=65532:65532 scripts/staging-s2g-db-admin-diagnostic.mjs /app/scripts/staging-s2g-db-admin-diagnostic.mjs
+COPY --chown=65532:65532 scripts/s2g-db-admin-diagnostic-lib.mjs /app/scripts/s2g-db-admin-diagnostic-lib.mjs
+COPY --chown=65532:65532 scripts/postgres-connection.mjs /app/scripts/postgres-connection.mjs
+COPY --chown=65532:65532 scripts/postgres-ca-preflight.mjs /app/scripts/postgres-ca-preflight.mjs
+COPY --chown=65532:65532 infra/staging/certificates/aws-rds-global-bundle.pem /app/certs/rds-global-bundle.pem
+
+USER 65532:65532
 ENTRYPOINT ["node", "scripts/staging-s2g-db-admin-diagnostic.mjs"]
