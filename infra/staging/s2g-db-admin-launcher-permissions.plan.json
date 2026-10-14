@@ -53,19 +53,18 @@
     "clientToken": "runId",
     "reclaimFromClaimedAfterTtl": false
   },
-  "authorizationCreatorBoundary": {
-    "roleLogicalName": "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole",
-    "authorizationCreatorPrincipalArnParameter": "AuthorizationCreatorPrincipalArn",
-    "authorizationCreatorPrincipalArnDefault": "none-required",
-    "authorizationCreatorPrincipalArnPattern": "arn:aws:iam::452630323448:role/<restricted-role>",
-    "forbiddenCreatorPrincipalArns": [
-      "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f"
-    ],
-    "separationRules": [
-      "Creator principal must not equal operator principal",
-      "Creator principal must not be AdministratorAccess role"
-    ],
+  "canonicalAuthorizationWriterBoundary": {
+    "roleName": "genesis-staging-s2g-db-admin-authorization-writer-role",
+    "sourcePrincipalRoleName": "AWSReservedSSO_GenesisS2GDiagAuthCreator_a8cbf54ac63d3f12",
+    "assumeRoleRestriction": "Source principal may assume canonical writer role only.",
     "allowedActions": ["dynamodb:PutItem"],
+    "leadingKeyPrefix": "s2g-dbdiag-*",
+    "requiredLeadingKeyCondition": {
+      "ForAllValues:StringLike": "dynamodb:LeadingKeys",
+      "Null": {
+        "dynamodb:LeadingKeys": "false"
+      }
+    },
     "requiredConditionExpression": "attribute_not_exists(runId)",
     "expirationSecondsDefault": 300,
     "expirationSecondsMax": 300,
@@ -89,8 +88,8 @@
       "purpose": "Can invoke launcher URL only. No direct ECS/IAM authority."
     },
     {
-      "roleLogicalName": "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole",
-      "purpose": "Can create one-time AUTHORIZED launch records only. No launcher invocation or ECS permissions."
+      "roleName": "genesis-staging-s2g-db-admin-authorization-writer-role",
+      "purpose": "Canonical one-time authorization writer role provisioned outside the launcher stack."
     }
   ],
   "secretBoundary": {

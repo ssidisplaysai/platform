@@ -28,16 +28,20 @@ test("diagnostic launcher plan enforces disabled bootstrap and fixed launch boun
   assert.equal(plan.authorization.claimTransition.from, "AUTHORIZED");
   assert.equal(plan.authorization.claimTransition.to, "CLAIMED");
   assert.equal(plan.authorization.claimTransition.upsertAllowed, false);
-  assert.equal(plan.authorizationCreatorBoundary.requiredConditionExpression, "attribute_not_exists(runId)");
-  assert.deepEqual(plan.authorizationCreatorBoundary.allowedActions, ["dynamodb:PutItem"]);
-  assert.equal(plan.authorizationCreatorBoundary.expirationSecondsDefault, 300);
-  assert.equal(plan.authorizationCreatorBoundary.maxLaunchAttempts, 1);
-  assert.equal(plan.authorizationCreatorBoundary.authorizationCreatorPrincipalArnParameter, "AuthorizationCreatorPrincipalArn");
-  assert.equal(plan.authorizationCreatorBoundary.authorizationCreatorPrincipalArnDefault, "none-required");
-  assert.ok(plan.authorizationCreatorBoundary.authorizationCreatorPrincipalArnPattern.includes("role/<restricted-role>"));
-  assert.ok(plan.authorizationCreatorBoundary.forbiddenCreatorPrincipalArns.some((arn) =>
-    arn.includes("AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f")));
-  assert.ok(plan.authorizationCreatorBoundary.separationRules.includes("Creator principal must not equal operator principal"));
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.roleName, "genesis-staging-s2g-db-admin-authorization-writer-role");
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.sourcePrincipalRoleName, "AWSReservedSSO_GenesisS2GDiagAuthCreator_a8cbf54ac63d3f12");
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.assumeRoleRestriction, "Source principal may assume canonical writer role only.");
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.requiredConditionExpression, "attribute_not_exists(runId)");
+  assert.deepEqual(plan.canonicalAuthorizationWriterBoundary.allowedActions, ["dynamodb:PutItem"]);
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.leadingKeyPrefix, "s2g-dbdiag-*");
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.requiredLeadingKeyCondition["ForAllValues:StringLike"], "dynamodb:LeadingKeys");
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.requiredLeadingKeyCondition.Null["dynamodb:LeadingKeys"], "false");
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.expirationSecondsDefault, 300);
+  assert.equal(plan.canonicalAuthorizationWriterBoundary.maxLaunchAttempts, 1);
+  assert.ok(plan.newRoles.some((role) =>
+    role.roleName === "genesis-staging-s2g-db-admin-authorization-writer-role"));
+  assert.ok(!plan.newRoles.some((role) =>
+    role.roleLogicalName === "StagingS2gDbAdminDiagnosticAuthorizationCreatorRole"));
   assert.ok(plan.operatorRestrictions.includes("No direct ecs:RunTask permission"));
   assert.ok(plan.operatorRestrictions.includes("No direct iam:PassRole permission"));
   assert.deepEqual(plan.secretBoundary.allowedActions, ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]);

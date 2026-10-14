@@ -82,11 +82,9 @@ Hard requirements:
   - Optional isolated identity stack for creator-boundary provisioning:
     - [staging-s2g-db-admin-authorization-identity-stack.mjs](../../infra/staging/s2g-db-admin-authorization-identity/cdk/staging-s2g-db-admin-authorization-identity-stack.mjs)
     - [s2g-db-admin-authorization-identity.plan.json](../../infra/staging/s2g-db-admin-authorization-identity.plan.json)
-  - Use `StagingS2gDbAdminDiagnosticAuthorizationCreatorRole` only.
-  - `AuthorizationCreatorPrincipalArn` must be explicitly supplied (no template default) and must:
-    - be an account-local IAM role ARN in account `452630323448`,
-    - differ from `OperatorPrincipalArn`,
-    - not be `AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f`.
+  - Canonical writer role is `genesis-staging-s2g-db-admin-authorization-writer-role` only.
+  - The launcher stack must not create a second authorization writer role or export a creator-role output.
+  - Restricted source role `AWSReservedSSO_GenesisS2GDiagAuthCreator_a8cbf54ac63d3f12` must retain `sts:AssumeRole` to the canonical writer role only.
   - Role scope: `dynamodb:PutItem` on `genesis-staging-s2g-db-admin-diagnostic-launches` only.
   - IAM condition scope for run IDs must be fail-closed:
     - `ForAllValues:StringLike` on `dynamodb:LeadingKeys` with `s2g-dbdiag-*` (no `IfExists` suffix),
