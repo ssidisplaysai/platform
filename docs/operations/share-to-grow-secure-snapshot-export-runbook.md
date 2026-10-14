@@ -94,8 +94,22 @@ Hard requirements:
     - immutable launch scope fields listed above
     - `maxLaunchAttempts=1`
     - short expiry (`expiresAtEpoch` within 300 seconds of creation)
-  - Example CLI skeleton (for separately approved run only):
-    - `aws dynamodb put-item --table-name genesis-staging-s2g-db-admin-diagnostic-launches --item '<authorized-record-json>' --condition-expression 'attribute_not_exists(runId)'`
+  - Offline authorization-request preparation (PowerShell 5.1-safe, no AWS calls):
+    - script: [staging-s2g-db-admin-authorization-prepare.ps1](../../scripts/staging-s2g-db-admin-authorization-prepare.ps1)
+    - template example: `s2g-db-admin-authorization-putitem-sample.json` remains demonstration-only and must not be treated as live authorization
+    - reads a non-live template and writes a complete `put-item` request as UTF-8 **without BOM**
+    - validates table/condition/attribute types, fixed task-image-network-account-region bindings, STS operator ARN shape, `maxLaunchAttempts=1`, and <= 5-minute expiry window
+    - refuses placeholder approval references and expired windows
+    - requires fresh values for each authorized attempt:
+      - independent approval reference
+      - unpredictable `runId`
+      - exact current operator STS assumed-role ARN
+      - current `createdAtEpoch` and `expiresAtEpoch`
+    - output artifact can be used later with `--cli-input-json file://<absolute-path>` under separate approval
+  - Example future execution command (for separately approved run only):
+    - `aws dynamodb put-item --cli-input-json file://C:\secure-path\approved-s2g-dbdiag-putitem-request.json`
+    - never place raw JSON inline in PowerShell commands
+    - capture stdout/stderr/exit code and do not retry on failure/ambiguity
   - Residual governance risk:
     - account-level `AdministratorAccess` can bypass this boundary unless operations are restricted to independently approved, least-privilege roles.
   - If no existing restricted IAM/SSO principal satisfies this boundary, deployment is blocked until a dedicated restricted principal is created and separately approved.
