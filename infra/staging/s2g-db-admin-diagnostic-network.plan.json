@@ -1,0 +1,46 @@
+{
+  "status": "draft-not-applied",
+  "vpcId": "vpc-05035503df7e142d6",
+  "subnets": [
+    "subnet-0f303dea5f645e42d",
+    "subnet-00a0b287895a3b18c"
+  ],
+  "assignPublicIp": "DISABLED",
+  "existingRdsSecurityGroup": {
+    "groupId": "sg-04aa58230942f9dc9",
+    "description": "genesis-staging-postgres",
+    "currentIngressSources": [
+      "sg-0687242229bc3a80e"
+    ]
+  },
+  "proposedDiagnosticSecurityGroup": {
+    "groupName": "genesis-staging-s2g-db-admin-diagnostic-sg",
+    "description": "Staging S2G DB admin diagnostic task egress-only security group",
+    "inboundRules": [],
+    "outboundRules": [
+      {
+        "protocol": "tcp",
+        "fromPort": 5432,
+        "toPort": 5432,
+        "destinationSecurityGroupId": "sg-04aa58230942f9dc9",
+        "rationale": "Permit PostgreSQL TLS traffic only to staging RDS."
+      }
+    ],
+    "additionalAwsEndpointEgressRequired": true
+  },
+  "requiredRdsIngressChange": {
+    "securityGroupId": "sg-04aa58230942f9dc9",
+    "rule": {
+      "protocol": "tcp",
+      "fromPort": 5432,
+      "toPort": 5432,
+      "sourceSecurityGroupName": "genesis-staging-s2g-db-admin-diagnostic-sg"
+    },
+    "dropLegacyWebSecurityGroupAfterCutover": false
+  },
+  "privateConnectivityFindings": {
+    "vpcEndpoints": [],
+    "conclusion": "No interface endpoints are currently present in the staging VPC. Restricting outbound to only RDS requires adding interface endpoints for ECR API, ECR DKR, Secrets Manager, and CloudWatch Logs or routing through an approved egress control path."
+  }
+}
+

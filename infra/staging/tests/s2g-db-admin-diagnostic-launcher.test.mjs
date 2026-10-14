@@ -11,8 +11,8 @@ function baseConfig() {
     expectedAccountId: "452630323448",
     expectedRegion: "us-west-2",
     stagingClusterArn: "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
-    approvedDiagnosticTaskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-role-provision:4",
-    taskContainerName: "S2gDbRoleProvisioner",
+    approvedDiagnosticTaskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:4",
+    taskContainerName: "S2gDbAdminDiagnostic",
     subnets: ["subnet-1", "subnet-2"],
     securityGroups: ["sg-1"],
     expectedDatabaseHost: "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com",
@@ -52,9 +52,9 @@ function baseDeps(overrides = {}) {
         taskDefinition: {
           taskDefinitionArn,
           containerDefinitions: [{
-            name: "S2gDbRoleProvisioner",
+            name: "S2gDbAdminDiagnostic",
             image: "repo/image@sha256:1234",
-            command: ["node", "scripts/staging-s2g-db-role-provision.mjs", "--diagnose-admin-readonly"],
+            command: ["node", "scripts/staging-s2g-db-admin-diagnostic.mjs"],
             environment: [
               { name: "GENESIS_ENVIRONMENT", value: "staging" },
               { name: "DB_HOST", value: "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com" },
@@ -90,8 +90,7 @@ test("launches diagnostic task with fixed command/network and execute-command di
   assert.equal(runInput.networkConfiguration.awsvpcConfiguration.assignPublicIp, "DISABLED");
   assert.deepEqual(runInput.overrides.containerOverrides[0].command, [
     "node",
-    "scripts/staging-s2g-db-role-provision.mjs",
-    "--diagnose-admin-readonly",
+    "scripts/staging-s2g-db-admin-diagnostic.mjs",
   ]);
 });
 
@@ -141,7 +140,7 @@ test("rejects non-digest image, wrong task command, wrong revision, and producti
         async describeTaskDefinition() {
           return {
             taskDefinition: {
-              taskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-role-provision:5",
+              taskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:5",
               containerDefinitions: [],
             },
           };
@@ -158,7 +157,7 @@ test("rejects non-digest image, wrong task command, wrong revision, and producti
           return {
             taskDefinition: {
               taskDefinitionArn,
-              containerDefinitions: [{ name: "S2gDbRoleProvisioner", image: "repo/image:latest", command: [] }],
+              containerDefinitions: [{ name: "S2gDbAdminDiagnostic", image: "repo/image:latest", command: [] }],
             },
           };
         },
@@ -181,7 +180,7 @@ test("rejects non-digest image, wrong task command, wrong revision, and producti
   );
   await assert.rejects(
     authorizeAndLaunchDbAdminDiagnostic(baseEvent(), {
-      config: { ...baseConfig(), approvedDiagnosticTaskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-role-provision:4", expectedDatabaseHost: "genesis-production-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com" },
+      config: { ...baseConfig(), approvedDiagnosticTaskDefinitionArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:4", expectedDatabaseHost: "genesis-production-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com" },
       deps: baseDeps(),
     }),
     /DIAG_LAUNCHER_PRODUCTION_RESOURCE_REJECTED/,

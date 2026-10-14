@@ -4,6 +4,10 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER,
+  S2G_DB_ADMIN_DIAGNOSTIC_FAMILY,
+} from "../../s2g-db-admin-diagnostic-contract.mjs";
 
 const brokerAssetPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "broker");
 
@@ -21,7 +25,7 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
   const approvedDiagnosticTaskDefinitionArn = new cdk.CfnParameter(stack, "ApprovedDiagnosticTaskDefinitionArn", {
     type: "String",
     default: "",
-    allowedPattern: "(^$)|(^arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-role-provision:[1-9][0-9]*$)",
+    allowedPattern: `(^$)|(^arn:aws:ecs:us-west-2:452630323448:task-definition/${S2G_DB_ADMIN_DIAGNOSTIC_FAMILY}:[1-9][0-9]*$)`,
     description: "Exact approved diagnostic task definition ARN including revision.",
   });
   const launcherActivationState = new cdk.CfnParameter(stack, "LauncherActivationState", {
@@ -133,7 +137,7 @@ export function createStagingS2gDbAdminLauncherStack(app, id = "GenesisStagingS2
       EXPECTED_REGION: cdk.Aws.REGION,
       STAGING_CLUSTER_ARN: stagingClusterArn.valueAsString,
       APPROVED_DIAGNOSTIC_TASK_DEFINITION_ARN: approvedDiagnosticTaskDefinitionArn.valueAsString,
-      TASK_CONTAINER_NAME: "S2gDbRoleProvisioner",
+      TASK_CONTAINER_NAME: S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER,
       STAGING_SUBNETS: cdk.Fn.join(",", stagingSubnets.valueAsList),
       STAGING_SECURITY_GROUPS: cdk.Fn.join(",", stagingSecurityGroups.valueAsList),
       EXPECTED_DATABASE_HOST: expectedDatabaseHost.valueAsString,

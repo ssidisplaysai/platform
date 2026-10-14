@@ -14,13 +14,12 @@ test("diagnostic launcher plan enforces disabled bootstrap and fixed launch boun
   assert.equal(plan.status, "draft-not-applied");
   assert.equal(plan.activationModel.default, "DISABLED");
   assert.deepEqual(plan.activationModel.allowedValues, ["DISABLED", "ENABLED"]);
-  assert.equal(plan.approvedDiagnosticTaskFamily, "genesis-staging-s2g-db-role-provision");
+  assert.equal(plan.approvedDiagnosticTaskFamily, "genesis-staging-s2g-db-admin-diagnostic");
   assert.equal(plan.network.assignPublicIp, "DISABLED");
   assert.equal(plan.network.enableExecuteCommand, false);
   assert.deepEqual(plan.fixedCommand, [
     "node",
-    "scripts/staging-s2g-db-role-provision.mjs",
-    "--diagnose-admin-readonly",
+    "scripts/staging-s2g-db-admin-diagnostic.mjs",
   ]);
   assert.ok(plan.operatorRestrictions.includes("No direct ecs:RunTask permission"));
   assert.ok(plan.operatorRestrictions.includes("No direct iam:PassRole permission"));

@@ -19,7 +19,7 @@ test("synthesizes isolated diagnostic launcher stack with disabled bootstrap and
   assert.match(json, /"Default":"DISABLED"/);
   assert.match(json, /"AllowedValues":\["DISABLED","ENABLED"\]/);
   assert.match(json, /"ApprovedDiagnosticTaskDefinitionArn"/);
-  assert.match(json, /genesis-staging-s2g-db-role-provision:\[1-9\]\[0-9\]\*/);
+  assert.match(json, /genesis-staging-s2g-db-admin-diagnostic:\[1-9\]\[0-9\]\*/);
   assert.match(json, /"Default":""/);
 });
 

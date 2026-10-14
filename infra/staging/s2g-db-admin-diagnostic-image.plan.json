@@ -1,0 +1,31 @@
+{
+  "status": "draft-not-applied",
+  "repository": {
+    "name": "genesis-staging-s2g-db-admin-diagnostic",
+    "imageTagMutability": "IMMUTABLE",
+    "scanOnPush": true
+  },
+  "build": {
+    "dockerfile": "infra/staging/Dockerfile.s2g-db-admin-diagnostic",
+    "platform": "linux/amd64",
+    "requiredBaseImageFormat": "name@sha256:digest",
+    "entrypoint": [
+      "node",
+      "scripts/staging-s2g-db-admin-diagnostic.mjs"
+    ],
+    "includesFilesOnly": [
+      "scripts/staging-s2g-db-admin-diagnostic.mjs",
+      "scripts/s2g-db-admin-diagnostic-lib.mjs",
+      "scripts/postgres-connection.mjs",
+      "scripts/postgres-ca-preflight.mjs",
+      "infra/staging/certificates/aws-rds-global-bundle.pem"
+    ],
+    "nonRootUser": "node",
+    "rootFilesystemReadOnly": true
+  },
+  "publishEvidence": {
+    "recordDigest": true,
+    "recordSbomLocation": true,
+    "recordSourceSha": true
+  }
+}

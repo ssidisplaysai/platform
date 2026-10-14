@@ -2,6 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { ECSClient, DescribeTaskDefinitionCommand, RunTaskCommand } from "@aws-sdk/client-ecs";
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { authorizeAndLaunchDbAdminDiagnostic, mapDiagnosticLauncherFailureCode } from "./diagnostic-launcher-core.mjs";
+import { S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER } from "../../s2g-db-admin-diagnostic-contract.mjs";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const ecs = new ECSClient({});
@@ -12,7 +13,7 @@ const config = Object.freeze({
   expectedRegion: process.env.EXPECTED_REGION ?? "",
   stagingClusterArn: process.env.STAGING_CLUSTER_ARN ?? "",
   approvedDiagnosticTaskDefinitionArn: process.env.APPROVED_DIAGNOSTIC_TASK_DEFINITION_ARN ?? "",
-  taskContainerName: process.env.TASK_CONTAINER_NAME ?? "S2gDbRoleProvisioner",
+  taskContainerName: process.env.TASK_CONTAINER_NAME ?? S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER,
   subnets: (process.env.STAGING_SUBNETS ?? "").split(",").map((value) => value.trim()).filter(Boolean),
   securityGroups: (process.env.STAGING_SECURITY_GROUPS ?? "").split(",").map((value) => value.trim()).filter(Boolean),
   expectedDatabaseHost: process.env.EXPECTED_DATABASE_HOST ?? "",

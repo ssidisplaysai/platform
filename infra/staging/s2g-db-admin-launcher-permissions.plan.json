@@ -7,18 +7,17 @@
     "allowedValues": ["DISABLED", "ENABLED"]
   },
   "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
-  "approvedDiagnosticTaskFamily": "genesis-staging-s2g-db-role-provision",
-  "requiredTaskArnPattern": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-role-provision:<revision>",
+  "approvedDiagnosticTaskFamily": "genesis-staging-s2g-db-admin-diagnostic",
+  "requiredTaskArnPattern": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:<revision>",
   "network": {
     "subnets": ["subnet-0f303dea5f645e42d", "subnet-00a0b287895a3b18c"],
-    "securityGroups": ["sg-0687242229bc3a80e"],
+    "securityGroups": ["sg-TO-BE-CREATED-s2g-db-admin-diagnostic"],
     "assignPublicIp": "DISABLED",
     "enableExecuteCommand": false
   },
   "fixedCommand": [
     "node",
-    "scripts/staging-s2g-db-role-provision.mjs",
-    "--diagnose-admin-readonly"
+    "scripts/staging-s2g-db-admin-diagnostic.mjs"
   ],
   "idempotency": {
     "tableName": "genesis-staging-s2g-db-admin-diagnostic-launches",

@@ -1,5 +1,5 @@
 {
-  "family": "genesis-staging-s2g-db-role-provision",
+  "family": "genesis-staging-s2g-db-admin-diagnostic",
   "requiresCompatibilities": ["FARGATE"],
   "networkMode": "awsvpc",
   "cpu": "512",
@@ -12,15 +12,14 @@
   "executionRoleArn": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
   "containerDefinitions": [
     {
-      "name": "S2gDbRoleProvisioner",
-      "image": "${S2G_DB_ROLE_PROVISION_IMAGE_URI}",
+      "name": "S2gDbAdminDiagnostic",
+      "image": "${S2G_DB_ADMIN_DIAGNOSTIC_IMAGE_URI}",
       "essential": true,
       "readonlyRootFilesystem": true,
       "user": "1000:1000",
       "command": [
         "node",
-        "scripts/staging-s2g-db-role-provision.mjs",
-        "--diagnose-admin-readonly"
+        "scripts/staging-s2g-db-admin-diagnostic.mjs"
       ],
       "environment": [
         {
@@ -67,7 +66,7 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/genesis/staging/s2g-db-role-provision",
+          "awslogs-group": "/genesis/staging/s2g-db-admin-diagnostic",
           "awslogs-region": "us-west-2",
           "awslogs-stream-prefix": "diagnostic"
         }

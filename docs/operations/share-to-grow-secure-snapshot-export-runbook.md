@@ -51,6 +51,9 @@ Hard requirements:
 - Use a dedicated one-off task family for DB admin diagnostics/provisioning design:
   - [s2g-db-role-provision-task-definition.template.json](../../infra/staging/s2g-db-role-provision-task-definition.template.json)
   - [s2g-db-role-provision-permissions.plan.json](../../infra/staging/s2g-db-role-provision-permissions.plan.json)
+  - [s2g-db-admin-diagnostic-network.plan.json](../../infra/staging/s2g-db-admin-diagnostic-network.plan.json)
+  - [s2g-db-admin-diagnostic-image.plan.json](../../infra/staging/s2g-db-admin-diagnostic-image.plan.json)
+  - [s2g-db-admin-diagnostic-provisioning-package.json](../../infra/staging/s2g-db-admin-diagnostic-provisioning-package.json)
 - Use a dedicated launcher control plane for privileged diagnostic execution:
   - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
   - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
@@ -58,7 +61,7 @@ Hard requirements:
 - Before creating/executing any launcher stack change set, run preflight validation:
   - `node infra/staging/s2g-db-admin-launcher/cdk/validate-diagnostic-launcher-deployment.mjs --profile genesis-production --region us-west-2 --account-id 452630323448`
   - The validator fails closed if the Lambda asset object is missing from the CDK bootstrap bucket, if the stack is in `ROLLBACK_COMPLETE` without explicit recovery acknowledgment, if the retained DynamoDB table conflicts with fresh creation, or if activation/task-definition defaults drift from reviewed disabled bootstrap values.
-- The default command is diagnostic-only (`--diagnose-admin-readonly`) and requires:
+- The default command is diagnostic-only (`node scripts/staging-s2g-db-admin-diagnostic.mjs`) and requires:
   - fixed staging host/database,
   - `DB_ADMIN_USERNAME` + `DB_ADMIN_PASSWORD` from the exact staging RDS-managed admin secret,
   - TLS CA verification,
