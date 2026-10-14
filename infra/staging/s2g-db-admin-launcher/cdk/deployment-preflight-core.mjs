@@ -118,7 +118,27 @@ export function validateStackStateForMode({
     if (retainedTableExists) throw failure("DEPLOYMENT_PREFLIGHT_RETAINED_TABLE_CONFLICT", REQUIRED_TABLE_NAME);
     return;
   }
-  if (stackStatus !== "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_STACK_NOT_CREATE_COMPLETE");
+  const normalizedStatus = String(stackStatus ?? "STACK_ABSENT");
+  const stableUpdateStates = new Set(["CREATE_COMPLETE", "UPDATE_COMPLETE"]);
+  if (normalizedStatus === "UPDATE_ROLLBACK_COMPLETE") {
+    if (!allowRollbackComplete) throw failure("DEPLOYMENT_PREFLIGHT_UPDATE_ROLLBACK_REQUIRES_REVIEW");
+  } else if (stableUpdateStates.has(normalizedStatus)) {
+    // allowed
+  } else if (normalizedStatus.endsWith("_IN_PROGRESS")) {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_UPDATE_IN_PROGRESS");
+  } else if (normalizedStatus === "UPDATE_FAILED") {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_UPDATE_FAILED");
+  } else if (normalizedStatus === "UPDATE_ROLLBACK_FAILED") {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_UPDATE_ROLLBACK_FAILED");
+  } else if (normalizedStatus === "ROLLBACK_COMPLETE") {
+    throw failure("DEPLOYMENT_PREFLIGHT_ROLLBACK_REQUIRES_REVIEW");
+  } else if (normalizedStatus.startsWith("DELETE_") || normalizedStatus === "DELETE_COMPLETE") {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_DELETE_STATE");
+  } else if (normalizedStatus === "STACK_ABSENT") {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_MISSING_FOR_UPDATE");
+  } else {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_STATE_INVALID_FOR_UPDATE", normalizedStatus);
+  }
   if (!retainedTableExists) throw failure("DEPLOYMENT_PREFLIGHT_TABLE_MISSING_FOR_UPDATE", REQUIRED_TABLE_NAME);
 }
 
@@ -130,23 +150,99 @@ export function validateStackIdentity(stack, expectedStackName) {
   }
 }
 
-export function validateUpdateChangeSetScope(changeSet, { expectedStackName, allowedLogicalIds = [] } = {}) {
+export function validateUpdateChangeSetScope(changeSet, {
+  expectedStackName,
+  allowedLogicalIds = [],
+  expectedResourceChanges = [],
+} = {}) {
   const item = asObject(changeSet, "change set");
   if (item.StackName !== expectedStackName) throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_STACK_MISMATCH");
+  if (item.ChangeSetType && item.ChangeSetType !== "UPDATE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_UPDATE");
   if (item.Status !== "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_READY");
   if (item.ExecutionStatus !== "AVAILABLE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_AVAILABLE");
   const changes = Array.isArray(item.Changes) ? item.Changes : [];
   if (changes.length === 0) throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_EMPTY");
   const allowed = new Set(allowedLogicalIds);
+  const expectedMap = new Map(expectedResourceChanges.map((entry) => [entry.logicalResourceId, entry]));
+  if (expectedMap.size > 0 && changes.length !== expectedMap.size) {
+    throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTION_COUNT_MISMATCH");
+  }
   for (const entry of changes) {
     const resourceChange = asObject(entry.ResourceChange, "change set resource change");
-    if (resourceChange.Action !== "Modify") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_UNEXPECTED_ACTION");
-    if (resourceChange.Replacement === "True" || resourceChange.Replacement === "Conditional") {
-      throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_REPLACEMENT");
-    }
     if (allowed.size > 0 && !allowed.has(resourceChange.LogicalResourceId)) {
       throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_SCOPE_UNEXPECTED", resourceChange.LogicalResourceId);
     }
+    const expected = expectedMap.get(resourceChange.LogicalResourceId);
+    if (expected) {
+      if (resourceChange.Action !== expected.action) {
+        throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_UNEXPECTED_ACTION", resourceChange.LogicalResourceId);
+      }
+      if (expected.replacement) {
+        if ((resourceChange.Replacement ?? "False") !== expected.replacement) {
+          throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_REPLACEMENT", resourceChange.LogicalResourceId);
+        }
+      } else if (resourceChange.Replacement === "True") {
+        throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_REPLACEMENT", resourceChange.LogicalResourceId);
+      }
+    }
+  }
+  if (expectedMap.size > 0) {
+    for (const logicalId of expectedMap.keys()) {
+      if (!changes.some((entry) => entry?.ResourceChange?.LogicalResourceId === logicalId)) {
+        throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_SCOPE_UNEXPECTED", logicalId);
+      }
+    }
+  }
+}
+
+function toParameterMap(parameters) {
+  const map = new Map();
+  for (const parameter of parameters ?? []) {
+    if (parameter?.ParameterKey) {
+      map.set(parameter.ParameterKey, parameter.ParameterValue ?? "");
+    }
+  }
+  return map;
+}
+
+export function validateUpdateChangeSetParameters({
+  expectedChangeSetArn,
+  changeSetArn,
+  changeSetParameters,
+  deployedStackParameters,
+  expectedOperatorAssumerPrincipalArn,
+}) {
+  if (!String(changeSetArn ?? "").startsWith("arn:aws:cloudformation:")) {
+    throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ARN_REQUIRED");
+  }
+  if (changeSetArn !== expectedChangeSetArn) {
+    throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ARN_MISMATCH");
+  }
+  const proposed = toParameterMap(changeSetParameters);
+  const deployed = toParameterMap(deployedStackParameters);
+
+  if (proposed.get("LauncherActivationState") !== "ENABLED") {
+    throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_NOT_ENABLED");
+  }
+  const requiredUnchanged = [
+    "OperatorAssumerPrincipalArn",
+    "ApprovedDiagnosticTaskDefinitionArn",
+    "ApprovedDiagnosticImageDigest",
+    "StagingClusterArn",
+    "StagingSubnets",
+    "StagingSecurityGroups",
+    "ExpectedDatabaseHost",
+    "ExpectedDatabaseName",
+    "DiagnosticExecutionRoleArn",
+    "DiagnosticTaskRoleArn",
+  ];
+  for (const key of requiredUnchanged) {
+    if (proposed.get(key) !== deployed.get(key)) {
+      throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_PARAMETER_CHANGED", key);
+    }
+  }
+  if (proposed.get("OperatorAssumerPrincipalArn") !== expectedOperatorAssumerPrincipalArn) {
+    throw failure("DEPLOYMENT_PREFLIGHT_OPERATOR_ASSUMER_MISMATCH");
   }
 }
 

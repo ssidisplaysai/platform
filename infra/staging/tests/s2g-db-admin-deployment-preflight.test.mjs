@@ -10,6 +10,7 @@ import {
   validateCallerIdentity,
   validateStackIdentity,
   validateStackStateForMode,
+  validateUpdateChangeSetParameters,
   validateUpdateChangeSetScope,
   validateLauncherTemplateGuards,
 } from "../s2g-db-admin-launcher/cdk/deployment-preflight-core.mjs";
@@ -146,6 +147,29 @@ test("mode-specific stack state checks enforce create and update expectations", 
     retainedTableExists: true,
     mode: "update",
   }));
+  assert.doesNotThrow(() => validateStackStateForMode({
+    stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    stackStatus: "UPDATE_COMPLETE",
+    retainedTableExists: true,
+    mode: "update",
+  }));
+  assert.throws(
+    () => validateStackStateForMode({
+      stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      stackStatus: "UPDATE_ROLLBACK_COMPLETE",
+      retainedTableExists: true,
+      mode: "update",
+      allowRollbackComplete: false,
+    }),
+    /DEPLOYMENT_PREFLIGHT_UPDATE_ROLLBACK_REQUIRES_REVIEW/,
+  );
+  assert.doesNotThrow(() => validateStackStateForMode({
+    stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    stackStatus: "UPDATE_ROLLBACK_COMPLETE",
+    retainedTableExists: true,
+    mode: "update",
+    allowRollbackComplete: true,
+  }));
   assert.throws(
     () => validateStackStateForMode({
       stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
@@ -154,6 +178,24 @@ test("mode-specific stack state checks enforce create and update expectations", 
       mode: "update",
     }),
     /DEPLOYMENT_PREFLIGHT_TABLE_MISSING_FOR_UPDATE/,
+  );
+  assert.throws(
+    () => validateStackStateForMode({
+      stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      stackStatus: "UPDATE_IN_PROGRESS",
+      retainedTableExists: true,
+      mode: "update",
+    }),
+    /DEPLOYMENT_PREFLIGHT_STACK_UPDATE_IN_PROGRESS/,
+  );
+  assert.throws(
+    () => validateStackStateForMode({
+      stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      stackStatus: "UPDATE_FAILED",
+      retainedTableExists: true,
+      mode: "update",
+    }),
+    /DEPLOYMENT_PREFLIGHT_STACK_UPDATE_FAILED/,
   );
 });
 
@@ -171,12 +213,19 @@ test("stack identity validation checks stack name and stack id format", () => {
   );
 });
 
-test("update change-set scope validation rejects non-modify and replacement actions", () => {
+test("update change-set scope validation enforces exact approved action inventory", () => {
   const base = {
     StackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    ChangeSetType: "UPDATE",
     Status: "CREATE_COMPLETE",
     ExecutionStatus: "AVAILABLE",
     Changes: [
+      {
+        ResourceChange: {
+          Action: "Add",
+          LogicalResourceId: "DbAdminDiagnosticLauncherEnabledPolicy21B6A083",
+        },
+      },
       {
         ResourceChange: {
           Action: "Modify",
@@ -184,21 +233,154 @@ test("update change-set scope validation rejects non-modify and replacement acti
           Replacement: "False",
         },
       },
+      {
+        ResourceChange: {
+          Action: "Modify",
+          LogicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
+          Replacement: "Conditional",
+        },
+      },
+      {
+        ResourceChange: {
+          Action: "Add",
+          LogicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+        },
+      },
     ],
   };
   assert.doesNotThrow(() => validateUpdateChangeSetScope(base, {
     expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
-    allowedLogicalIds: ["DbAdminDiagnosticLauncherFunction4A98B30B"],
+    allowedLogicalIds: [
+      "DbAdminDiagnosticLauncherEnabledPolicy21B6A083",
+      "DbAdminDiagnosticLauncherFunction4A98B30B",
+      "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
+      "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+    ],
+    expectedResourceChanges: [
+      { logicalResourceId: "DbAdminDiagnosticLauncherEnabledPolicy21B6A083", action: "Add" },
+      { logicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B", action: "Modify", replacement: "False" },
+      { logicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4", action: "Modify", replacement: "Conditional" },
+      { logicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C", action: "Add" },
+    ],
+  }));
+  assert.doesNotThrow(() => validateUpdateChangeSetScope({
+    ...base,
+    ChangeSetType: null,
+  }, {
+    expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    allowedLogicalIds: [
+      "DbAdminDiagnosticLauncherEnabledPolicy21B6A083",
+      "DbAdminDiagnosticLauncherFunction4A98B30B",
+      "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
+      "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+    ],
+    expectedResourceChanges: [
+      { logicalResourceId: "DbAdminDiagnosticLauncherEnabledPolicy21B6A083", action: "Add" },
+      { logicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B", action: "Modify", replacement: "False" },
+      { logicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4", action: "Modify", replacement: "Conditional" },
+      { logicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C", action: "Add" },
+    ],
   }));
   assert.throws(
     () => validateUpdateChangeSetScope({
       ...base,
-      Changes: [{ ResourceChange: { Action: "Add", LogicalResourceId: "X", Replacement: "False" } }],
+      ChangeSetType: "CREATE",
     }, {
       expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
-      allowedLogicalIds: ["DbAdminDiagnosticLauncherFunction4A98B30B"],
+      allowedLogicalIds: [
+        "DbAdminDiagnosticLauncherEnabledPolicy21B6A083",
+        "DbAdminDiagnosticLauncherFunction4A98B30B",
+        "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
+        "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+      ],
+      expectedResourceChanges: [
+        { logicalResourceId: "DbAdminDiagnosticLauncherEnabledPolicy21B6A083", action: "Add" },
+        { logicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B", action: "Modify", replacement: "False" },
+        { logicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4", action: "Modify", replacement: "Conditional" },
+        { logicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C", action: "Add" },
+      ],
+    }),
+    /DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_UPDATE/,
+  );
+  assert.throws(
+    () => validateUpdateChangeSetScope({
+      ...base,
+      Changes: [
+        ...base.Changes.slice(0, 3),
+        {
+          ResourceChange: {
+            Action: "Modify",
+            LogicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+          },
+        },
+      ],
+    }, {
+      expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      allowedLogicalIds: [
+        "DbAdminDiagnosticLauncherEnabledPolicy21B6A083",
+        "DbAdminDiagnosticLauncherFunction4A98B30B",
+        "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
+        "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+      ],
+      expectedResourceChanges: [
+        { logicalResourceId: "DbAdminDiagnosticLauncherEnabledPolicy21B6A083", action: "Add" },
+        { logicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B", action: "Modify", replacement: "False" },
+        { logicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4", action: "Modify", replacement: "Conditional" },
+        { logicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C", action: "Add" },
+      ],
     }),
     /DEPLOYMENT_PREFLIGHT_CHANGE_SET_UNEXPECTED_ACTION/,
+  );
+});
+
+test("update change-set parameter validation enforces exact arn, enabled activation, and unchanged bindings", () => {
+  const deployedStackParameters = [
+    { ParameterKey: "LauncherActivationState", ParameterValue: "DISABLED" },
+    { ParameterKey: "OperatorAssumerPrincipalArn", ParameterValue: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49" },
+    { ParameterKey: "ApprovedDiagnosticTaskDefinitionArn", ParameterValue: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:1" },
+    { ParameterKey: "ApprovedDiagnosticImageDigest", ParameterValue: "sha256:4603f32f34be3dcf4c4c80fee1c521d2427fc95b54d6e031fb0fa868143be7b5" },
+    { ParameterKey: "StagingClusterArn", ParameterValue: "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production" },
+    { ParameterKey: "StagingSubnets", ParameterValue: "subnet-0f303dea5f645e42d,subnet-00a0b287895a3b18c" },
+    { ParameterKey: "StagingSecurityGroups", ParameterValue: "sg-0e9dcd277642bdb63" },
+    { ParameterKey: "ExpectedDatabaseHost", ParameterValue: "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com" },
+    { ParameterKey: "ExpectedDatabaseName", ParameterValue: "genesis_staging" },
+    { ParameterKey: "DiagnosticExecutionRoleArn", ParameterValue: "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role" },
+    { ParameterKey: "DiagnosticTaskRoleArn", ParameterValue: "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-task-role" },
+  ];
+  const changeSetArn = "arn:aws:cloudformation:us-west-2:452630323448:changeSet/s2g-db-launcher-enable-second-diag-20261014T220618Z/6c07fc77-634e-41e0-8cc5-3dce7d695d5b";
+  const changeSetParameters = [
+    { ParameterKey: "LauncherActivationState", ParameterValue: "ENABLED" },
+    ...deployedStackParameters.filter(({ ParameterKey }) => ParameterKey !== "LauncherActivationState"),
+  ];
+  assert.doesNotThrow(() => validateUpdateChangeSetParameters({
+    expectedChangeSetArn: changeSetArn,
+    changeSetArn,
+    changeSetParameters,
+    deployedStackParameters,
+    expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
+  }));
+  assert.throws(
+    () => validateUpdateChangeSetParameters({
+      expectedChangeSetArn: changeSetArn,
+      changeSetArn: "arn:aws:cloudformation:us-west-2:452630323448:changeSet/other/1234",
+      changeSetParameters,
+      deployedStackParameters,
+      expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
+    }),
+    /DEPLOYMENT_PREFLIGHT_CHANGE_SET_ARN_MISMATCH/,
+  );
+  assert.throws(
+    () => validateUpdateChangeSetParameters({
+      expectedChangeSetArn: changeSetArn,
+      changeSetArn,
+      changeSetParameters: [
+        { ParameterKey: "LauncherActivationState", ParameterValue: "DISABLED" },
+        ...deployedStackParameters.filter(({ ParameterKey }) => ParameterKey !== "LauncherActivationState"),
+      ],
+      deployedStackParameters,
+      expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
+    }),
+    /DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_NOT_ENABLED/,
   );
 });
 

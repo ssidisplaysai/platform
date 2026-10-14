@@ -140,6 +140,10 @@ Hard requirements:
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`
+  - update-preflight accepted baseline stack states:
+    - `CREATE_COMPLETE`
+    - `UPDATE_COMPLETE`
+    - `UPDATE_ROLLBACK_COMPLETE` only with explicit rollback review/acknowledgement (`--allow-rollback-complete`)
   - The validator fails closed if the Lambda asset object is missing from the CDK bootstrap bucket, if stack mode/identity is incorrect, if activation defaults drift from reviewed values, if protected ECS services are unhealthy, or if update-mode change-set scope contains unexpected action/replacement/resource changes.
 - The default command is diagnostic-only (`node scripts/staging-s2g-db-admin-diagnostic.mjs`) and requires:
   - fixed staging host/database,

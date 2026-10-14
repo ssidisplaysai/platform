@@ -14,6 +14,7 @@ import {
   validateCallerIdentity,
   validateStackIdentity,
   validateStackStateForMode,
+  validateUpdateChangeSetParameters,
   validateUpdateChangeSetScope,
   validateLauncherTemplateGuards,
 } from "./deployment-preflight-core.mjs";
@@ -28,7 +29,8 @@ function parseArgs(argv) {
     mode: "create",
     changeSetName: "",
     expectedActivationState: "DISABLED",
-    expectedApprovedTaskArn: "",
+    expectedApprovedTaskArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:1",
+    expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
     allowRollbackComplete: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -42,6 +44,7 @@ function parseArgs(argv) {
     else if (token === "--change-set-name") options.changeSetName = argv[++index];
     else if (token === "--expected-activation-state") options.expectedActivationState = argv[++index];
     else if (token === "--expected-approved-task-arn") options.expectedApprovedTaskArn = argv[++index];
+    else if (token === "--expected-operator-assumer-principal-arn") options.expectedOperatorAssumerPrincipalArn = argv[++index];
     else if (token === "--allow-rollback-complete") options.allowRollbackComplete = true;
     else throw new Error(`Unknown option: ${token}`);
   }
@@ -185,18 +188,34 @@ async function main() {
     if (options.mode === "update") {
       const changeSetResult = runAwsJson(["cloudformation", "describe-change-set", "--change-set-name", options.changeSetName], options);
       if (!changeSetResult.ok) throw new Error(`DEPLOYMENT_PREFLIGHT_CHANGE_SET_READ_FAILED:${options.changeSetName}`);
+      validateUpdateChangeSetParameters({
+        expectedChangeSetArn: options.changeSetName,
+        changeSetArn: changeSetResult.data?.ChangeSetId ?? "",
+        changeSetParameters: changeSetResult.data?.Parameters ?? [],
+        deployedStackParameters: stack?.Parameters ?? [],
+        expectedOperatorAssumerPrincipalArn: options.expectedOperatorAssumerPrincipalArn,
+      });
       validateUpdateChangeSetScope(changeSetResult.data, {
         expectedStackName: options.stackName,
         allowedLogicalIds: [
-          "DbAdminDiagnosticLauncherFunction4A98B30B",
           "DbAdminDiagnosticLauncherEnabledPolicy21B6A083",
+          "DbAdminDiagnosticLauncherFunction4A98B30B",
+          "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
           "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+        ],
+        expectedResourceChanges: [
+          { logicalResourceId: "DbAdminDiagnosticLauncherEnabledPolicy21B6A083", action: "Add" },
+          { logicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B", action: "Modify", replacement: "False" },
+          { logicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4", action: "Modify", replacement: "Conditional" },
+          { logicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C", action: "Add" },
         ],
       });
       changeSetSummary = {
         changeSetName: changeSetResult.data?.ChangeSetName ?? options.changeSetName,
+        changeSetArn: changeSetResult.data?.ChangeSetId ?? "",
         status: changeSetResult.data?.Status ?? "UNKNOWN",
         executionStatus: changeSetResult.data?.ExecutionStatus ?? "UNKNOWN",
+        type: changeSetResult.data?.ChangeSetType ?? "UNKNOWN",
         actionCount: Array.isArray(changeSetResult.data?.Changes) ? changeSetResult.data.Changes.length : 0,
       };
     }
