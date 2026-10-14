@@ -1,5 +1,10 @@
 const REQUIRED_STACK_NAME = "GenesisStagingS2gDbAdminDiagnosticLauncherStack";
 const REQUIRED_TABLE_NAME = "genesis-staging-s2g-db-admin-diagnostic-launches";
+const PROTECTED_ECS_SERVICES = Object.freeze([
+  "genesis-production-web",
+  "genesis-share-to-grow-production",
+  "genesis-staging-web",
+]);
 
 function failure(code, detail) {
   const error = new Error(detail ? `${code}:${detail}` : code);
@@ -87,14 +92,94 @@ export function evaluateRecoverySafety({
   retainedTableExists,
   allowRollbackComplete = false,
 }) {
-  if (stackName !== REQUIRED_STACK_NAME) {
-    throw failure("DEPLOYMENT_PREFLIGHT_STACK_NAME_MISMATCH");
+  validateStackStateForMode({
+    stackName,
+    stackStatus,
+    retainedTableExists,
+    mode: "create",
+    allowRollbackComplete,
+  });
+}
+
+export function validateStackStateForMode({
+  stackName,
+  stackStatus,
+  retainedTableExists,
+  mode,
+  allowRollbackComplete = false,
+}) {
+  if (stackName !== REQUIRED_STACK_NAME) throw failure("DEPLOYMENT_PREFLIGHT_STACK_NAME_MISMATCH");
+  if (mode !== "create" && mode !== "update") throw failure("DEPLOYMENT_PREFLIGHT_MODE_INVALID");
+  if (mode === "create") {
+    if (stackStatus === "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_STACK_ALREADY_EXISTS");
+    if (stackStatus === "ROLLBACK_COMPLETE" && !allowRollbackComplete) {
+      throw failure("DEPLOYMENT_PREFLIGHT_ROLLBACK_REQUIRES_REVIEW");
+    }
+    if (retainedTableExists) throw failure("DEPLOYMENT_PREFLIGHT_RETAINED_TABLE_CONFLICT", REQUIRED_TABLE_NAME);
+    return;
   }
-  if (stackStatus === "ROLLBACK_COMPLETE" && !allowRollbackComplete) {
-    throw failure("DEPLOYMENT_PREFLIGHT_ROLLBACK_REQUIRES_REVIEW");
+  if (stackStatus !== "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_STACK_NOT_CREATE_COMPLETE");
+  if (!retainedTableExists) throw failure("DEPLOYMENT_PREFLIGHT_TABLE_MISSING_FOR_UPDATE", REQUIRED_TABLE_NAME);
+}
+
+export function validateStackIdentity(stack, expectedStackName) {
+  const item = asObject(stack, "stack");
+  if (item.StackName !== expectedStackName) throw failure("DEPLOYMENT_PREFLIGHT_STACK_NAME_MISMATCH");
+  if (typeof item.StackId !== "string" || !item.StackId.includes(`stack/${expectedStackName}/`)) {
+    throw failure("DEPLOYMENT_PREFLIGHT_STACK_ID_MISMATCH");
   }
-  if (retainedTableExists) {
-    throw failure("DEPLOYMENT_PREFLIGHT_RETAINED_TABLE_CONFLICT", REQUIRED_TABLE_NAME);
+}
+
+export function validateUpdateChangeSetScope(changeSet, { expectedStackName, allowedLogicalIds = [] } = {}) {
+  const item = asObject(changeSet, "change set");
+  if (item.StackName !== expectedStackName) throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_STACK_MISMATCH");
+  if (item.Status !== "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_READY");
+  if (item.ExecutionStatus !== "AVAILABLE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_AVAILABLE");
+  const changes = Array.isArray(item.Changes) ? item.Changes : [];
+  if (changes.length === 0) throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_EMPTY");
+  const allowed = new Set(allowedLogicalIds);
+  for (const entry of changes) {
+    const resourceChange = asObject(entry.ResourceChange, "change set resource change");
+    if (resourceChange.Action !== "Modify") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_UNEXPECTED_ACTION");
+    if (resourceChange.Replacement === "True" || resourceChange.Replacement === "Conditional") {
+      throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_REPLACEMENT");
+    }
+    if (allowed.size > 0 && !allowed.has(resourceChange.LogicalResourceId)) {
+      throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_SCOPE_UNEXPECTED", resourceChange.LogicalResourceId);
+    }
+  }
+}
+
+export function validateActivationState({
+  launcherActivationState,
+  approvedDiagnosticTaskDefinitionArn,
+  expectedActivationState,
+  expectedApprovedTaskArn,
+}) {
+  if (launcherActivationState !== expectedActivationState) {
+    throw failure("DEPLOYMENT_PREFLIGHT_ACTIVATION_STATE_MISMATCH");
+  }
+  if ((approvedDiagnosticTaskDefinitionArn ?? "") !== (expectedApprovedTaskArn ?? "")) {
+    throw failure("DEPLOYMENT_PREFLIGHT_APPROVED_TASK_ARN_MISMATCH");
+  }
+}
+
+export function evaluateProtectedServiceHealth(services) {
+  if (!Array.isArray(services) || services.length === 0) {
+    throw failure("DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICES_MISSING");
+  }
+  for (const expectedServiceName of PROTECTED_ECS_SERVICES) {
+    const item = services.find((service) => service?.serviceName === expectedServiceName);
+    if (!item) throw failure("DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICE_MISSING", expectedServiceName);
+    if (item.status !== "ACTIVE") throw failure("DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICE_INACTIVE", expectedServiceName);
+    if (item.runningCount !== item.desiredCount) {
+      throw failure("DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICE_COUNT_MISMATCH", expectedServiceName);
+    }
+    if (item.pendingCount !== 0) throw failure("DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICE_PENDING", expectedServiceName);
+    const deployments = Array.isArray(item.deployments) ? item.deployments : [];
+    if (deployments.some((deployment) => deployment?.rolloutState !== "COMPLETED")) {
+      throw failure("DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICE_ROLLOUT_INCOMPLETE", expectedServiceName);
+    }
   }
 }
 
@@ -112,4 +197,5 @@ export function normalizeStackStatus(raw) {
 export const DEPLOYMENT_PREFLIGHT_CONSTANTS = Object.freeze({
   REQUIRED_STACK_NAME,
   REQUIRED_TABLE_NAME,
+  PROTECTED_ECS_SERVICES,
 });

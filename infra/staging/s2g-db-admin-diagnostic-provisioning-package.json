@@ -42,6 +42,7 @@
       "awsCommands": [
         "aws ec2 create-security-group --group-name genesis-staging-s2g-db-admin-diagnostic-sg --description \"Staging S2G DB admin diagnostic task egress-only\" --vpc-id vpc-05035503df7e142d6",
         "aws ec2 authorize-security-group-egress --group-id <new-sg-id> --ip-permissions IpProtocol=tcp,FromPort=5432,ToPort=5432,UserIdGroupPairs=[{GroupId=sg-04aa58230942f9dc9}]",
+        "aws ec2 authorize-security-group-egress --group-id <new-sg-id> --ip-permissions IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0,Description='HTTPS via NAT for ECR/Secrets/Logs/S3'}]",
         "aws ec2 authorize-security-group-ingress --group-id sg-04aa58230942f9dc9 --protocol tcp --port 5432 --source-group <new-sg-id>"
       ],
       "expectedOutputs": [
@@ -50,6 +51,30 @@
       ],
       "rollback": [
         "Revoke ingress/egress rules and delete dedicated SG if task-definition registration is not approved."
+      ]
+    },
+    {
+      "id": "B1",
+      "name": "optional-private-endpoint-hardening",
+      "dependsOn": [
+        "B"
+      ],
+      "inputs": [
+        "infra/staging/s2g-db-admin-diagnostic-network.plan.json"
+      ],
+      "awsCommands": [
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.ecr.api --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.ecr.dkr --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.secretsmanager --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.logs --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.s3 --vpc-endpoint-type Gateway --route-table-ids rtb-0b31fdbbaf93fdeef rtb-06a8111c846284964"
+      ],
+      "expectedOutputs": [
+        "Interface endpoints expose private DNS names for ECR API, ECR DKR, Secrets Manager, and CloudWatch Logs.",
+        "S3 gateway endpoint is associated to both task subnet route tables."
+      ],
+      "rollback": [
+        "Delete only newly created endpoints and restore NAT-only egress if endpoint mode is rejected."
       ]
     },
     {

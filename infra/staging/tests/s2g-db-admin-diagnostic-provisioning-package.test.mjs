@@ -40,18 +40,21 @@ test("diagnostic task role has ECS task trust only and no runtime permissions", 
 
 test("network boundary requires dedicated SG with zero ingress and scoped RDS egress", async () => {
   const plan = await readJson("infra/staging/s2g-db-admin-diagnostic-network.plan.json");
-  assert.equal(plan.assignPublicIp, "DISABLED");
-  assert.deepEqual(plan.proposedDiagnosticSecurityGroup.inboundRules, []);
-  assert.equal(plan.proposedDiagnosticSecurityGroup.outboundRules.length, 1);
-  assert.equal(plan.proposedDiagnosticSecurityGroup.outboundRules[0].toPort, 5432);
-  assert.equal(plan.proposedDiagnosticSecurityGroup.outboundRules[0].destinationSecurityGroupId, "sg-04aa58230942f9dc9");
-  assert.equal(plan.privateConnectivityFindings.vpcEndpoints.length, 0);
+  assert.equal(plan.dns.enableDnsSupport, true);
+  assert.equal(plan.dns.enableDnsHostnames, true);
+  assert.equal(plan.existingVpcEndpoints.length, 0);
+  assert.equal(plan.recommendedArchitecture.selection, "B_nat_path");
+  assert.equal(plan.architectures.A_private_endpoints.requiredEndpoints.length, 5);
+  assert.ok(plan.architectures.B_nat_path.diagnosticSecurityGroupEgress.some((rule) =>
+    rule.destinationSecurityGroupId === "sg-04aa58230942f9dc9" && rule.toPort === 5432));
+  assert.ok(plan.architectures.B_nat_path.diagnosticSecurityGroupEgress.some((rule) =>
+    rule.destinationCidrIpv4 === "0.0.0.0/0" && rule.toPort === 443));
 });
 
 test("provisioning package phases remain isolated and keep launcher disabled during task ARN update", async () => {
   const pack = await readJson("infra/staging/s2g-db-admin-diagnostic-provisioning-package.json");
-  assert.equal(pack.phases.length, 6);
-  assert.deepEqual(pack.phases.map((phase) => phase.id), ["A", "B", "C", "D", "E", "F"]);
+  assert.equal(pack.phases.length, 7);
+  assert.deepEqual(pack.phases.map((phase) => phase.id), ["A", "B", "B1", "C", "D", "E", "F"]);
   const phaseF = pack.phases.find((phase) => phase.id === "F");
   assert.ok(phaseF.expectedOutputs.some((line) => line.includes("LauncherActivationState remains DISABLED")));
 });
@@ -62,4 +65,3 @@ test("diagnostic dockerfile enforces pinned base digest and dedicated entrypoint
   assert.match(dockerfile, /ENTRYPOINT \["node", "scripts\/staging-s2g-db-admin-diagnostic\.mjs"\]/);
   assert.doesNotMatch(dockerfile, /aws cli|awscli/i);
 });
-

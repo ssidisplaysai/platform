@@ -2,10 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEPLOYMENT_PREFLIGHT_CONSTANTS,
+  evaluateProtectedServiceHealth,
   evaluateRecoverySafety,
   extractLauncherLambdaAsset,
   normalizeStackStatus,
+  validateActivationState,
   validateCallerIdentity,
+  validateStackIdentity,
+  validateStackStateForMode,
+  validateUpdateChangeSetScope,
   validateLauncherTemplateGuards,
 } from "../s2g-db-admin-launcher/cdk/deployment-preflight-core.mjs";
 
@@ -111,7 +116,7 @@ test("recovery safety rejects rollback and retained table conflicts unless expli
   assert.throws(
     () => evaluateRecoverySafety({
       stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
-      stackStatus: "CREATE_COMPLETE",
+      stackStatus: "STACK_ABSENT",
       retainedTableExists: true,
       allowRollbackComplete: true,
     }),
@@ -123,6 +128,114 @@ test("recovery safety rejects rollback and retained table conflicts unless expli
     retainedTableExists: false,
     allowRollbackComplete: true,
   }));
+});
+
+test("mode-specific stack state checks enforce create and update expectations", () => {
+  assert.throws(
+    () => validateStackStateForMode({
+      stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      stackStatus: "CREATE_COMPLETE",
+      retainedTableExists: true,
+      mode: "create",
+    }),
+    /DEPLOYMENT_PREFLIGHT_STACK_ALREADY_EXISTS/,
+  );
+  assert.doesNotThrow(() => validateStackStateForMode({
+    stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    stackStatus: "CREATE_COMPLETE",
+    retainedTableExists: true,
+    mode: "update",
+  }));
+  assert.throws(
+    () => validateStackStateForMode({
+      stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      stackStatus: "CREATE_COMPLETE",
+      retainedTableExists: false,
+      mode: "update",
+    }),
+    /DEPLOYMENT_PREFLIGHT_TABLE_MISSING_FOR_UPDATE/,
+  );
+});
+
+test("stack identity validation checks stack name and stack id format", () => {
+  assert.doesNotThrow(() => validateStackIdentity({
+    StackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    StackId: `arn:aws:cloudformation:us-west-2:452630323448:stack/${DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME}/abc`,
+  }, DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME));
+  assert.throws(
+    () => validateStackIdentity({
+      StackName: "OtherStack",
+      StackId: "arn:aws:cloudformation:us-west-2:452630323448:stack/OtherStack/abc",
+    }, DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME),
+    /DEPLOYMENT_PREFLIGHT_STACK_NAME_MISMATCH/,
+  );
+});
+
+test("update change-set scope validation rejects non-modify and replacement actions", () => {
+  const base = {
+    StackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    Status: "CREATE_COMPLETE",
+    ExecutionStatus: "AVAILABLE",
+    Changes: [
+      {
+        ResourceChange: {
+          Action: "Modify",
+          LogicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B",
+          Replacement: "False",
+        },
+      },
+    ],
+  };
+  assert.doesNotThrow(() => validateUpdateChangeSetScope(base, {
+    expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    allowedLogicalIds: ["DbAdminDiagnosticLauncherFunction4A98B30B"],
+  }));
+  assert.throws(
+    () => validateUpdateChangeSetScope({
+      ...base,
+      Changes: [{ ResourceChange: { Action: "Add", LogicalResourceId: "X", Replacement: "False" } }],
+    }, {
+      expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+      allowedLogicalIds: ["DbAdminDiagnosticLauncherFunction4A98B30B"],
+    }),
+    /DEPLOYMENT_PREFLIGHT_CHANGE_SET_UNEXPECTED_ACTION/,
+  );
+});
+
+test("activation state validation enforces expected launcher mode and task arn", () => {
+  assert.doesNotThrow(() => validateActivationState({
+    launcherActivationState: "DISABLED",
+    approvedDiagnosticTaskDefinitionArn: "",
+    expectedActivationState: "DISABLED",
+    expectedApprovedTaskArn: "",
+  }));
+  assert.throws(
+    () => validateActivationState({
+      launcherActivationState: "ENABLED",
+      approvedDiagnosticTaskDefinitionArn: "",
+      expectedActivationState: "DISABLED",
+      expectedApprovedTaskArn: "",
+    }),
+    /DEPLOYMENT_PREFLIGHT_ACTIVATION_STATE_MISMATCH/,
+  );
+});
+
+test("protected service health validation requires active completed deployments", () => {
+  const services = DEPLOYMENT_PREFLIGHT_CONSTANTS.PROTECTED_ECS_SERVICES.map((serviceName) => ({
+    serviceName,
+    status: "ACTIVE",
+    desiredCount: 1,
+    runningCount: 1,
+    pendingCount: 0,
+    deployments: [{ rolloutState: "COMPLETED" }],
+  }));
+  assert.doesNotThrow(() => evaluateProtectedServiceHealth(services));
+  assert.throws(
+    () => evaluateProtectedServiceHealth([
+      ...services.filter((service) => service.serviceName !== "genesis-staging-web"),
+    ]),
+    /DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICE_MISSING/,
+  );
 });
 
 test("caller identity validation requires expected account and assumed role ARN", () => {
