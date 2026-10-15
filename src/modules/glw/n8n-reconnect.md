@@ -1,0 +1,23 @@
+# GLW n8n reconnect callback gate
+
+This module provides the staging-safe callback reconciliation gate for GLW page-generation executions.
+
+## Environment flags
+
+- `GLW_N8N_RECONNECT_ENABLED`  
+  Defaults to disabled when unset. Callback reconciliation returns `FEATURE_DISABLED` unless explicitly set to `true`.
+
+- `GLW_N8N_CALLBACK_SECRET`  
+  Required bearer secret for callback authentication (`Authorization: Bearer <secret>`), validated with constant-time comparison.
+
+- `GLW_N8N_NON_MUTATING_TEST`  
+  When `true`, MCP dispatch uses a synthetic accepted execution and does not invoke `execute_workflow`.
+
+## Callback contract behavior
+
+- Accepts `jobId` (or legacy `id`), `executionId`, and status.
+- Normalizes in-flight statuses (`RUNNING`, `GENERATING_CONTENT`, `GENERATING_IMAGE`, `UPLOADING_IMAGE`, `PUBLISHING`) to runtime `RUNNING`.
+- Supports terminal `FAILED` and `CONTENT_READY` transitions.
+- Rejects callback `COMPLETE` transitions (`UNAUTHORIZED_COMPLETE`) so WordPress completion authority remains inside Genesis.
+- Rejects callback attempts to provide WordPress destination identifiers (`WORDPRESS_AUTHORITY_REJECTED`).
+- Enforces exact job identity, execution binding, organization/site isolation, transition validity, and idempotent replay handling.
