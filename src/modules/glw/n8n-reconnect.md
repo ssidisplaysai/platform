@@ -27,6 +27,8 @@ This module provides the staging-safe callback reconciliation gate for GLW page-
 To support bounded callback reconciliation tests without invoking generation or WordPress preflight, use:
 
 - `npx tsx scripts/glw-seed-synthetic-callback-job.mts --owner-approval-id OWNER_APPROVAL-... --execution-id synthetic-execution-... --confirm SEED-SYNTHETIC-CALLBACK-JOB`
+- Runtime-packaged command inside the staging container image:
+  `node runtime-tools/glw-seed-synthetic-callback-job-runtime.cjs --owner-approval-id OWNER_APPROVAL-... --execution-id synthetic-execution-... --confirm SEED-SYNTHETIC-CALLBACK-JOB`
 
 Guardrails:
 
@@ -35,3 +37,33 @@ Guardrails:
 - Creates exactly one non-customer synthetic job per owner approval id.
 - Uses existing GLW execution repository persistence only; does not call WordPress, n8n, campaign schedulers, or paid providers.
 - Persists retention metadata in `qaChecks.syntheticCallbackSeed` for owner-directed cleanup of only the seeded job.
+
+## Isolated ECS one-shot execution shape (staging)
+
+Use a separate `run-task` invocation with the existing staging image/task definition and override only the command for `GenesisWebRuntime`:
+
+```json
+{
+  "containerOverrides": [
+    {
+      "name": "GenesisWebRuntime",
+      "command": [
+        "node",
+        "runtime-tools/glw-seed-synthetic-callback-job-runtime.cjs",
+        "--owner-approval-id",
+        "OWNER_APPROVAL-GLW-PHASE4D-TEST-001",
+        "--execution-id",
+        "synthetic-execution-001",
+        "--confirm",
+        "SEED-SYNTHETIC-CALLBACK-JOB"
+      ],
+      "environment": [
+        { "name": "GLW_N8N_RECONNECT_ENABLED", "value": "false" },
+        { "name": "GLW_N8N_NON_MUTATING_TEST", "value": "true" }
+      ]
+    }
+  ]
+}
+```
+
+This preserves the web service startup command for normal service tasks and limits the seed action to the short-lived one-shot task only.
