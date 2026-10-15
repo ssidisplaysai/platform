@@ -168,6 +168,20 @@ test("rejects extra JSON fields", async () => {
   );
 });
 
+test("rejects UTF-8 BOM in request body", async () => {
+  await assert.rejects(
+    () => validateOfflineInvocationPreflight(baseOptions({ requestBodyText: `\uFEFF${GOOD_BODY}` })),
+    { code: "INVOCATION_REQUEST_UTF8_BOM" }
+  );
+});
+
+test("rejects invalid JSON request body", async () => {
+  await assert.rejects(
+    () => validateOfflineInvocationPreflight(baseOptions({ requestBodyText: "{\"runId\":\"oops\"" })),
+    { code: "REQUEST_BODY_JSON_INVALID" }
+  );
+});
+
 test("offline mode cannot transmit requests", async () => {
   const prepared = await getPrepared();
   let called = false;

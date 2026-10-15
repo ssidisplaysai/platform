@@ -92,6 +92,7 @@ function parseArgs(argv) {
     expectedFunctionUrlHost: EXPECTED_FUNCTION_URL_HOST,
     expectedDedicatedOperatorRoleArn: EXPECTED_DEDICATED_OPERATOR_ROLE_ARN,
     ownerApprovalReference: "",
+    authorizationApprovalReference: "",
     ownerApprovalIssuedAtEpoch: Number.NaN,
     approvedRunId: "",
     authorizationLaunchState: "",
@@ -125,6 +126,7 @@ function parseArgs(argv) {
     else if (token === "--expected-function-url-host") options.expectedFunctionUrlHost = argv[++index] ?? "";
     else if (token === "--expected-dedicated-operator-role-arn") options.expectedDedicatedOperatorRoleArn = argv[++index] ?? "";
     else if (token === "--owner-approval-reference") options.ownerApprovalReference = argv[++index] ?? "";
+    else if (token === "--authorization-approval-reference") options.authorizationApprovalReference = argv[++index] ?? "";
     else if (token === "--owner-approval-issued-at-epoch") options.ownerApprovalIssuedAtEpoch = parseInteger(argv[++index], "--owner-approval-issued-at-epoch");
     else if (token === "--approved-run-id") options.approvedRunId = argv[++index] ?? "";
     else if (token === "--authorization-launch-state") options.authorizationLaunchState = argv[++index] ?? "";
@@ -152,6 +154,7 @@ function parseArgs(argv) {
 
   if (!options.live) {
     options.ownerApprovalReference = "";
+    options.authorizationApprovalReference = "";
     options.approvedRunId = "";
     options.authorizationLaunchState = "";
     options.launcherActivationState = "";
@@ -188,6 +191,7 @@ async function main(argv = process.argv.slice(2)) {
     expectedFunctionUrlHost: options.expectedFunctionUrlHost,
     expectedDedicatedOperatorRoleArn: options.expectedDedicatedOperatorRoleArn,
     ownerApprovalReference: options.ownerApprovalReference,
+    authorizationApprovalReference: options.authorizationApprovalReference,
     ownerApprovalIssuedAtEpoch: options.ownerApprovalIssuedAtEpoch,
     approvedRunId: options.approvedRunId,
     authorizationLaunchState: options.authorizationLaunchState,

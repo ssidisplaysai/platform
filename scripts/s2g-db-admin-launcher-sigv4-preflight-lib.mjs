@@ -9,7 +9,7 @@ export const EXPECTED_FUNCTION_URL_HOST = "r7sknifhujrb2ypc7rj3ycr4k40rbalj.lamb
 export const EXPECTED_DEDICATED_OPERATOR_ROLE_ARN = "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma";
 export const RUN_ID_PATTERN = /^s2g-dbdiag-[a-z0-9-]{3,55}$/;
 const AMZ_DATE_PATTERN = /^[0-9]{8}T[0-9]{6}Z$/;
-const OWNER_APPROVAL_REFERENCE_PATTERN = /^OWNER_APPROVAL:[A-Za-z0-9:_-]{6,}$/;
+const OWNER_APPROVAL_REFERENCE_PATTERN = /^OWNER_APPROVAL$/;
 
 function failure(code, message = code) {
   const error = new Error(message);
@@ -139,7 +139,17 @@ function validateOperatorIdentity({
 }
 
 function validateRequestBody(requestBodyText) {
-  const payload = JSON.parse(requestBodyText);
+  assertTrue(typeof requestBodyText === "string" && requestBodyText.length > 0, "REQUEST_BODY_MISSING", "Request body text is required.");
+  if (requestBodyText.charCodeAt(0) === 0xFEFF) {
+    throw failure("INVOCATION_REQUEST_UTF8_BOM", "Invocation request body must be UTF-8 without BOM.");
+  }
+  let payload;
+  try {
+    payload = JSON.parse(requestBodyText);
+  } catch {
+    throw failure("REQUEST_BODY_JSON_INVALID", "Request body must be valid JSON.");
+  }
+  assertTrue(payload !== null && typeof payload === "object" && !Array.isArray(payload), "REQUEST_BODY_INVALID", "Request body must be a JSON object.");
   const keys = Object.keys(payload);
   assertTrue(keys.length === 1 && keys[0] === "runId", "REQUEST_BODY_INVALID", "Request body must contain only runId.");
   assertTrue(typeof payload.runId === "string" && RUN_ID_PATTERN.test(payload.runId), "REQUEST_RUN_ID_INVALID", "runId format is invalid.");
@@ -190,6 +200,7 @@ function validateLiveInvocationGate({
   live,
   approvedRunId,
   ownerApprovalReference,
+  authorizationApprovalReference,
   ownerApprovalIssuedAtEpoch,
   authorizationLaunchState,
   authorizationExpiresAtEpoch,
@@ -202,6 +213,12 @@ function validateLiveInvocationGate({
 }) {
   if (!live) return;
   assertTrue(ownerApprovalReference && OWNER_APPROVAL_REFERENCE_PATTERN.test(ownerApprovalReference), "OWNER_APPROVAL_REFERENCE_INVALID", "Live mode requires a valid owner approval reference.");
+  assertTrue(authorizationApprovalReference && authorizationApprovalReference.length > 0, "AUTHORIZATION_APPROVAL_REFERENCE_MISSING", "Live mode requires authorization approval reference evidence.");
+  assertTrue(
+    authorizationApprovalReference === ownerApprovalReference,
+    "OWNER_APPROVAL_REFERENCE_MISMATCH",
+    "Authorization approval reference must exactly match owner approval reference.",
+  );
   assertTrue(Number.isFinite(ownerApprovalIssuedAtEpoch), "OWNER_APPROVAL_TIME_INVALID", "Live mode requires ownerApprovalIssuedAtEpoch.");
   assertTrue(ownerApprovalIssuedAtEpoch <= nowEpoch, "OWNER_APPROVAL_TIME_INVALID", "Owner approval timestamp cannot be in the future.");
   assertTrue((nowEpoch - ownerApprovalIssuedAtEpoch) <= 300, "OWNER_APPROVAL_STALE", "Owner approval is older than 5 minutes.");
@@ -499,6 +516,7 @@ export async function runSdkFunctionUrlInvocation(input) {
   const {
     live = false,
     ownerApprovalReference = "",
+    authorizationApprovalReference = "",
     ownerApprovalIssuedAtEpoch = Number.NaN,
     approvedRunId = "",
     authorizationLaunchState = "",
@@ -521,6 +539,7 @@ export async function runSdkFunctionUrlInvocation(input) {
     live,
     approvedRunId,
     ownerApprovalReference,
+    authorizationApprovalReference,
     ownerApprovalIssuedAtEpoch,
     authorizationLaunchState,
     authorizationExpiresAtEpoch,
@@ -547,6 +566,7 @@ export async function runSdkFunctionUrlInvocation(input) {
     attemptCount: execution.attemptCount ?? 0,
     invokedAt: new Date().toISOString(),
     ownerApprovalReference: live ? ownerApprovalReference : null,
+    authorizationApprovalReference: live ? authorizationApprovalReference : null,
     operatorCallerArn: shared.operatorCallerArn,
     authorizedOperatorArn: shared.authorizedOperatorArn,
     runId: prepared.runId,

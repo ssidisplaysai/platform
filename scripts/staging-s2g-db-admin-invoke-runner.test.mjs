@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { tmpdir } from "node:os";
 import {
   EXPECTED_ACCOUNT_ID,
   EXPECTED_DEDICATED_OPERATOR_ROLE_ARN,
@@ -66,7 +69,8 @@ function baseArgs() {
 function liveArgs(transportUrl) {
   return [
     "--live",
-    "--owner-approval-reference", "OWNER_APPROVAL:S2G-DBDIAG-RUNNER-TEST-001",
+    "--owner-approval-reference", "OWNER_APPROVAL",
+    "--authorization-approval-reference", "OWNER_APPROVAL",
     "--owner-approval-issued-at-epoch", String(NOW_EPOCH - 30),
     "--approved-run-id", GOOD_RUN_ID,
     "--authorization-launch-state", "AUTHORIZED",
@@ -77,6 +81,15 @@ function liveArgs(transportUrl) {
     "--transport-url", transportUrl,
     "--transport-timeout-ms", "400",
   ];
+}
+
+async function withTempDir(fn) {
+  const directory = await mkdtemp(resolve(tmpdir(), "s2g-dbdiag-runner-test-"));
+  try {
+    return await fn(directory);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 }
 
 function createServer(handler) {
@@ -232,6 +245,100 @@ test("rejects unauthorized live mode when owner approval is missing", async () =
     assert.equal(result.code, 1);
     const failure = JSON.parse(result.stderr.trim());
     assert.equal(failure.code, "OWNER_APPROVAL_REFERENCE_INVALID");
+    assert.equal(receiver.state.requests.length, 0);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("rejects synthesized owner approval reference", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 200;
+    res.end("{}");
+  });
+  try {
+    const args = [...baseArgs(), ...liveArgs(receiver.url)];
+    const index = args.indexOf("--owner-approval-reference");
+    args[index + 1] = "OWNER_APPROVAL:SYNTH-123";
+    const result = await runRunner(args);
+    assert.equal(result.code, 1);
+    const failure = JSON.parse(result.stderr.trim());
+    assert.equal(failure.code, "OWNER_APPROVAL_REFERENCE_INVALID");
+    assert.equal(receiver.state.requests.length, 0);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("rejects missing authorization approval reference", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 200;
+    res.end("{}");
+  });
+  try {
+    const args = [...baseArgs(), ...liveArgs(receiver.url)];
+    const index = args.indexOf("--authorization-approval-reference");
+    args[index + 1] = "";
+    const result = await runRunner(args);
+    assert.equal(result.code, 1);
+    const failure = JSON.parse(result.stderr.trim());
+    assert.equal(failure.code, "AUTHORIZATION_APPROVAL_REFERENCE_MISSING");
+    assert.equal(receiver.state.requests.length, 0);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("rejects mismatch between owner and authorization approval references", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 200;
+    res.end("{}");
+  });
+  try {
+    const args = [...baseArgs(), ...liveArgs(receiver.url)];
+    const index = args.indexOf("--authorization-approval-reference");
+    args[index + 1] = "OWNER_APPROVAL_MISMATCH";
+    const result = await runRunner(args);
+    assert.equal(result.code, 1);
+    const failure = JSON.parse(result.stderr.trim());
+    assert.equal(failure.code, "OWNER_APPROVAL_REFERENCE_MISMATCH");
+    assert.equal(receiver.state.requests.length, 0);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("rejects UTF-8 BOM request-body file before transport", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 200;
+    res.end("{}");
+  });
+  try {
+    await withTempDir(async (directory) => {
+      const filePath = resolve(directory, "invoke-body.json");
+      const bomBuffer = Buffer.concat([
+        Buffer.from([0xEF, 0xBB, 0xBF]),
+        Buffer.from(BODY_TEXT, "utf8"),
+      ]);
+      await writeFile(filePath, bomBuffer);
+      const args = [...baseArgs(), ...liveArgs(receiver.url)];
+      const textIndex = args.indexOf("--request-body-text");
+      args.splice(textIndex, 2);
+      args.push("--request-body-file", filePath);
+      const result = await runRunner(args);
+      assert.equal(result.code, 1);
+      const failure = JSON.parse(result.stderr.trim());
+      assert.equal(failure.code, "INVOCATION_REQUEST_UTF8_BOM");
+      assert.equal(receiver.state.requests.length, 0);
+    });
   } finally {
     await new Promise((resolve) => receiver.server.close(resolve));
   }
@@ -276,4 +383,3 @@ test("rejects source Identity Center operator session in live mode", async () =>
     await new Promise((resolve) => receiver.server.close(resolve));
   }
 });
-
