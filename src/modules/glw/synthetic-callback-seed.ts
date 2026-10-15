@@ -1,6 +1,7 @@
 import {
   GLW_APPLICATION_SITE_ID,
   GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID,
+  GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION,
   type GlwPageExecutionRecord,
   type GlwPageExecutionRepository,
 } from "./page-execution";
@@ -11,7 +12,7 @@ export const GLW_SYNTHETIC_CALLBACK_JOB_PREFIX = "glw-synthetic-callback";
 export const GLW_SYNTHETIC_CALLBACK_ORGANIZATION_ID = "led-display-warehouse";
 export const GLW_SYNTHETIC_CALLBACK_SITE_ID = GLW_APPLICATION_SITE_ID;
 export const GLW_SYNTHETIC_CALLBACK_PRODUCT_ID = GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID;
-export const GLW_SYNTHETIC_CALLBACK_DISPOSITION = "SYNTHETIC_CALLBACK_TEST_ONLY";
+export const GLW_SYNTHETIC_CALLBACK_DISPOSITION = GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION;
 
 type SyntheticSeedChecks = {
   syntheticCallbackSeed?: {

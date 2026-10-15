@@ -108,6 +108,7 @@ export type GlwPageExecutionRecord = {
 
 const GLW_DUPLICATE_QUARANTINE_DISPOSITION = "QUARANTINED_SUPERSEDED_DUPLICATE";
 export const GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION = "REFERENCE_EXECUTION_RETIRED";
+export const GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION = "SYNTHETIC_CALLBACK_TEST_ONLY";
 
 export function isGlwExecutionQuarantined(record: GlwPageExecutionRecord): boolean {
   if (record.disposition === GLW_DUPLICATE_QUARANTINE_DISPOSITION) return true;
@@ -121,6 +122,19 @@ export function isGlwReferenceExecutionRetiredForProjection(record: GlwPageExecu
   const checks = record.qaChecks;
   if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
   return Boolean((checks as Record<string, unknown>).referenceExecutionRetirement);
+}
+
+export function isGlwSyntheticCallbackSeed(record: GlwPageExecutionRecord): boolean {
+  if (record.disposition === GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION) return true;
+  const checks = record.qaChecks;
+  if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
+  return Boolean((checks as Record<string, unknown>).syntheticCallbackSeed);
+}
+
+export function filterOutSyntheticCallbackSeeds(
+  records: readonly GlwPageExecutionRecord[],
+): GlwPageExecutionRecord[] {
+  return records.filter((record) => !isGlwSyntheticCallbackSeed(record));
 }
 
 type GlwExecutionRetryHistoryEntry = {
@@ -788,6 +802,12 @@ export function createGlwDraftExecutionService(input: {
   const recoveringDispatches = new Set<string>();
   const retryingTerminalFailures = new Set<string>();
 
+  function assertNotSyntheticMutationTarget(record: GlwPageExecutionRecord): void {
+    if (isGlwSyntheticCallbackSeed(record)) {
+      throw new GlwExecutionResultError("Synthetic callback test jobs are excluded from normal generation mutation paths.");
+    }
+  }
+
   async function applyTerminalResult(
     jobId: string,
     result: Extract<GlwN8nDraftResponse, { kind: "complete" | "failed" }>,
@@ -853,6 +873,7 @@ export function createGlwDraftExecutionService(input: {
       try {
         const current = await input.repository.getById(jobId);
         if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+        assertNotSyntheticMutationTarget(current);
         if (isGlwExecutionQuarantined(current)) {
           throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
         }
@@ -922,6 +943,7 @@ export function createGlwDraftExecutionService(input: {
       try {
         const current = await input.repository.getById(inputRetry.jobId);
         if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${inputRetry.jobId}`);
+        assertNotSyntheticMutationTarget(current);
         if (isGlwExecutionQuarantined(current)) {
           throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
         }
@@ -1066,6 +1088,7 @@ export function createGlwDraftExecutionService(input: {
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      assertNotSyntheticMutationTarget(current);
       if (isGlwExecutionQuarantined(current)) {
         throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
       }
@@ -1140,6 +1163,7 @@ export function createGlwDraftExecutionService(input: {
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      assertNotSyntheticMutationTarget(current);
       if (isGlwExecutionQuarantined(current)) {
         throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
       }

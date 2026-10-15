@@ -5,6 +5,7 @@ import {
 } from "../n8n-reconnect";
 import {
   createInMemoryGlwPageExecutionRepository,
+  filterOutSyntheticCallbackSeeds,
   type GlwPageExecutionRecord,
   type GlwPageExecutionRepository,
 } from "../page-execution";
@@ -134,6 +135,55 @@ describe("synthetic callback seed", () => {
     expect(wrapped.counts.getById).toBe(1);
     expect(wrapped.counts.list).toBe(1);
     expect(wrapped.counts.update).toBe(0);
+  });
+
+  test("excludes synthetic seeds from normal execution projections", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const seeded = await seedRecord({
+      repository,
+      ownerApprovalId: "OWNER_APPROVAL-GLW-PHASE4D-TEST-004B",
+      executionId: "synthetic-execution-004b",
+    });
+    await repository.create({
+      jobId: "normal-job-001",
+      correlationId: "normal-job-001",
+      executionTransport: "N8N_WEBHOOK",
+      organizationId: GLW_SYNTHETIC_CALLBACK_ORGANIZATION_ID,
+      siteId: GLW_SYNTHETIC_CALLBACK_SITE_ID,
+      productId: "prod-indoor-led-video-wall",
+      productTopic: "LED Video Wall",
+      state: "Texas",
+      city: "Austin",
+      slug: "indoor-led-video-wall/texas/austin",
+      title: "Normal job",
+      seoTitle: "Normal job",
+      metaDescription: "Normal job",
+      publicationIntent: "draft",
+      status: "DISPATCHED",
+      externalExecutionId: "normal-execution-001",
+      wordpressObjectId: null,
+      wordpressUrl: null,
+      wordpressStatus: null,
+      generatedDraft: null,
+      errorCode: null,
+      errorMessage: null,
+      requestedPublicationMode: "draft",
+      disposition: null,
+      qaStatus: null,
+      qaChecks: null,
+      qaFailureReasons: null,
+      focusKeyphrase: null,
+      wordCount: null,
+      featuredImagePresent: null,
+      createdAt: "2031-01-01T00:00:00.000Z",
+      dispatchedAt: "2031-01-01T00:00:00.000Z",
+      updatedAt: "2031-01-01T00:00:00.000Z",
+      completedAt: null,
+    });
+
+    const filtered = filterOutSyntheticCallbackSeeds(await repository.list());
+    expect(filtered.map((record) => record.jobId)).toEqual(["normal-job-001"]);
+    expect(filtered.some((record) => record.jobId === seeded.jobId)).toBe(false);
   });
 
   test("is compatible with reconnect callback application and replay protections", async () => {
