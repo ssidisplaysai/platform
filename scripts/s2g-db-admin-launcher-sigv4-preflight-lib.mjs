@@ -9,7 +9,8 @@ export const EXPECTED_FUNCTION_URL_HOST = "r7sknifhujrb2ypc7rj3ycr4k40rbalj.lamb
 export const EXPECTED_DEDICATED_OPERATOR_ROLE_ARN = "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma";
 export const RUN_ID_PATTERN = /^s2g-dbdiag-[a-z0-9-]{3,55}$/;
 const AMZ_DATE_PATTERN = /^[0-9]{8}T[0-9]{6}Z$/;
-const OWNER_APPROVAL_REFERENCE_PATTERN = /^OWNER_APPROVAL$/;
+const OWNER_APPROVAL_REFERENCE_PATTERN = /^OWNER_APPROVAL:[A-Za-z0-9][A-Za-z0-9:_-]{5,}$/;
+const OWNER_APPROVAL_SYNTHESIZED_PATTERN = /^OWNER_APPROVAL:OWNER_APPROVAL-/;
 
 function failure(code, message = code) {
   const error = new Error(message);
@@ -213,11 +214,21 @@ function validateLiveInvocationGate({
 }) {
   if (!live) return;
   assertTrue(ownerApprovalReference && OWNER_APPROVAL_REFERENCE_PATTERN.test(ownerApprovalReference), "OWNER_APPROVAL_REFERENCE_INVALID", "Live mode requires a valid owner approval reference.");
+  assertTrue(
+    !OWNER_APPROVAL_SYNTHESIZED_PATTERN.test(ownerApprovalReference),
+    "OWNER_APPROVAL_REFERENCE_SYNTHESIZED",
+    "Synthesized owner approval references are forbidden.",
+  );
   assertTrue(authorizationApprovalReference && authorizationApprovalReference.length > 0, "AUTHORIZATION_APPROVAL_REFERENCE_MISSING", "Live mode requires authorization approval reference evidence.");
   assertTrue(
     authorizationApprovalReference === ownerApprovalReference,
     "OWNER_APPROVAL_REFERENCE_MISMATCH",
     "Authorization approval reference must exactly match owner approval reference.",
+  );
+  assertTrue(
+    !OWNER_APPROVAL_SYNTHESIZED_PATTERN.test(authorizationApprovalReference),
+    "AUTHORIZATION_APPROVAL_REFERENCE_SYNTHESIZED",
+    "Synthesized authorization approval references are forbidden.",
   );
   assertTrue(Number.isFinite(ownerApprovalIssuedAtEpoch), "OWNER_APPROVAL_TIME_INVALID", "Live mode requires ownerApprovalIssuedAtEpoch.");
   assertTrue(ownerApprovalIssuedAtEpoch <= nowEpoch, "OWNER_APPROVAL_TIME_INVALID", "Owner approval timestamp cannot be in the future.");

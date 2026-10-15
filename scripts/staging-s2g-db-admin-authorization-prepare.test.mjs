@@ -25,7 +25,7 @@ const baseTemplate = {
     createdAtEpoch: { N: "1760459400" },
     expiresAtEpoch: { N: "1760459700" },
     maxLaunchAttempts: { N: "1" },
-    approvalReference: { S: "APPROVAL-REF-1" },
+    approvalReference: { S: "OWNER_APPROVAL:S2G-DBDIAG-TEST-REF-001" },
   },
 };
 
@@ -37,7 +37,7 @@ function runPrepare({
   runId = "s2g-dbdiag-offline-abc123",
   operatorArn = "arn:aws:sts::452630323448:assumed-role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma/session-001",
   creatorArn = "arn:aws:sts::452630323448:assumed-role/genesis-staging-s2g-db-admin-authorization-writer-role/session-creator-001",
-  approvalReference = "S2G-DBDIAG-APPROVAL-NEW-001",
+  approvalReference = "OWNER_APPROVAL:S2G-DBDIAG-APPROVAL-NEW-001",
   createdAtEpoch = String(Math.floor(Date.now() / 1000)),
   expiresAtEpoch = String(Math.floor(Date.now() / 1000) + 300),
 }) {
@@ -198,6 +198,24 @@ if (!isWindows) {
       });
       assert.notEqual(missingApprovalResult.status, 0);
       assert.match(missingApprovalResult.stderr, /PREP_APPROVAL_REFERENCE_REQUIRED/);
+
+      const genericApprovalTemplate = await makeTemplate("generic-approval-template.json", () => {});
+      const genericApprovalResult = runPrepare({
+        templatePath: genericApprovalTemplate,
+        outputPath,
+        approvalReference: "OWNER_APPROVAL",
+      });
+      assert.notEqual(genericApprovalResult.status, 0);
+      assert.match(genericApprovalResult.stderr, /PREP_APPROVAL_REFERENCE_INVALID/);
+
+      const synthesizedApprovalTemplate = await makeTemplate("synth-approval-template.json", () => {});
+      const synthesizedApprovalResult = runPrepare({
+        templatePath: synthesizedApprovalTemplate,
+        outputPath,
+        approvalReference: "OWNER_APPROVAL:OWNER_APPROVAL-20261015T170824Z",
+      });
+      assert.notEqual(synthesizedApprovalResult.status, 0);
+      assert.match(synthesizedApprovalResult.stderr, /PREP_APPROVAL_REFERENCE_SYNTHESIZED/);
     });
   });
 

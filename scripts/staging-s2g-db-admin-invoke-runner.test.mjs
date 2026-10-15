@@ -69,8 +69,8 @@ function baseArgs() {
 function liveArgs(transportUrl) {
   return [
     "--live",
-    "--owner-approval-reference", "OWNER_APPROVAL",
-    "--authorization-approval-reference", "OWNER_APPROVAL",
+    "--owner-approval-reference", "OWNER_APPROVAL:S2G-DBDIAG-RUNNER-TEST-001",
+    "--authorization-approval-reference", "OWNER_APPROVAL:S2G-DBDIAG-RUNNER-TEST-001",
     "--owner-approval-issued-at-epoch", String(NOW_EPOCH - 30),
     "--approved-run-id", GOOD_RUN_ID,
     "--authorization-launch-state", "AUTHORIZED",
@@ -251,6 +251,29 @@ test("rejects unauthorized live mode when owner approval is missing", async () =
   }
 });
 
+test("rejects generic owner approval token", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 200;
+    res.end("{}");
+  });
+  try {
+    const args = [...baseArgs(), ...liveArgs(receiver.url)];
+    const index = args.indexOf("--owner-approval-reference");
+    args[index + 1] = "OWNER_APPROVAL";
+    const authIndex = args.indexOf("--authorization-approval-reference");
+    args[authIndex + 1] = "OWNER_APPROVAL";
+    const result = await runRunner(args);
+    assert.equal(result.code, 1);
+    const failure = JSON.parse(result.stderr.trim());
+    assert.equal(failure.code, "OWNER_APPROVAL_REFERENCE_INVALID");
+    assert.equal(receiver.state.requests.length, 0);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
 test("rejects synthesized owner approval reference", async () => {
   const receiver = await createServer((req, res, state) => {
     state.requests.push({ url: req.url });
@@ -261,11 +284,13 @@ test("rejects synthesized owner approval reference", async () => {
   try {
     const args = [...baseArgs(), ...liveArgs(receiver.url)];
     const index = args.indexOf("--owner-approval-reference");
-    args[index + 1] = "OWNER_APPROVAL:SYNTH-123";
+    args[index + 1] = "OWNER_APPROVAL:OWNER_APPROVAL-20261015T170824Z";
+    const authIndex = args.indexOf("--authorization-approval-reference");
+    args[authIndex + 1] = args[index + 1];
     const result = await runRunner(args);
     assert.equal(result.code, 1);
     const failure = JSON.parse(result.stderr.trim());
-    assert.equal(failure.code, "OWNER_APPROVAL_REFERENCE_INVALID");
+    assert.equal(failure.code, "OWNER_APPROVAL_REFERENCE_SYNTHESIZED");
     assert.equal(receiver.state.requests.length, 0);
   } finally {
     await new Promise((resolve) => receiver.server.close(resolve));

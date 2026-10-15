@@ -30,6 +30,8 @@ $EXPECTED_REGION = "us-west-2"
 $EXPECTED_SCHEMA_VERSION = "2026-10-13"
 $EXPECTED_PURPOSE = "STAGING_DB_ADMIN_READONLY_DIAGNOSTIC"
 $EXPECTED_MAX_LAUNCH_ATTEMPTS = 1
+$ownerApprovalReferencePattern = "^OWNER_APPROVAL:[A-Za-z0-9][A-Za-z0-9:_-]{5,}$"
+$synthesizedOwnerApprovalPattern = "^OWNER_APPROVAL:OWNER_APPROVAL-"
 
 $runIdPattern = "^s2g-dbdiag-[a-z0-9-]{3,55}$"
 $stsAssumedRolePattern = "^arn:aws:sts::\d{12}:assumed-role\/[^\/]+\/[^\/]+$"
@@ -166,6 +168,8 @@ function Validate-Request([object]$Request, [long]$NowEpoch) {
 
   $approvalReference = Get-StringAttribute $item "approvalReference"
   Assert-True ($approvalReference -notmatch $placeholderPattern) "PREP_APPROVAL_REFERENCE_REQUIRED" "approvalReference must be a fresh independent approval reference."
+  Assert-True ($approvalReference -match $ownerApprovalReferencePattern) "PREP_APPROVAL_REFERENCE_INVALID" "approvalReference must match canonical OWNER_APPROVAL:<unique-reference> format."
+  Assert-True ($approvalReference -notmatch $synthesizedOwnerApprovalPattern) "PREP_APPROVAL_REFERENCE_SYNTHESIZED" "Synthesized approvalReference values are forbidden."
 
   $taskArn = Get-StringAttribute $item "approvedDiagnosticTaskDefinitionArn"
   Assert-True ($taskArn -eq $EXPECTED_TASK_DEFINITION_ARN) "PREP_TASK_ARN_INVALID" "approvedDiagnosticTaskDefinitionArn does not match approved value."
