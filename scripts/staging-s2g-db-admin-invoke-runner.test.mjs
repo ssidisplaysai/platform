@@ -169,6 +169,7 @@ test("live mode does not retry on HTTP 403", async () => {
     req.resume();
     res.statusCode = 403;
     res.setHeader("x-amzn-requestid", "mock-req-403");
+    res.setHeader("content-type", "application/json");
     res.end("{\"message\":\"forbidden\"}");
   });
   try {
@@ -177,26 +178,154 @@ test("live mode does not retry on HTTP 403", async () => {
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.httpStatus, 403);
     assert.equal(payload.attemptCount, 1);
+    assert.equal(payload.responseEvidence.outcome, null);
+    assert.equal(payload.responseEvidence.code, null);
+    assert.equal(payload.responseEvidence.bodyValidation.code, "INVOCATION_RESPONSE_SCHEMA_INVALID");
+    assert.equal(receiver.state.requests.length, 1);
+    assert.equal(result.stdout.includes("forbidden"), false);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("live mode does not retry on HTTP 500", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 500;
+    res.setHeader("x-amzn-requestid", "mock-req-500");
+    res.setHeader("content-type", "application/json");
+    res.end("{\"message\":\"internal\"}");
+  });
+  try {
+    const result = await runRunner([...baseArgs(), ...liveArgs(receiver.url)]);
+    assert.equal(result.code, 0);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.httpStatus, 500);
+    assert.equal(payload.attemptCount, 1);
+    assert.equal(payload.responseEvidence.bodyValidation.code, "INVOCATION_RESPONSE_SCHEMA_INVALID");
+    assert.equal(receiver.state.requests.length, 1);
+    assert.equal(result.stdout.includes("internal"), false);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("captures known launcher rejection code without raw body leakage", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 400;
+    res.setHeader("x-amzn-requestid", "mock-req-400-known");
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({
+      outcome: "REJECTED",
+      code: "DIAG_LAUNCHER_OPERATOR_NOT_AUTHORIZED",
+      debug: "SECRET_SHOULD_NEVER_BE_EMITTED",
+    }));
+  });
+  try {
+    const result = await runRunner([...baseArgs(), ...liveArgs(receiver.url)]);
+    assert.equal(result.code, 0);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.httpStatus, 400);
+    assert.equal(payload.requestId, "mock-req-400-known");
+    assert.equal(payload.responseEvidence.outcome, "REJECTED");
+    assert.equal(payload.responseEvidence.code, "DIAG_LAUNCHER_OPERATOR_NOT_AUTHORIZED");
+    assert.equal(payload.responseEvidence.bodyValidation.status, "PASS");
+    assert.equal(payload.responseEvidence.contentType, "application/json");
+    assert.equal(result.stdout.includes("SECRET_SHOULD_NEVER_BE_EMITTED"), false);
     assert.equal(receiver.state.requests.length, 1);
   } finally {
     await new Promise((resolve) => receiver.server.close(resolve));
   }
 });
 
-test("live mode does not retry on HTTP 502", async () => {
+test("captures unknown launcher rejection code", async () => {
   const receiver = await createServer((req, res, state) => {
     state.requests.push({ url: req.url });
     req.resume();
-    res.statusCode = 502;
-    res.setHeader("x-amzn-requestid", "mock-req-502");
-    res.end("{\"message\":\"bad gateway\"}");
+    res.statusCode = 400;
+    res.setHeader("x-amzn-requestid", "mock-req-400-unknown");
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({
+      outcome: "REJECTED",
+      code: "UNRECOGNIZED_LAUNCHER_CODE",
+    }));
   });
   try {
     const result = await runRunner([...baseArgs(), ...liveArgs(receiver.url)]);
     assert.equal(result.code, 0);
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.httpStatus, 502);
-    assert.equal(payload.attemptCount, 1);
+    assert.equal(payload.httpStatus, 400);
+    assert.equal(payload.responseEvidence.outcome, "REJECTED");
+    assert.equal(payload.responseEvidence.code, "UNRECOGNIZED_LAUNCHER_CODE");
+    assert.equal(payload.responseEvidence.bodyValidation.status, "PASS");
+    assert.equal(receiver.state.requests.length, 1);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("reports missing response body as sanitized validation error", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 400;
+    res.setHeader("x-amzn-requestid", "mock-req-400-empty");
+    res.setHeader("content-type", "application/json");
+    res.end();
+  });
+  try {
+    const result = await runRunner([...baseArgs(), ...liveArgs(receiver.url)]);
+    assert.equal(result.code, 0);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.responseEvidence.bodyValidation.code, "INVOCATION_RESPONSE_BODY_MISSING");
+    assert.equal(payload.responseEvidence.outcome, null);
+    assert.equal(receiver.state.requests.length, 1);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("reports malformed response JSON as sanitized validation error", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    res.statusCode = 400;
+    res.setHeader("x-amzn-requestid", "mock-req-400-malformed");
+    res.setHeader("content-type", "application/json");
+    res.end("{");
+  });
+  try {
+    const result = await runRunner([...baseArgs(), ...liveArgs(receiver.url)]);
+    assert.equal(result.code, 0);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.responseEvidence.bodyValidation.code, "INVOCATION_RESPONSE_BODY_JSON_INVALID");
+    assert.equal(payload.responseEvidence.outcome, null);
+    assert.equal(receiver.state.requests.length, 1);
+  } finally {
+    await new Promise((resolve) => receiver.server.close(resolve));
+  }
+});
+
+test("reports oversized response body as sanitized validation error", async () => {
+  const receiver = await createServer((req, res, state) => {
+    state.requests.push({ url: req.url });
+    req.resume();
+    const oversizedMessage = "X".repeat(5000);
+    res.statusCode = 400;
+    res.setHeader("x-amzn-requestid", "mock-req-400-oversized");
+    res.setHeader("content-type", "application/json");
+    res.end(`{"outcome":"REJECTED","code":"DIAG_LAUNCHER_RUN_NOT_AUTHORIZED","message":"${oversizedMessage}"}`);
+  });
+  try {
+    const result = await runRunner([...baseArgs(), ...liveArgs(receiver.url)]);
+    assert.equal(result.code, 0);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.responseEvidence.bodyValidation.code, "INVOCATION_RESPONSE_BODY_OVERSIZED");
+    assert.equal(payload.responseEvidence.outcome, null);
+    assert.equal(payload.responseEvidence.code, null);
     assert.equal(receiver.state.requests.length, 1);
   } finally {
     await new Promise((resolve) => receiver.server.close(resolve));

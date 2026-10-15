@@ -8,6 +8,7 @@ export const EXPECTED_SERVICE = "lambda";
 export const EXPECTED_FUNCTION_URL_HOST = "r7sknifhujrb2ypc7rj3ycr4k40rbalj.lambda-url.us-west-2.on.aws";
 export const EXPECTED_DEDICATED_OPERATOR_ROLE_ARN = "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma";
 export const RUN_ID_PATTERN = /^s2g-dbdiag-[a-z0-9-]{3,55}$/;
+export const MAX_LAUNCHER_RESPONSE_BODY_BYTES = 4096;
 const AMZ_DATE_PATTERN = /^[0-9]{8}T[0-9]{6}Z$/;
 const OWNER_APPROVAL_REFERENCE_PATTERN = /^OWNER_APPROVAL:[A-Za-z0-9][A-Za-z0-9:_-]{5,}$/;
 const OWNER_APPROVAL_SYNTHESIZED_PATTERN = /^OWNER_APPROVAL:OWNER_APPROVAL-/;
@@ -170,6 +171,93 @@ function assertHeadersForSigV4(signedHeaders, signedHeaderNames, expectedRegion,
   assertTrue(signedHeaderNames.includes("content-type"), "SIGV4_CONTENT_TYPE_UNSIGNED", "Content-Type header must be signed.");
   assertTrue(signedHeaderNames.includes("x-amz-date"), "SIGV4_DATE_UNSIGNED", "x-amz-date header must be signed.");
   assertTrue(signedHeaderNames.includes("x-amz-security-token"), "SIGV4_SESSION_TOKEN_UNSIGNED", "Session token header must be signed.");
+}
+
+function readHeaderValue(headers, key) {
+  const value = headers?.[key];
+  if (Array.isArray(value)) return value[0] ?? "";
+  return typeof value === "string" ? value : "";
+}
+
+function parseLauncherResponseBody({ statusCode, body, bodyTooLarge, bodyBytes }) {
+  if (bodyTooLarge) {
+    return {
+      outcome: null,
+      code: null,
+      bodyValidation: {
+        status: "FAIL",
+        code: "INVOCATION_RESPONSE_BODY_OVERSIZED",
+        message: `Response body exceeded ${MAX_LAUNCHER_RESPONSE_BODY_BYTES} bytes.`,
+        observedBytes: bodyBytes,
+      },
+    };
+  }
+  if (typeof body !== "string" || body.length === 0) {
+    return {
+      outcome: null,
+      code: null,
+      bodyValidation: {
+        status: "FAIL",
+        code: "INVOCATION_RESPONSE_BODY_MISSING",
+        message: "Response body was not returned by launcher.",
+      },
+    };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return {
+      outcome: null,
+      code: null,
+      bodyValidation: {
+        status: "FAIL",
+        code: "INVOCATION_RESPONSE_BODY_JSON_INVALID",
+        message: "Response body was not valid JSON.",
+      },
+    };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || typeof parsed.outcome !== "string") {
+    return {
+      outcome: null,
+      code: null,
+      bodyValidation: {
+        status: "FAIL",
+        code: "INVOCATION_RESPONSE_SCHEMA_INVALID",
+        message: "Response JSON did not match launcher schema.",
+      },
+    };
+  }
+  if (Object.hasOwn(parsed, "code") && typeof parsed.code !== "string") {
+    return {
+      outcome: parsed.outcome,
+      code: null,
+      bodyValidation: {
+        status: "FAIL",
+        code: "INVOCATION_RESPONSE_SCHEMA_INVALID",
+        message: "Launcher response code field must be a string when present.",
+      },
+    };
+  }
+  const responseCode = typeof parsed.code === "string" ? parsed.code : null;
+  if (statusCode >= 400 && parsed.outcome === "REJECTED" && !responseCode) {
+    return {
+      outcome: parsed.outcome,
+      code: null,
+      bodyValidation: {
+        status: "FAIL",
+        code: "INVOCATION_RESPONSE_REJECTION_CODE_MISSING",
+        message: "Rejected launcher response did not include code.",
+      },
+    };
+  }
+  return {
+    outcome: parsed.outcome,
+    code: responseCode,
+    bodyValidation: {
+      status: "PASS",
+    },
+  };
 }
 
 function stableStringify(value) {
@@ -380,7 +468,7 @@ export function verifySignedInvokeRequest(prepared, { expectedRegion = EXPECTED_
   return { status: "PASS" };
 }
 
-function createHttpsTransport(timeoutMs = 12_000) {
+function createHttpsTransport(timeoutMs = 12_000, maxResponseBodyBytes = MAX_LAUNCHER_RESPONSE_BODY_BYTES) {
   return (request) => new Promise((resolve, reject) => {
     const url = new URL(request.url);
     const req = https.request({
@@ -391,12 +479,26 @@ function createHttpsTransport(timeoutMs = 12_000) {
       timeout: timeoutMs,
     }, (res) => {
       const chunks = [];
-      res.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+      let observedBytes = 0;
+      let bodyTooLarge = false;
+      res.on("data", (chunk) => {
+        const bufferChunk = Buffer.from(chunk);
+        observedBytes += bufferChunk.length;
+        if (bodyTooLarge) return;
+        if (observedBytes > maxResponseBodyBytes) {
+          bodyTooLarge = true;
+          chunks.length = 0;
+          return;
+        }
+        chunks.push(bufferChunk);
+      });
       res.on("end", () => {
-        const body = Buffer.concat(chunks).toString("utf8");
+        const body = bodyTooLarge ? null : Buffer.concat(chunks).toString("utf8");
         resolve({
           statusCode: res.statusCode ?? 0,
           headers: res.headers,
+          bodyBytes: observedBytes,
+          bodyTooLarge,
           body,
         });
       });
@@ -452,8 +554,14 @@ export async function executeSignedInvokeRequest({
     inspection: prepared.inspection,
     response: {
       statusCode: response.statusCode,
-      headers: response.headers,
-      body: response.body,
+      requestId: readHeaderValue(response.headers, "x-amzn-requestid") || readHeaderValue(response.headers, "x-amz-request-id") || null,
+      contentType: readHeaderValue(response.headers, "content-type") || null,
+      parsed: parseLauncherResponseBody({
+        statusCode: response.statusCode,
+        body: response.body,
+        bodyTooLarge: response.bodyTooLarge === true,
+        bodyBytes: typeof response.bodyBytes === "number" ? response.bodyBytes : 0,
+      }),
     },
   };
 }
@@ -584,17 +692,30 @@ export async function runSdkFunctionUrlInvocation(input) {
     credentialScope: `${prepared.scope.dateStamp}/${prepared.scope.region}/${prepared.scope.service}/aws4_request`,
     signedHeaders: prepared.signedHeaderNames,
     bodySha256: prepared.request.headers["x-amz-content-sha256"],
-    requestId: execution.response?.headers?.["x-amzn-requestid"] ?? execution.response?.headers?.["x-amz-request-id"] ?? null,
+    requestId: execution.response?.requestId ?? null,
     httpStatus: execution.response?.statusCode ?? null,
     inspection: prepared.inspection,
     transportIntegrity: execution.transportIntegrity ?? {
       requestDigest: requestTransportDigest(prepared.request),
       unchanged: true,
     },
+    responseEvidence: execution.response
+      ? {
+        statusCode: execution.response.statusCode,
+        requestId: execution.response.requestId,
+        contentType: execution.response.contentType,
+        outcome: execution.response.parsed.outcome,
+        code: execution.response.parsed.code,
+        bodyValidation: execution.response.parsed.bodyValidation,
+      }
+      : null,
     responseSummary: execution.response
       ? {
         statusCode: execution.response.statusCode,
-        headerNames: Object.keys(execution.response.headers ?? {}).sort(),
+        headerNames: [
+          execution.response.contentType ? "content-type" : null,
+          execution.response.requestId ? "x-amzn-requestid" : null,
+        ].filter(Boolean),
       }
       : null,
   };

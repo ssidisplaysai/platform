@@ -197,6 +197,8 @@ Hard requirements:
    - live mode requires explicit `--live` plus fresh owner-approval and authorization gate fields (`--owner-approval-reference OWNER_APPROVAL:<unique-attempt-reference>`, `--authorization-approval-reference OWNER_APPROVAL:<unique-attempt-reference>`, `--owner-approval-issued-at-epoch`, `--approved-run-id`, `--authorization-launch-state AUTHORIZED`, `--authorization-expires-at-epoch`, `--launcher-activation-state ENABLED`, `--snapshot-broker-activation-state DISABLED`).
    - `OWNER_APPROVAL` by itself is rejected; synthesized substitutions such as `OWNER_APPROVAL:OWNER_APPROVAL-...` are rejected; owner and authorization references must be exactly equal.
    - the runner enforces consistency and timing constraints, but it does not read a trusted owner-approval ledger; the approval-evidence chain must be preserved externally in the signed-off run record.
+   - live invocation output now includes sanitized `responseEvidence` (`statusCode`, `requestId`, `contentType`, `outcome`, `code`, and response-body validation status) and never persists raw launcher response bodies.
+   - malformed, missing, and oversized launcher response bodies are surfaced with sanitized validation codes without enabling retries.
    - transport never retries, transmits at most one request, and verifies signed-request integrity before/after send.
 5. For local simulation tests, provide a localhost `--transport-url` and keep `Host` set to the canonical Function URL hostname in the signed request.
 6. Invoke launch broker URL with signed IAM request and only `runId`.
@@ -207,6 +209,7 @@ Hard requirements:
    - digest-pinned container image,
    - fixed staging network config and `enableExecuteCommand=false`,
    - launch claim state (`APPROVED -> CLAIMED`) with short claim TTL to prevent concurrent duplicate launches.
+   - on rejection, the launcher emits one structured CloudWatch log event (`STAGING_S2G_DIAGNOSTIC_REJECTED`) containing only requestId, validated runId (when available), mapped rejection code, HTTP status, and UTC timestamp.
 8. Retry behavior:
    - if broker returns `CLAIM_IN_PROGRESS`, wait for claim TTL window and retry same `runId`,
    - broker `RunTask` uses `clientToken=runId` so ambiguous retry cannot create duplicate tasks.

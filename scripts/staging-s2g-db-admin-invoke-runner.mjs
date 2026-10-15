@@ -5,6 +5,7 @@ import {
   EXPECTED_ACCOUNT_ID,
   EXPECTED_DEDICATED_OPERATOR_ROLE_ARN,
   EXPECTED_FUNCTION_URL_HOST,
+  MAX_LAUNCHER_RESPONSE_BODY_BYTES,
   EXPECTED_REGION,
   EXPECTED_SERVICE,
   runSdkFunctionUrlInvocation,
@@ -55,12 +56,26 @@ function createTransport({ transportUrl, timeoutMs, allowNonLocalTransport }) {
       timeout: timeoutMs,
     }, (res) => {
       const chunks = [];
-      res.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+      let observedBytes = 0;
+      let bodyTooLarge = false;
+      res.on("data", (chunk) => {
+        const bufferChunk = Buffer.from(chunk);
+        observedBytes += bufferChunk.length;
+        if (bodyTooLarge) return;
+        if (observedBytes > MAX_LAUNCHER_RESPONSE_BODY_BYTES) {
+          bodyTooLarge = true;
+          chunks.length = 0;
+          return;
+        }
+        chunks.push(bufferChunk);
+      });
       res.on("end", () => {
         resolve({
           statusCode: res.statusCode ?? 0,
           headers: res.headers,
-          body: Buffer.concat(chunks).toString("utf8"),
+          body: bodyTooLarge ? null : Buffer.concat(chunks).toString("utf8"),
+          bodyTooLarge,
+          bodyBytes: observedBytes,
         });
       });
     });

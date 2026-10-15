@@ -297,3 +297,58 @@ test("rejects date and scope mismatch", async () => {
     { code: "SIGV4_SCOPE_TAMPERED" }
   );
 });
+
+test("live mode captures sanitized launcher rejection evidence", async () => {
+  const prepared = await getPrepared();
+  const result = await executeSignedInvokeRequest({
+    prepared,
+    mode: "live-send",
+    maxAttempts: 1,
+    allowLiveSend: true,
+    transport: async () => ({
+      statusCode: 400,
+      headers: {
+        "content-type": "application/json",
+        "x-amzn-requestid": "preflight-req-1",
+      },
+      body: JSON.stringify({
+        outcome: "REJECTED",
+        code: "DIAG_LAUNCHER_RUN_NOT_AUTHORIZED",
+        detail: "must not be exposed",
+      }),
+    }),
+  });
+  assert.equal(result.attemptCount, 1);
+  assert.equal(result.response.statusCode, 400);
+  assert.equal(result.response.requestId, "preflight-req-1");
+  assert.equal(result.response.contentType, "application/json");
+  assert.equal(result.response.parsed.outcome, "REJECTED");
+  assert.equal(result.response.parsed.code, "DIAG_LAUNCHER_RUN_NOT_AUTHORIZED");
+  assert.equal(result.response.parsed.bodyValidation.status, "PASS");
+  assert.equal(Object.hasOwn(result.response.parsed, "detail"), false);
+});
+
+test("live mode classifies malformed launcher response body without retry", async () => {
+  const prepared = await getPrepared();
+  let attempts = 0;
+  const result = await executeSignedInvokeRequest({
+    prepared,
+    mode: "live-send",
+    maxAttempts: 1,
+    allowLiveSend: true,
+    transport: async () => {
+      attempts += 1;
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+          "x-amzn-requestid": "preflight-req-2",
+        },
+        body: "{",
+      };
+    },
+  });
+  assert.equal(attempts, 1);
+  assert.equal(result.response.statusCode, 500);
+  assert.equal(result.response.parsed.bodyValidation.code, "INVOCATION_RESPONSE_BODY_JSON_INVALID");
+});

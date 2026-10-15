@@ -54,6 +54,14 @@ function parseBody(event) {
   return { runId: payload.runId };
 }
 
+export function extractValidatedRunIdFromEvent(event) {
+  try {
+    return parseBody(event).runId;
+  } catch {
+    return null;
+  }
+}
+
 function validateConfig(config) {
   if (!config || typeof config !== "object") throw failure("DIAG_LAUNCHER_CONFIG_INVALID");
   if (config.launcherActivationState !== "DISABLED" && config.launcherActivationState !== "ENABLED") {

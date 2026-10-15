@@ -1,7 +1,11 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { ECSClient, DescribeTaskDefinitionCommand, RunTaskCommand } from "@aws-sdk/client-ecs";
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { authorizeAndLaunchDbAdminDiagnostic, mapDiagnosticLauncherFailureCode } from "./diagnostic-launcher-core.mjs";
+import {
+  authorizeAndLaunchDbAdminDiagnostic,
+  extractValidatedRunIdFromEvent,
+  mapDiagnosticLauncherFailureCode,
+} from "./diagnostic-launcher-core.mjs";
 import { S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER } from "./s2g-db-admin-diagnostic-contract.mjs";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -156,14 +160,28 @@ const deps = {
 };
 
 export async function handler(event) {
+  const validatedRunId = extractValidatedRunIdFromEvent(event);
   try {
     return await authorizeAndLaunchDbAdminDiagnostic(event, { config, deps });
   } catch (error) {
+    const rejectionCode = mapDiagnosticLauncherFailureCode(error);
+    const requestId = typeof event?.requestContext?.requestId === "string" && event.requestContext.requestId.length > 0
+      ? event.requestContext.requestId
+      : null;
+    const logEntry = {
+      eventType: "STAGING_S2G_DIAGNOSTIC_REJECTED",
+      requestId,
+      code: rejectionCode,
+      httpStatus: 400,
+      timestampUtc: new Date().toISOString(),
+      ...(validatedRunId ? { runId: validatedRunId } : {}),
+    };
+    console.log(JSON.stringify(logEntry));
     return {
       statusCode: 400,
       body: JSON.stringify({
         outcome: "REJECTED",
-        code: mapDiagnosticLauncherFailureCode(error),
+        code: rejectionCode,
       }),
     };
   }

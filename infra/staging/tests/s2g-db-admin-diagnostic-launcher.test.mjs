@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   authorizeAndLaunchDbAdminDiagnostic,
+  extractValidatedRunIdFromEvent,
   mapDiagnosticLauncherFailureCode,
 } from "../s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs";
 
@@ -56,6 +57,23 @@ function baseAuthorization(runId = "s2g-dbdiag-abc123") {
 function baseEvent(runId = "s2g-dbdiag-abc123") {
   return {
     requestContext: {
+      authorizer: {
+        iam: {
+          userArn: "arn:aws:sts::452630323448:assumed-role/DiagOperator/rober",
+        },
+      },
+    },
+    body: JSON.stringify({ runId }),
+  };
+}
+
+function functionUrlEventFixture(runId = "s2g-dbdiag-abc123") {
+  return {
+    version: "2.0",
+    routeKey: "$default",
+    rawPath: "/",
+    requestContext: {
+      requestId: "fixture-request-id",
       authorizer: {
         iam: {
           userArn: "arn:aws:sts::452630323448:assumed-role/DiagOperator/rober",
@@ -152,6 +170,53 @@ test("rejects disabled launcher, unauthenticated callers, and cross-account call
     ),
     /DIAG_LAUNCHER_CROSS_ACCOUNT_DENIED/,
   );
+});
+
+test("extracts runId only when request payload is strictly valid", () => {
+  assert.equal(extractValidatedRunIdFromEvent(functionUrlEventFixture()), "s2g-dbdiag-abc123");
+  assert.equal(extractValidatedRunIdFromEvent({ body: JSON.stringify({ runId: "BAD" }) }), null);
+  assert.equal(extractValidatedRunIdFromEvent({ body: JSON.stringify({ runId: "s2g-dbdiag-abc123", sql: "SELECT 1" }) }), null);
+  assert.equal(extractValidatedRunIdFromEvent({ body: "{" }), null);
+});
+
+test("uses Function URL IAM request-context ARN for pre-claim operator guard", async () => {
+  let claimCalled = false;
+  await assert.rejects(
+    authorizeAndLaunchDbAdminDiagnostic(functionUrlEventFixture(), {
+      config: baseConfig(),
+      deps: baseDeps({
+        async getLaunchRecord(runId) {
+          return { ...baseAuthorization(runId), authorizedOperatorArn: "arn:aws:sts::452630323448:assumed-role/DiagOperator/not-rober" };
+        },
+        async claimLaunch() {
+          claimCalled = true;
+          return { status: "CLAIMED" };
+        },
+      }),
+    }),
+    /DIAG_LAUNCHER_OPERATOR_NOT_AUTHORIZED/,
+  );
+  assert.equal(claimCalled, false);
+});
+
+test("fails closed on pre-launch authorization contract mismatch before RunTask", async () => {
+  let runTaskCalled = false;
+  await assert.rejects(
+    authorizeAndLaunchDbAdminDiagnostic(baseEvent(), {
+      config: baseConfig(),
+      deps: baseDeps({
+        async claimLaunch() {
+          return { status: "AUTHORIZATION_CONTRACT_MISMATCH" };
+        },
+        async runTask() {
+          runTaskCalled = true;
+          return { tasks: [] };
+        },
+      }),
+    }),
+    /DIAG_LAUNCHER_RUN_CONTRACT_MISMATCH/,
+  );
+  assert.equal(runTaskCalled, false);
 });
 
 test("rejects missing, expired, wrong-purpose, wrong-operator, wrong-task, wrong-image, wrong-network, and wrong-cluster authorizations", async () => {
