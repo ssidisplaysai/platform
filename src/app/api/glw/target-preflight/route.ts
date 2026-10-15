@@ -5,6 +5,7 @@ import { getSiteById } from "@/modules/foundation/site-repository";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "@/modules/glw/page-execution";
 import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
   const target = await readGlwTargetPreflight({
     request: preview.request,
     wordpressReadAuthority,
-    localExecutions: await glwPageExecutionRepository.list(),
+    localExecutions: filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list()),
   });
   return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target, preview.request.pageType) });
 }

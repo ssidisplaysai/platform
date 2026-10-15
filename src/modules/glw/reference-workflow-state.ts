@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { GlwCampaign } from "./campaign-types";
 import {
+  isGlwSyntheticCallbackSeed,
   isGlwExecutionQuarantined,
   isGlwReferenceExecutionRetiredForProjection,
   type GlwPageExecutionRecord,
@@ -99,7 +100,9 @@ function stateCodeForName(name: string | null): string | null {
 }
 
 export function isActiveReferenceProjectionExecution(record: GlwPageExecutionRecord): boolean {
-  return !isGlwExecutionQuarantined(record) && !isGlwReferenceExecutionRetiredForProjection(record);
+  return !isGlwExecutionQuarantined(record)
+    && !isGlwReferenceExecutionRetiredForProjection(record)
+    && !isGlwSyntheticCallbackSeed(record);
 }
 
 export function selectMostRecentActiveReferenceExecution(records: readonly GlwPageExecutionRecord[]): GlwPageExecutionRecord | null {

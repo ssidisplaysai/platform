@@ -33,6 +33,7 @@ import {
   adaptSiteForGeneration,
   buildLocalGlwGenerationPreview,
 } from "@/modules/glw/page-generation";
+import { filterOutSyntheticCallbackSeeds } from "@/modules/glw/page-execution";
 import {
   appendDispatchRequestOutcome,
   authorizeExactTargetDispatchRequest,
@@ -438,7 +439,7 @@ export async function POST(
   const targetPreflight = await readGlwTargetPreflight({
     request: previewInput.request,
     wordpressReadAuthority,
-    localExecutions: await glwPageExecutionRepository.list(),
+    localExecutions: filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list()),
   });
   const mutationAvailability = resolveGlwTargetMutationAvailability(targetPreflight, previewInput.request.pageType);
   if (!targetPreflight.canonicalParentId || !mutationAvailability.plannedOperation) {
