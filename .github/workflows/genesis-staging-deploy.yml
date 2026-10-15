@@ -83,6 +83,21 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GenesisGitHubDeployRole
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Capture approved staging task-definition baseline
+        id: baseline
+        run: |
+          set -euo pipefail
+          STATUS=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].status' --output text)
+          if [[ "$STATUS" != "ACTIVE" ]]; then
+            echo "Staging service must already exist and be ACTIVE to preserve full runtime configuration." >&2
+            echo "Use genesis-staging-infra/service bootstrap workflows for first-time creation." >&2
+            exit 1
+          fi
+          PREVIOUS_TD=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)
+          aws ecs describe-task-definition --task-definition "$PREVIOUS_TD" --query 'taskDefinition' --output json > baseline-taskdef.json
+          echo "previous_task_definition=$PREVIOUS_TD" >> "$GITHUB_OUTPUT"
+          echo "PREVIOUS_STAGING_TASK_DEFINITION=$PREVIOUS_TD" >> "$GITHUB_ENV"
+
       - name: Guard against production targets
         run: |
           for v in "$ECR_REPOSITORY" "$ECS_SERVICE" "$TASK_FAMILY"; do
@@ -109,36 +124,57 @@ jobs:
           docker run --rm --entrypoint test genesis-staging-runtime:${{ env.GIT_SHA }} -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
           docker run --rm --entrypoint test genesis-staging-runtime:${{ env.GIT_SHA }} -f .next/server/app/api/share-to-grow/shopify/webhook/route.js
 
-      - name: Register task definition revision (production config copied only through the reviewed allowlist)
+      - name: Build candidate task definition from approved staging baseline
         id: taskdef
         env:
           IMAGE_URI_WITH_DIGEST: ${{ steps.push.outputs.image }}
           GIT_COMMIT: ${{ env.GIT_SHA }}
         run: |
-          bash infra/staging/provision.sh render-taskdef > taskdef.json
-          jq -e '.family=="genesis-staging-web" and (.containerDefinitions[0].logConfiguration.options["awslogs-group"]=="/genesis/staging/web")' taskdef.json
+          node infra/staging/staging-taskdef-config-guard.mjs build \
+            --baseline baseline-taskdef.json \
+            --image "$IMAGE_URI_WITH_DIGEST" \
+            --git-commit "$GIT_COMMIT" \
+            --output taskdef.json
+          node infra/staging/staging-taskdef-config-guard.mjs validate \
+            --baseline baseline-taskdef.json \
+            --candidate taskdef.json \
+            --image "$IMAGE_URI_WITH_DIGEST" \
+            --git-commit "$GIT_COMMIT"
+          jq -e '
+            .family=="genesis-staging-web"
+            and (.containerDefinitions[] | select(.name=="GenesisWebRuntime") | .environment[] | select(.name=="GLW_N8N_RECONNECT_ENABLED").value == "false")
+            and (.containerDefinitions[] | select(.name=="GenesisWebRuntime") | .environment[] | select(.name=="GLW_N8N_NON_MUTATING_TEST").value == "true")
+            and (.containerDefinitions[] | select(.name=="GenesisWebRuntime") | any(.secrets[]; .name=="GLW_N8N_CALLBACK_SECRET" and (.valueFrom|startswith("arn:aws:secretsmanager:"))))
+          ' taskdef.json
           ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text)
           echo "arn=$ARN" >> "$GITHUB_OUTPUT"
 
-      - name: Create staging service if absent, otherwise update ONLY the staging service
+      - name: Update ONLY the existing staging service
         run: |
-          STATUS=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].status' --output text)
-          if [ "$STATUS" = "ACTIVE" ]; then
-            aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
-              --task-definition "${{ steps.taskdef.outputs.arn }}" --desired-count 1 --force-new-deployment
-          else
-            TASK_DEFINITION_ARN="${{ steps.taskdef.outputs.arn }}" bash infra/staging/provision.sh service
-          fi
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --task-definition "${{ steps.taskdef.outputs.arn }}" --desired-count 1 --force-new-deployment
 
       - name: Wait for service stability
         run: aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
 
-      - name: Prove deployed task runs the digest-pinned image with the webhook route
+      - name: Validate deployed task definition against preserved baseline
         run: |
-          aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
-            --query 'services[0].deployments[?status==`PRIMARY`].[taskDefinition,runningCount]' --output text
-          aws ecs describe-task-definition --task-definition "${{ steps.taskdef.outputs.arn }}" \
-            --query 'taskDefinition.containerDefinitions[0].image' --output text | grep "${{ steps.push.outputs.image }}"
+          DEPLOYED_TD=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)
+          if [[ "$DEPLOYED_TD" != "${{ steps.taskdef.outputs.arn }}" ]]; then
+            echo "Deployed task definition mismatch. expected=${{ steps.taskdef.outputs.arn }} actual=$DEPLOYED_TD" >&2
+            exit 1
+          fi
+          aws ecs describe-task-definition --task-definition "$DEPLOYED_TD" --query 'taskDefinition' --output json > deployed-taskdef.json
+          node infra/staging/staging-taskdef-config-guard.mjs validate \
+            --baseline baseline-taskdef.json \
+            --candidate deployed-taskdef.json \
+            --image "${{ steps.push.outputs.image }}" \
+            --git-commit "${{ env.GIT_SHA }}"
+          jq -e --arg sha "${{ env.GIT_SHA }}" '
+            (.containerDefinitions[] | select(.name=="GenesisWebRuntime") | .image) == "${{ steps.push.outputs.image }}"
+            and (.containerDefinitions[] | select(.name=="GenesisWebRuntime") | .environment[] | select(.name=="GIT_COMMIT").value == $sha)
+            and (.containerDefinitions[] | select(.name=="GenesisWebRuntime") | .environment[] | select(.name=="GENESIS_RUNTIME_SHA").value == $sha)
+          ' deployed-taskdef.json
 
       - name: Prove target group health (/api/health) on the staging target group
         run: |
@@ -151,3 +187,11 @@ jobs:
           CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d '{}' https://staging.glwplatform.com/api/share-to-grow/woocommerce/webhook)
           echo "unsigned webhook status: $CODE"
           [ "$CODE" = "401" ]
+
+      - name: Report rollback command if deployment validation fails
+        if: failure()
+        run: |
+          echo "DEPLOYMENT_VALIDATION_FAILED=true"
+          echo "PREVIOUS_STAGING_TASK_DEFINITION=${PREVIOUS_STAGING_TASK_DEFINITION:-unknown}"
+          echo "Rollback command:"
+          echo "aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition ${PREVIOUS_STAGING_TASK_DEFINITION:-<set-task-def-arn>} --desired-count 1 --force-new-deployment"
