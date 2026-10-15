@@ -109,7 +109,7 @@ export function validateStackStateForMode({
   allowRollbackComplete = false,
 }) {
   if (stackName !== REQUIRED_STACK_NAME) throw failure("DEPLOYMENT_PREFLIGHT_STACK_NAME_MISMATCH");
-  if (mode !== "create" && mode !== "update") throw failure("DEPLOYMENT_PREFLIGHT_MODE_INVALID");
+  if (mode !== "create" && mode !== "update" && mode !== "update-packaging") throw failure("DEPLOYMENT_PREFLIGHT_MODE_INVALID");
   if (mode === "create") {
     if (stackStatus === "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_STACK_ALREADY_EXISTS");
     if (stackStatus === "ROLLBACK_COMPLETE" && !allowRollbackComplete) {
@@ -211,6 +211,7 @@ export function validateUpdateChangeSetParameters({
   changeSetParameters,
   deployedStackParameters,
   expectedOperatorAssumerPrincipalArn,
+  expectedProposedActivationState = "ENABLED",
 }) {
   if (!String(changeSetArn ?? "").startsWith("arn:aws:cloudformation:")) {
     throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ARN_REQUIRED");
@@ -221,8 +222,11 @@ export function validateUpdateChangeSetParameters({
   const proposed = toParameterMap(changeSetParameters);
   const deployed = toParameterMap(deployedStackParameters);
 
-  if (proposed.get("LauncherActivationState") !== "ENABLED") {
-    throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_NOT_ENABLED");
+  if (proposed.get("LauncherActivationState") !== expectedProposedActivationState) {
+    if (expectedProposedActivationState === "ENABLED") {
+      throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_NOT_ENABLED");
+    }
+    throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_STATE_UNEXPECTED");
   }
   const requiredUnchanged = [
     "OperatorAssumerPrincipalArn",
@@ -243,6 +247,107 @@ export function validateUpdateChangeSetParameters({
   }
   if (proposed.get("OperatorAssumerPrincipalArn") !== expectedOperatorAssumerPrincipalArn) {
     throw failure("DEPLOYMENT_PREFLIGHT_OPERATOR_ASSUMER_MISMATCH");
+  }
+}
+
+export function validatePackagingOnlyChangeSetScope(changeSet, {
+  expectedStackName,
+} = {}) {
+  const item = asObject(changeSet, "change set");
+  if (item.StackName !== expectedStackName) throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_STACK_MISMATCH");
+  if (item.ChangeSetType && item.ChangeSetType !== "UPDATE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_UPDATE");
+  if (item.Status !== "CREATE_COMPLETE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_READY");
+  if (item.ExecutionStatus !== "AVAILABLE") throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_NOT_AVAILABLE");
+
+  const changes = Array.isArray(item.Changes) ? item.Changes : [];
+  if (changes.length === 0) throw failure("DEPLOYMENT_PREFLIGHT_CHANGE_SET_EMPTY");
+  if (changes.length > 2) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_UNEXPECTED_ACTION_COUNT");
+
+  let sawLambdaFunction = false;
+  let sawLambdaUrl = false;
+
+  for (const entry of changes) {
+    const resourceChange = asObject(entry.ResourceChange, "change set resource change");
+    const logicalId = String(resourceChange.LogicalResourceId ?? "");
+    const action = String(resourceChange.Action ?? "");
+    const replacement = String(resourceChange.Replacement ?? "False");
+    const details = Array.isArray(resourceChange.Details) ? resourceChange.Details : [];
+
+    if (logicalId === "DbAdminDiagnosticLauncherFunction4A98B30B") {
+      sawLambdaFunction = true;
+      if (action !== "Modify") throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_ACTION_INVALID");
+      if (replacement === "True") throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_REPLACEMENT");
+      if (details.length === 0) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_DETAILS_MISSING");
+      const codeDetail = details.find((detail) => detail?.Target?.Name === "Code");
+      if (!codeDetail) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_NON_CODE_CHANGE");
+      if (codeDetail?.Target?.RequiresRecreation !== "Never") {
+        throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_REPLACEMENT_RISK");
+      }
+      for (const detail of details) {
+        if (detail?.Target?.Name !== "Code") {
+          throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_NON_CODE_CHANGE");
+        }
+      }
+      continue;
+    }
+
+    if (logicalId === "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4") {
+      sawLambdaUrl = true;
+      if (action !== "Modify") throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_ACTION_INVALID");
+      if (replacement !== "Conditional") throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_REPLACEMENT_UNSUPPORTED");
+      if (details.length !== 1) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_DETAILS_UNEXPECTED");
+      const detail = details[0];
+      if (detail?.Target?.Name !== "TargetFunctionArn") {
+        throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_NON_DEPENDENCY_CHANGE");
+      }
+      if (detail?.Target?.RequiresRecreation !== "Always") {
+        throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_REPLACEMENT_UNSUPPORTED");
+      }
+      if (detail?.ChangeSource !== "ResourceAttribute" || detail?.CausingEntity !== "DbAdminDiagnosticLauncherFunction4A98B30B.Arn") {
+        throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_REPLACEMENT_UNSUPPORTED");
+      }
+      continue;
+    }
+
+    throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_UNEXPECTED_RESOURCE", logicalId);
+  }
+
+  if (!sawLambdaFunction) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_MISSING");
+  if (sawLambdaUrl) {
+    const urlChanges = changes.filter((entry) => entry?.ResourceChange?.LogicalResourceId === "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4");
+    if (urlChanges.length !== 1) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_DETAILS_UNEXPECTED");
+  }
+}
+
+export function validatePackagingOnlyAssetEvidence({
+  packageFiles = [],
+  requiredFiles = [],
+  missingLocalImports = [],
+  absoluteImports = [],
+  handlerImportStatus = "unknown",
+  zipSha256Hex = "",
+  expectedZipSha256Hex = "",
+  proposedCodeSha256 = "",
+  expectedCodeSha256 = "",
+}) {
+  const fileSet = new Set(packageFiles);
+  for (const required of requiredFiles) {
+    if (!fileSet.has(required)) throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_MODULE_MISSING", required);
+  }
+  if (Array.isArray(missingLocalImports) && missingLocalImports.length > 0) {
+    throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_IMPORT_RESOLUTION_FAILED");
+  }
+  if (Array.isArray(absoluteImports) && absoluteImports.length > 0) {
+    throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_ABSOLUTE_IMPORT_DETECTED");
+  }
+  if (handlerImportStatus !== "ok") {
+    throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_HANDLER_IMPORT_FAILED");
+  }
+  if (expectedZipSha256Hex && zipSha256Hex !== expectedZipSha256Hex) {
+    throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_ZIP_DIGEST_MISMATCH");
+  }
+  if (expectedCodeSha256 && proposedCodeSha256 !== expectedCodeSha256) {
+    throw failure("DEPLOYMENT_PREFLIGHT_PACKAGING_CODE_SHA_MISMATCH");
   }
 }
 

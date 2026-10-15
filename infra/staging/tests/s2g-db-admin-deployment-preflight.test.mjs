@@ -8,6 +8,8 @@ import {
   normalizeStackStatus,
   validateActivationState,
   validateCallerIdentity,
+  validatePackagingOnlyAssetEvidence,
+  validatePackagingOnlyChangeSetScope,
   validateStackIdentity,
   validateStackStateForMode,
   validateUpdateChangeSetParameters,
@@ -152,6 +154,12 @@ test("mode-specific stack state checks enforce create and update expectations", 
     stackStatus: "UPDATE_COMPLETE",
     retainedTableExists: true,
     mode: "update",
+  }));
+  assert.doesNotThrow(() => validateStackStateForMode({
+    stackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    stackStatus: "UPDATE_COMPLETE",
+    retainedTableExists: true,
+    mode: "update-packaging",
   }));
   assert.throws(
     () => validateStackStateForMode({
@@ -381,6 +389,217 @@ test("update change-set parameter validation enforces exact arn, enabled activat
       expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
     }),
     /DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_NOT_ENABLED/,
+  );
+  assert.doesNotThrow(() => validateUpdateChangeSetParameters({
+    expectedChangeSetArn: changeSetArn,
+    changeSetArn,
+    changeSetParameters: [
+      { ParameterKey: "LauncherActivationState", ParameterValue: "DISABLED" },
+      ...deployedStackParameters.filter(({ ParameterKey }) => ParameterKey !== "LauncherActivationState"),
+    ],
+    deployedStackParameters,
+    expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
+    expectedProposedActivationState: "DISABLED",
+  }));
+  assert.throws(
+    () => validateUpdateChangeSetParameters({
+      expectedChangeSetArn: changeSetArn,
+      changeSetArn,
+      changeSetParameters,
+      deployedStackParameters,
+      expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
+      expectedProposedActivationState: "DISABLED",
+    }),
+    /DEPLOYMENT_PREFLIGHT_CHANGE_SET_ACTIVATION_STATE_UNEXPECTED/,
+  );
+});
+
+test("packaging-only change-set scope accepts code-only update and rejects unsupported changes", () => {
+  const base = {
+    StackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    ChangeSetType: "UPDATE",
+    Status: "CREATE_COMPLETE",
+    ExecutionStatus: "AVAILABLE",
+    Changes: [
+      {
+        ResourceChange: {
+          Action: "Modify",
+          LogicalResourceId: "DbAdminDiagnosticLauncherFunction4A98B30B",
+          Replacement: "False",
+          Details: [{
+            Target: {
+              Attribute: "Properties",
+              Name: "Code",
+              RequiresRecreation: "Never",
+            },
+            Evaluation: "Static",
+            ChangeSource: "DirectModification",
+          }],
+        },
+      },
+      {
+        ResourceChange: {
+          Action: "Modify",
+          LogicalResourceId: "DbAdminDiagnosticLauncherFunctionFunctionUrlF0CCD3F4",
+          Replacement: "Conditional",
+          Details: [{
+            Target: {
+              Attribute: "Properties",
+              Name: "TargetFunctionArn",
+              RequiresRecreation: "Always",
+            },
+            Evaluation: "Dynamic",
+            ChangeSource: "ResourceAttribute",
+            CausingEntity: "DbAdminDiagnosticLauncherFunction4A98B30B.Arn",
+          }],
+        },
+      },
+    ],
+  };
+
+  assert.doesNotThrow(() => validatePackagingOnlyChangeSetScope(base, {
+    expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+  }));
+  assert.doesNotThrow(() => validatePackagingOnlyChangeSetScope({
+    ...base,
+    Changes: [base.Changes[0]],
+  }, {
+    expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+  }));
+  assert.throws(
+    () => validatePackagingOnlyChangeSetScope({
+      ...base,
+      Changes: [
+        ...base.Changes,
+        {
+          ResourceChange: {
+            Action: "Modify",
+            LogicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C",
+            Replacement: "False",
+          },
+        },
+      ],
+    }, {
+      expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_UNEXPECTED_ACTION_COUNT/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyChangeSetScope({
+      ...base,
+      Changes: [{
+        ResourceChange: {
+          ...base.Changes[0].ResourceChange,
+          Details: [{
+            Target: {
+              Attribute: "Properties",
+              Name: "Environment",
+              RequiresRecreation: "Never",
+            },
+            Evaluation: "Static",
+            ChangeSource: "DirectModification",
+          }],
+        },
+      }],
+    }, {
+      expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_LAMBDA_NON_CODE_CHANGE/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyChangeSetScope({
+      ...base,
+      Changes: [{
+        ResourceChange: {
+          ...base.Changes[1].ResourceChange,
+          Details: [{
+            ...base.Changes[1].ResourceChange.Details[0],
+            Target: {
+              ...base.Changes[1].ResourceChange.Details[0].Target,
+              Name: "AuthType",
+            },
+          }],
+        },
+      }, base.Changes[0]],
+    }, {
+      expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_NON_DEPENDENCY_CHANGE/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyChangeSetScope({
+      ...base,
+      Changes: [{
+        ResourceChange: {
+          ...base.Changes[1].ResourceChange,
+          Replacement: "True",
+        },
+      }, base.Changes[0]],
+    }, {
+      expectedStackName: DEPLOYMENT_PREFLIGHT_CONSTANTS.REQUIRED_STACK_NAME,
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_SCOPE_URL_REPLACEMENT_UNSUPPORTED/,
+  );
+});
+
+test("packaging-only asset evidence enforces required modules and digests", () => {
+  const base = {
+    packageFiles: [
+      "diagnostic-launcher-lambda.mjs",
+      "diagnostic-launcher-core.mjs",
+      "s2g-db-admin-diagnostic-contract.mjs",
+    ],
+    requiredFiles: [
+      "diagnostic-launcher-lambda.mjs",
+      "diagnostic-launcher-core.mjs",
+      "s2g-db-admin-diagnostic-contract.mjs",
+    ],
+    missingLocalImports: [],
+    absoluteImports: [],
+    handlerImportStatus: "ok",
+    zipSha256Hex: "a14d3b9682716355aa9b748ada5a7a171985a0f497650dc37806b03f1da93fdb",
+    expectedZipSha256Hex: "a14d3b9682716355aa9b748ada5a7a171985a0f497650dc37806b03f1da93fdb",
+    proposedCodeSha256: "oU07loJxY1Wqm3SK2lp6FxmFoPSXZQ3DeAawPx2pP9s=",
+    expectedCodeSha256: "oU07loJxY1Wqm3SK2lp6FxmFoPSXZQ3DeAawPx2pP9s=",
+  };
+  assert.doesNotThrow(() => validatePackagingOnlyAssetEvidence(base));
+  assert.throws(
+    () => validatePackagingOnlyAssetEvidence({
+      ...base,
+      packageFiles: [
+        "diagnostic-launcher-lambda.mjs",
+        "diagnostic-launcher-core.mjs",
+      ],
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_MODULE_MISSING/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyAssetEvidence({
+      ...base,
+      zipSha256Hex: "deadbeef",
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_ZIP_DIGEST_MISMATCH/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyAssetEvidence({
+      ...base,
+      proposedCodeSha256: "wrong",
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_CODE_SHA_MISMATCH/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyAssetEvidence({
+      ...base,
+      absoluteImports: [{ file: "diagnostic-launcher-core.mjs", specifier: "/tmp/evil.mjs" }],
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_ABSOLUTE_IMPORT_DETECTED/,
+  );
+  assert.throws(
+    () => validatePackagingOnlyAssetEvidence({
+      ...base,
+      handlerImportStatus: "error:ERR_MODULE_NOT_FOUND",
+    }),
+    /DEPLOYMENT_PREFLIGHT_PACKAGING_HANDLER_IMPORT_FAILED/,
   );
 });
 

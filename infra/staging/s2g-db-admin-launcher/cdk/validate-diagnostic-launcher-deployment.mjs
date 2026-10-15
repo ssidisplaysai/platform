@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { App } from "aws-cdk-lib";
 import { createStagingS2gDbAdminLauncherStack } from "./staging-s2g-db-admin-launcher-stack.mjs";
 import {
@@ -12,11 +13,13 @@ import {
   normalizeStackStatus,
   validateActivationState,
   validateCallerIdentity,
+  validateLauncherTemplateGuards,
+  validatePackagingOnlyAssetEvidence,
+  validatePackagingOnlyChangeSetScope,
   validateStackIdentity,
   validateStackStateForMode,
   validateUpdateChangeSetParameters,
   validateUpdateChangeSetScope,
-  validateLauncherTemplateGuards,
 } from "./deployment-preflight-core.mjs";
 
 function parseArgs(argv) {
@@ -28,9 +31,14 @@ function parseArgs(argv) {
     snapshotStackName: "GenesisStagingSnapshotExportStack",
     mode: "create",
     changeSetName: "",
+    expectedChangeSetArn: "",
     expectedActivationState: "DISABLED",
     expectedApprovedTaskArn: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:1",
     expectedOperatorAssumerPrincipalArn: "arn:aws:iam::452630323448:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_GenesisS2GDiagOperator_bef639e26f419d49",
+    expectedRepoSha: "",
+    expectedCurrentCodeSha256: "",
+    expectedProposedCodeSha256: "",
+    expectedProposedZipSha256: "",
     allowRollbackComplete: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -42,18 +50,24 @@ function parseArgs(argv) {
     else if (token === "--snapshot-stack-name") options.snapshotStackName = argv[++index];
     else if (token === "--mode") options.mode = argv[++index];
     else if (token === "--change-set-name") options.changeSetName = argv[++index];
+    else if (token === "--expected-change-set-arn") options.expectedChangeSetArn = argv[++index];
     else if (token === "--expected-activation-state") options.expectedActivationState = argv[++index];
     else if (token === "--expected-approved-task-arn") options.expectedApprovedTaskArn = argv[++index];
     else if (token === "--expected-operator-assumer-principal-arn") options.expectedOperatorAssumerPrincipalArn = argv[++index];
+    else if (token === "--expected-repo-sha") options.expectedRepoSha = argv[++index];
+    else if (token === "--expected-current-code-sha256") options.expectedCurrentCodeSha256 = argv[++index];
+    else if (token === "--expected-proposed-code-sha256") options.expectedProposedCodeSha256 = argv[++index];
+    else if (token === "--expected-proposed-zip-sha256") options.expectedProposedZipSha256 = argv[++index];
     else if (token === "--allow-rollback-complete") options.allowRollbackComplete = true;
     else throw new Error(`Unknown option: ${token}`);
   }
-  if (options.mode !== "create" && options.mode !== "update") {
-    throw new Error("Unknown mode. Use --mode create or --mode update.");
+  if (!["create", "update", "update-packaging"].includes(options.mode)) {
+    throw new Error("Unknown mode. Use --mode create, --mode update, or --mode update-packaging.");
   }
-  if (options.mode === "update" && !options.changeSetName) {
+  if ((options.mode === "update" || options.mode === "update-packaging") && !options.changeSetName) {
     throw new Error("--change-set-name is required in update mode.");
   }
+  if (!options.expectedChangeSetArn) options.expectedChangeSetArn = options.changeSetName;
   return options;
 }
 
@@ -72,8 +86,13 @@ function runAwsJson(args, { region, profile }) {
   }
 }
 
+function runGitHeadSha() {
+  const output = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  return String(output).trim();
+}
+
 async function synthArtifacts(stackName) {
-  const outDir = await mkdtemp(join(tmpdir(), "s2g-db-admin-launcher-"));
+  const outDir = await mkdtemp(resolve(process.cwd(), ".tmp-s2g-db-admin-launcher-"));
   const app = new App({ outdir: outDir });
   createStagingS2gDbAdminLauncherStack(app, stackName);
   app.synth();
@@ -115,9 +134,103 @@ function describeProtectedServices(options) {
     ], options);
     if (!result.ok) throw new Error(`DEPLOYMENT_PREFLIGHT_PROTECTED_SERVICES_READ_FAILED:${serviceName}`);
     const item = result.data?.services?.[0];
-    services.push(item ?? { serviceName, status: "MISSING", desiredCount: 0, runningCount: 0, pendingCount: 0, deployments: [] });
+    services.push(item ?? {
+      serviceName, status: "MISSING", desiredCount: 0, runningCount: 0, pendingCount: 0, deployments: [],
+    });
   }
   return services;
+}
+
+function gatherRelativeImports(source) {
+  const imports = [];
+  const importRegex = /^\s*import(?:\s+[^'"]+?\s+from\s+)?["']([^"']+)["'];?$/gm;
+  const exportRegex = /^\s*export\s+[^'"]+?\s+from\s+["']([^"']+)["'];?$/gm;
+  let match;
+  while ((match = importRegex.exec(source)) !== null) imports.push(match[1]);
+  while ((match = exportRegex.exec(source)) !== null) imports.push(match[1]);
+  return imports.filter((specifier) => specifier.startsWith(".") || specifier.startsWith("/"));
+}
+
+async function listFilesRecursive(root) {
+  const files = [];
+  async function walk(current) {
+    const entries = await readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const absolute = resolve(current, entry.name);
+      if (entry.isDirectory()) await walk(absolute);
+      else files.push(absolute.slice(root.length + 1).replace(/\\/g, "/"));
+    }
+  }
+  await walk(root);
+  return files.sort();
+}
+
+async function collectPackagingAssetEvidence(artifacts) {
+  const lambdaAsset = extractLauncherLambdaAsset({
+    template: artifacts.template,
+    assetManifest: artifacts.assetManifest,
+  });
+  if (!lambdaAsset.sourcePath) {
+    throw new Error("DEPLOYMENT_PREFLIGHT_PACKAGING_SOURCE_PATH_MISSING");
+  }
+  const sourcePath = resolve(artifacts.outDir, lambdaAsset.sourcePath);
+  const packageFiles = await listFilesRecursive(sourcePath);
+  const missingLocalImports = [];
+  const absoluteImports = [];
+  const queue = ["diagnostic-launcher-lambda.mjs"];
+  const visited = new Set();
+  while (queue.length > 0) {
+    const current = queue.pop();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+    const source = await readFile(resolve(sourcePath, current), "utf8");
+    const imports = gatherRelativeImports(source);
+    for (const specifier of imports) {
+      if (specifier.startsWith("/")) {
+        absoluteImports.push({ file: current, specifier });
+        continue;
+      }
+      const resolved = resolve(resolve(sourcePath, current), "..", specifier)
+        .slice(sourcePath.length + 1)
+        .replace(/\\/g, "/");
+      if (!packageFiles.includes(resolved)) {
+        missingLocalImports.push({ file: current, specifier, resolved });
+      } else if (resolved.endsWith(".mjs")) {
+        queue.push(resolved);
+      }
+    }
+  }
+
+  let handlerImportStatus = "ok";
+  try {
+    const moduleUrl = `${pathToFileURL(resolve(sourcePath, "diagnostic-launcher-lambda.mjs")).href}?t=${Date.now()}`;
+    const loaded = await import(moduleUrl);
+    if (typeof loaded.handler !== "function") handlerImportStatus = "missing-handler";
+  } catch (error) {
+    handlerImportStatus = `error:${error?.code ?? "unknown"}`;
+  }
+
+  const zipPath = resolve(artifacts.outDir, "launcher-asset-validation.zip");
+  execFileSync(
+    "powershell",
+    [
+      "-NoProfile",
+      "-Command",
+      `if(Test-Path '${zipPath.replace(/'/g, "''")}'){Remove-Item '${zipPath.replace(/'/g, "''")}' -Force}; Compress-Archive -Path '${sourcePath.replace(/'/g, "''")}\\*' -DestinationPath '${zipPath.replace(/'/g, "''")}' -CompressionLevel Optimal`,
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  const zipBytes = await readFile(zipPath);
+  const zipSha256Hex = createHash("sha256").update(zipBytes).digest("hex");
+  const proposedCodeSha256 = createHash("sha256").update(zipBytes).digest("base64");
+  return {
+    packageFiles,
+    missingLocalImports,
+    absoluteImports,
+    handlerImportStatus,
+    zipSha256Hex,
+    proposedCodeSha256,
+  };
 }
 
 async function main() {
@@ -129,6 +242,13 @@ async function main() {
       template: artifacts.template,
       assetManifest: artifacts.assetManifest,
     });
+
+    if (options.expectedRepoSha) {
+      const currentSha = runGitHeadSha();
+      if (currentSha !== options.expectedRepoSha) {
+        throw new Error(`DEPLOYMENT_PREFLIGHT_REPO_SHA_MISMATCH:${currentSha}`);
+      }
+    }
 
     const identityResult = runAwsJson(["sts", "get-caller-identity"], options);
     if (!identityResult.ok) throw new Error(`DEPLOYMENT_PREFLIGHT_STS_FAILED:${identityResult.message}`);
@@ -153,7 +273,7 @@ async function main() {
         stackName: options.stackName,
         stackStatus,
         retainedTableExists,
-        mode: "update",
+        mode: options.mode,
       });
       validateStackIdentity(stack, options.stackName);
       validateActivationState({
@@ -189,7 +309,7 @@ async function main() {
       const changeSetResult = runAwsJson(["cloudformation", "describe-change-set", "--change-set-name", options.changeSetName], options);
       if (!changeSetResult.ok) throw new Error(`DEPLOYMENT_PREFLIGHT_CHANGE_SET_READ_FAILED:${options.changeSetName}`);
       validateUpdateChangeSetParameters({
-        expectedChangeSetArn: options.changeSetName,
+        expectedChangeSetArn: options.expectedChangeSetArn,
         changeSetArn: changeSetResult.data?.ChangeSetId ?? "",
         changeSetParameters: changeSetResult.data?.Parameters ?? [],
         deployedStackParameters: stack?.Parameters ?? [],
@@ -210,6 +330,52 @@ async function main() {
           { logicalResourceId: "StagingS2gDbAdminDiagnosticOperatorEnabledPolicy648A5B6C", action: "Add" },
         ],
       });
+      changeSetSummary = {
+        changeSetName: changeSetResult.data?.ChangeSetName ?? options.changeSetName,
+        changeSetArn: changeSetResult.data?.ChangeSetId ?? "",
+        status: changeSetResult.data?.Status ?? "UNKNOWN",
+        executionStatus: changeSetResult.data?.ExecutionStatus ?? "UNKNOWN",
+        type: changeSetResult.data?.ChangeSetType ?? "UNKNOWN",
+        actionCount: Array.isArray(changeSetResult.data?.Changes) ? changeSetResult.data.Changes.length : 0,
+      };
+    } else if (options.mode === "update-packaging") {
+      const configResult = runAwsJson(["lambda", "get-function-configuration", "--function-name", "GenesisStagingS2gDbAdminD-DbAdminDiagnosticLaunche-kMTHCJYmy24Q"], options);
+      if (!configResult.ok) throw new Error("DEPLOYMENT_PREFLIGHT_LAMBDA_CONFIGURATION_READ_FAILED");
+      if (options.expectedCurrentCodeSha256 && configResult.data?.CodeSha256 !== options.expectedCurrentCodeSha256) {
+        throw new Error("DEPLOYMENT_PREFLIGHT_CURRENT_CODE_SHA_MISMATCH");
+      }
+
+      const changeSetResult = runAwsJson(["cloudformation", "describe-change-set", "--change-set-name", options.changeSetName], options);
+      if (!changeSetResult.ok) throw new Error(`DEPLOYMENT_PREFLIGHT_CHANGE_SET_READ_FAILED:${options.changeSetName}`);
+      validateUpdateChangeSetParameters({
+        expectedChangeSetArn: options.expectedChangeSetArn,
+        changeSetArn: changeSetResult.data?.ChangeSetId ?? "",
+        changeSetParameters: changeSetResult.data?.Parameters ?? [],
+        deployedStackParameters: stack?.Parameters ?? [],
+        expectedOperatorAssumerPrincipalArn: options.expectedOperatorAssumerPrincipalArn,
+        expectedProposedActivationState: "DISABLED",
+      });
+      validatePackagingOnlyChangeSetScope(changeSetResult.data, {
+        expectedStackName: options.stackName,
+      });
+
+      const packagingEvidence = await collectPackagingAssetEvidence(artifacts);
+      validatePackagingOnlyAssetEvidence({
+        packageFiles: packagingEvidence.packageFiles,
+        requiredFiles: [
+          "diagnostic-launcher-lambda.mjs",
+          "diagnostic-launcher-core.mjs",
+          "s2g-db-admin-diagnostic-contract.mjs",
+        ],
+        missingLocalImports: packagingEvidence.missingLocalImports,
+        absoluteImports: packagingEvidence.absoluteImports,
+        handlerImportStatus: packagingEvidence.handlerImportStatus,
+        zipSha256Hex: packagingEvidence.zipSha256Hex,
+        expectedZipSha256Hex: options.expectedProposedZipSha256,
+        proposedCodeSha256: packagingEvidence.proposedCodeSha256,
+        expectedCodeSha256: options.expectedProposedCodeSha256,
+      });
+
       changeSetSummary = {
         changeSetName: changeSetResult.data?.ChangeSetName ?? options.changeSetName,
         changeSetArn: changeSetResult.data?.ChangeSetId ?? "",

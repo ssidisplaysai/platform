@@ -151,6 +151,7 @@ Hard requirements:
 - Before creating/executing any launcher stack change set, run preflight validation in mode-specific form:
   - create-preflight: `npm run preflight:create:s2g-db-admin-launcher`
   - update-preflight: `npm run preflight:update:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn>`
+  - disabled-state packaging-only update preflight: `npm run preflight:update-packaging:s2g-db-admin-launcher -- --change-set-name <reviewed-change-set-arn> --expected-change-set-arn <reviewed-change-set-arn> --expected-repo-sha <approved-sha> --expected-current-code-sha256 <deployed-code-sha256> --expected-proposed-code-sha256 <proposed-code-sha256> --expected-proposed-zip-sha256 <proposed-zip-sha256>`
   - update-preflight accepted baseline stack states:
     - `CREATE_COMPLETE`
     - `UPDATE_COMPLETE`
