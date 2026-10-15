@@ -21,3 +21,17 @@ This module provides the staging-safe callback reconciliation gate for GLW page-
 - Rejects callback `COMPLETE` transitions (`UNAUTHORIZED_COMPLETE`) so WordPress completion authority remains inside Genesis.
 - Rejects callback attempts to provide WordPress destination identifiers (`WORDPRESS_AUTHORITY_REJECTED`).
 - Enforces exact job identity, execution binding, organization/site isolation, transition validity, and idempotent replay handling.
+
+## Synthetic staging callback seed utility
+
+To support bounded callback reconciliation tests without invoking generation or WordPress preflight, use:
+
+- `npx tsx scripts/glw-seed-synthetic-callback-job.mts --owner-approval-id OWNER_APPROVAL-... --execution-id synthetic-execution-... --confirm SEED-SYNTHETIC-CALLBACK-JOB`
+
+Guardrails:
+
+- Refuses to run unless `GENESIS_ENVIRONMENT=staging`.
+- Requires an explicit owner approval identifier (`OWNER_APPROVAL-...`).
+- Creates exactly one non-customer synthetic job per owner approval id.
+- Uses existing GLW execution repository persistence only; does not call WordPress, n8n, campaign schedulers, or paid providers.
+- Persists retention metadata in `qaChecks.syntheticCallbackSeed` for owner-directed cleanup of only the seeded job.
