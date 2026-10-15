@@ -188,8 +188,11 @@ Hard requirements:
 
 1. Assume `StagingSnapshotOperatorRole`.
 2. Verify target account and region.
-3. Invoke launch broker URL with signed IAM request and only `runId`.
-4. Broker validates:
+3. Run offline invoke-signing preflight before any live Function URL request:
+   - `npm run preflight:invoke-offline:s2g-db-admin-launcher -- --function-url "<url>" --operator-caller-arn "<sts-arn>" --authorized-operator-arn "<sts-arn>" --access-key-id "<key>" --secret-access-key "<secret>" --session-token "<token>" --credential-expiration-iso "<iso>" --request-body-file "<path-to-json-body>" --max-attempts 1 --retry-mode standard --invocation-command-line 'curl.exe --retry 0 --aws-sigv4 "aws:amz:us-west-2:lambda"'`
+   - gate requirements: exact `YYYYMMDD/us-west-2/lambda/aws4_request` credential scope, required session token header, dedicated operator-role STS session, exact authorizedOperatorArn match, and no extra request-body fields.
+4. Invoke launch broker URL with signed IAM request and only `runId`.
+5. Broker validates:
    - caller identity,
    - run authorization record (`APPROVED` + operator binding),
    - exact approved task definition revision,
