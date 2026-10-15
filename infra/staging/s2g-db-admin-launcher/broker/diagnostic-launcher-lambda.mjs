@@ -2,7 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { ECSClient, DescribeTaskDefinitionCommand, RunTaskCommand } from "@aws-sdk/client-ecs";
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { authorizeAndLaunchDbAdminDiagnostic, mapDiagnosticLauncherFailureCode } from "./diagnostic-launcher-core.mjs";
-import { S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER } from "../../s2g-db-admin-diagnostic-contract.mjs";
+import { S2G_DB_ADMIN_DIAGNOSTIC_CONTAINER } from "./s2g-db-admin-diagnostic-contract.mjs";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const ecs = new ECSClient({});

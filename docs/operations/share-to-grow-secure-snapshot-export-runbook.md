@@ -62,7 +62,9 @@ Hard requirements:
 - Use a dedicated launcher control plane for privileged diagnostic execution:
   - [staging-s2g-db-admin-launcher-stack.mjs](../../infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs)
   - [diagnostic-launcher-core.mjs](../../infra/staging/s2g-db-admin-launcher/broker/diagnostic-launcher-core.mjs)
+  - [s2g-db-admin-diagnostic-contract.mjs](../../infra/staging/s2g-db-admin-launcher/broker/s2g-db-admin-diagnostic-contract.mjs)
   - [s2g-db-admin-launcher-permissions.plan.json](../../infra/staging/s2g-db-admin-launcher-permissions.plan.json)
+  - The launcher runtime contract module must be packaged in the same Lambda asset directory as `diagnostic-launcher-lambda.mjs` and `diagnostic-launcher-core.mjs` to preserve `/var/task` ESM resolution.
   - When `LauncherActivationState=ENABLED`, operator invocation policy must include both:
     - `lambda:InvokeFunctionUrl` with `StringEquals {"lambda:FunctionUrlAuthType":"AWS_IAM"}`
     - `lambda:InvokeFunction` with `Bool {"lambda:InvokedViaFunctionUrl":"true"}`

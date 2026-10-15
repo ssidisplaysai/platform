@@ -1,7 +1,7 @@
 import {
   S2G_DB_ADMIN_DIAGNOSTIC_COMMAND,
   S2G_DB_ADMIN_DIAGNOSTIC_FAMILY,
-} from "../../s2g-db-admin-diagnostic-contract.mjs";
+} from "./s2g-db-admin-diagnostic-contract.mjs";
 
 const RUN_ID_PATTERN = /^s2g-dbdiag-[a-z0-9-]{3,55}$/;
 const ARN_PATTERN = /^arn:aws:[a-z0-9-]+:[a-z0-9-]*:\d{12}:.+$/;
