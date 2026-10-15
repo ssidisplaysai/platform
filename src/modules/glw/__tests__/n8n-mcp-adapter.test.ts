@@ -173,6 +173,7 @@ describe("GLW n8n MCP recovery adapter", () => {
       configured: true,
       urlConfigured: true,
       tokenConfigured: true,
+      nonMutatingTestMode: false,
       transport: "N8N_MCP",
       workflowId: "9WTjTDXX0QNgF6Mw",
       engineWorkflowId: "bIDXxyWnY22G8zJC",
