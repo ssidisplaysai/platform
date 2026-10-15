@@ -338,6 +338,19 @@ describe("GLW n8n MCP recovery adapter", () => {
     });
   });
 
+  test("non-mutating test mode returns a synthetic execution without calling MCP tools", async () => {
+    const callTool = jest.fn();
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: environment({ GLW_N8N_NON_MUTATING_TEST: "true" }),
+      callTool,
+    });
+    const response = await dispatcher.dispatch(mappedRequest);
+    expect(response.kind).toBe("accepted");
+    expect(response.status).toBe("accepted");
+    expect(response.executionId).toMatch(/^9\d+$/);
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
   test.each([
     { status: "started" },
     { status: "started", executionId: "not-numeric" },
