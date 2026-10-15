@@ -27,6 +27,8 @@ function parseArgs(argv) {
     expectedService: EXPECTED_SERVICE,
     expectedFunctionUrlHost: EXPECTED_FUNCTION_URL_HOST,
     expectedDedicatedOperatorRoleArn: EXPECTED_DEDICATED_OPERATOR_ROLE_ARN,
+    mode: "offline",
+    allowLiveSend: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -48,6 +50,8 @@ function parseArgs(argv) {
     else if (token === "--expected-service") options.expectedService = argv[++index] ?? "";
     else if (token === "--expected-function-url-host") options.expectedFunctionUrlHost = argv[++index] ?? "";
     else if (token === "--expected-dedicated-operator-role-arn") options.expectedDedicatedOperatorRoleArn = argv[++index] ?? "";
+    else if (token === "--mode") options.mode = argv[++index] ?? "";
+    else if (token === "--allow-live-send") options.allowLiveSend = (argv[++index] ?? "").toLowerCase() === "true";
     else throw new Error(`Unknown argument: ${token}`);
   }
 
@@ -65,14 +69,17 @@ function parseArgs(argv) {
   return options;
 }
 
-function main(argv = process.argv.slice(2)) {
+async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const result = validateOfflineInvocationPreflight(options);
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  if (options.mode !== "offline") {
+    throw new Error("Live-send mode is disabled in this CLI. Use a separately authorized execution tool.");
+  }
+  const preflight = await validateOfflineInvocationPreflight(options);
+  process.stdout.write(`${JSON.stringify(preflight, null, 2)}\n`);
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   const code = typeof error?.code === "string" ? error.code : "SIGV4_PREFLIGHT_FAILED";
   const message = typeof error?.message === "string" && error.message.length > 0 ? error.message : "SigV4 preflight failed.";
