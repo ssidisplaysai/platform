@@ -10,6 +10,10 @@ infra
 infra/*
 !infra/staging/
 infra/staging/*
+!infra/staging/s2g-db-admin-diagnostic-runtime/
+infra/staging/s2g-db-admin-diagnostic-runtime/*
+!infra/staging/s2g-db-admin-diagnostic-runtime/package.json
+!infra/staging/s2g-db-admin-diagnostic-runtime/package-lock.json
 !infra/staging/certificates/
 infra/staging/certificates/*
 !infra/staging/certificates/aws-rds-global-bundle.pem

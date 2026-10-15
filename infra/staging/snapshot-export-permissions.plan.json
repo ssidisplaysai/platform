@@ -1,0 +1,134 @@
+{
+  "status": "approved-not-applied",
+  "scope": "staging-only-share-to-grow-snapshot-export",
+  "provisioningReadiness": "READY_WITH_APPROVAL_GATES",
+  "activationModel": {
+    "parameter": "BrokerActivationState",
+    "default": "DISABLED",
+    "allowedValues": ["DISABLED", "ENABLED"]
+  },
+  "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+  "taskDefinitionFamily": "genesis-staging-snapshot-export",
+  "namespace": "share-to-grow-repository",
+  "sourceRepositories": {
+    "postgres": {
+      "database": "genesis_staging",
+      "table": "public.genesis_foundation_state",
+      "namespace": "share-to-grow-repository"
+    },
+    "filesystem": {
+      "path": "/mnt/genesis-persistence/foundation/share-to-grow-repository.json"
+    }
+  },
+  "artifactStorage": {
+    "bucketLogicalName": "StagingSnapshotArtifactBucket",
+    "kmsKeyLogicalName": "StagingSnapshotArtifactKey",
+    "runPrefixPattern": "exports/<reconciliation-run-id>/",
+    "retentionDays": 2
+  },
+  "newRoles": [
+    {
+      "roleLogicalName": "StagingSnapshotExporterRole",
+      "purpose": "Read-only staging snapshot exporter task role",
+      "prohibitedActions": [
+        "ecs:UpdateService",
+        "rds:ModifyDBInstance",
+        "rds:DeleteDBInstance",
+        "secretsmanager:PutSecretValue",
+        "s3:PutBucketPolicy",
+        "s3:PutBucketAcl"
+      ]
+    },
+    {
+      "roleLogicalName": "StagingSnapshotReaderRole",
+      "purpose": "Retrieve run-scoped encrypted artifacts for local dry-run only",
+      "prohibitedActions": [
+        "ecs:*",
+        "rds:*",
+        "secretsmanager:*",
+        "s3:PutObject"
+      ]
+    },
+    {
+      "roleLogicalName": "StagingSnapshotOperatorRole",
+      "purpose": "Invoke launch and reader session brokers only",
+      "prohibitedActions": [
+        "ecs:RunTask",
+        "ecs:UpdateService",
+        "cloudformation:ExecuteChangeSet",
+        "iam:CreateRole",
+        "iam:PutRolePolicy"
+      ]
+    },
+    {
+      "roleLogicalName": "SnapshotLaunchBrokerExecutionRole",
+      "purpose": "Server-side validation and controlled ecs:RunTask for fixed staging export task",
+      "prohibitedActions": [
+        "ecs:UpdateService",
+        "ecs:CreateService",
+        "iam:CreateRole",
+        "cloudformation:ExecuteChangeSet"
+      ]
+    },
+    {
+      "roleLogicalName": "SnapshotReaderBrokerExecutionRole",
+      "purpose": "Server-side issuance of run-tag-bound reader sessions",
+      "prohibitedActions": [
+        "ecs:*",
+        "rds:*",
+        "secretsmanager:*",
+        "s3:PutObject"
+      ]
+    }
+  ],
+  "databaseRoleProvisioningRequirements": {
+    "roleName": "genesis_share_to_grow_snapshot_reader",
+    "database": "genesis_staging",
+    "requiredGrants": [
+      "CONNECT ON DATABASE genesis_staging",
+      "USAGE ON SCHEMA public",
+      "SELECT ON TABLE public.genesis_foundation_state"
+    ],
+    "requiredRevokes": [
+      "REVOKE CREATE ON SCHEMA public",
+      "REVOKE ALL ON ALL TABLES IN SCHEMA public",
+      "REVOKE ALL ON ALL SEQUENCES IN SCHEMA public",
+      "REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public"
+    ],
+    "prohibitedCapabilities": [
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "TRUNCATE",
+      "CREATE",
+      "ALTER",
+      "DROP",
+      "GRANT OPTION",
+      "CREATEROLE",
+      "SUPERUSER",
+      "BYPASSRLS",
+      "REPLICATION"
+    ],
+    "mustUseDedicatedSecret": "SNAPSHOT_DB_READER_SECRET_ARN"
+  },
+  "currentBlockers": [],
+  "launchBrokerControls": {
+    "authorizationRecord": "SnapshotRunAuthorizationTable",
+    "requiredFields": ["runId", "status=APPROVED", "operatorArn", "approvedTaskDefinitionArn", "readerRoleArn", "expiresAtEpoch"],
+    "idempotency": "claimRunLaunch transitions APPROVED -> CLAIMED with claim TTL; RunTask uses clientToken=runId; replay returns CLAIM_IN_PROGRESS or IDEMPOTENT_ALREADY_LAUNCHED without duplicate launches",
+    "overrideProtection": "broker rejects caller-supplied ECS cluster/taskDefinition/overrides and builds fixed run-task input server-side",
+    "stagingNetwork": "fixed staging cluster/subnets/security groups; assignPublicIp=DISABLED; ECS Exec disabled",
+    "disabledMode": "BROKER_DISABLED rejects all requests before authorization/side effects; enabled-only ecs/iam permissions are conditionally attached"
+  },
+  "readerBrokerControls": {
+    "disabledMode": "READER_BROKER_DISABLED rejects all requests before authorization/side effects; enabled-only sts assume/tag permissions are conditionally attached",
+    "enabledMode": "requires approved unexpired run, exact operator binding, exact reader role match, and run-scoped session tag issuance"
+  },
+  "requiredApprovalsBeforeApply": [
+    "Security architecture review",
+    "IAM least-privilege review",
+    "Data-handling and retention sign-off",
+    "Staging change window approval",
+    "Run-authorization record governance sign-off"
+  ]
+}

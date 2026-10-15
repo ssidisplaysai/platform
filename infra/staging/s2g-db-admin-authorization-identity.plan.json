@@ -1,0 +1,94 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-authorization-identity",
+  "stackName": "GenesisStagingS2gDbAdminAuthorizationIdentityStack",
+  "restrictedCreatorSourcePrincipal": {
+    "parameter": "RestrictedCreatorSourcePrincipalArn",
+    "required": true,
+    "mustBeSameAccount": "452630323448",
+    "mustNotEqual": [
+      "AWSReservedSSO_AdministratorAccess_0eb5f574d17f421f"
+    ],
+    "notes": [
+      "Provide a dedicated non-admin role ARN controlled by federated temporary credentials.",
+      "Do not reuse launcher operator, launcher lambda execution, or snapshot operator principals."
+    ]
+  },
+  "authorizationWriterRole": {
+    "roleName": "genesis-staging-s2g-db-admin-authorization-writer-role",
+    "trustedByParameter": "RestrictedCreatorSourcePrincipalArn",
+    "allowedActions": [
+      "dynamodb:PutItem"
+    ],
+    "forbiddenActions": [
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Scan",
+      "ecs:RunTask",
+      "iam:PassRole",
+      "lambda:InvokeFunction",
+      "lambda:InvokeFunctionUrl",
+      "secretsmanager:GetSecretValue"
+    ],
+    "resource": "arn:aws:dynamodb:us-west-2:452630323448:table/genesis-staging-s2g-db-admin-diagnostic-launches",
+    "conditions": {
+      "ForAllValues:StringLike": {
+        "dynamodb:LeadingKeys": [
+          "s2g-dbdiag-*"
+        ]
+      },
+      "Null": {
+        "dynamodb:LeadingKeys": "false"
+      }
+    }
+  },
+  "identityCenterPermissionSetDesign": {
+    "name": "GenesisS2GDiagnosticAuthorizationCreator",
+    "description": "Restricted routine authorization creator principal for staging diagnostic approvals.",
+    "accountId": "452630323448",
+    "sessionDuration": "PT1H",
+    "principalTypeOptions": [
+      "USER",
+      "GROUP"
+    ],
+    "requiredSeparateAssignment": true,
+    "managedPolicies": [],
+    "inlinePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AssumeAuthorizationWriterRoleOnly",
+          "Effect": "Allow",
+          "Action": [
+            "sts:AssumeRole"
+          ],
+          "Resource": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-admin-authorization-writer-role"
+        }
+      ]
+    },
+    "explicitDenyNotRequiredInPermissionSet": [
+      "dynamodb:*",
+      "ecs:RunTask",
+      "iam:*",
+      "lambda:InvokeFunction*",
+      "secretsmanager:GetSecretValue",
+      "rds:*"
+    ],
+    "notes": [
+      "Do not assign AdministratorAccess to routine authorization creators.",
+      "Use only explicitly approved user/group assignment."
+    ]
+  },
+  "provisioningSequence": [
+    "Create Identity Center permission set GenesisS2GDiagnosticAuthorizationCreator with sts:AssumeRole only to writer role ARN.",
+    "Assign permission set to explicitly approved USER or GROUP in account 452630323448.",
+    "Wait for assignment provisioning and verify resulting AWSReservedSSO role ARN.",
+    "Set RestrictedCreatorSourcePrincipalArn to the verified provisioned role ARN.",
+    "Prepare and review CREATE-only change set for GenesisStagingS2gDbAdminAuthorizationIdentityStack.",
+    "Prepare replacement disabled-state launcher security change set using restricted creator principal."
+  ],
+  "residualGovernanceRisks": [
+    "IAM policy cannot enforce approval-ticket semantics, approver identity, task/image/network field correctness, or expiry business rules.",
+    "Application/process controls must validate authorization payload semantics before PutItem."
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-diagnostic-infrastructure",
+  "approvalBoundaries": [
+    "No launcher activation in this package.",
+    "No ECS task execution in this package.",
+    "No PostgreSQL role or grant mutations in this package."
+  ],
+  "prerequisitesStack": {
+    "stackName": "GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack",
+    "type": "CREATE",
+    "templateCommand": "npm run synth:staging:s2g-db-admin-diagnostic-prerequisites > /tmp/genesis-staging-s2g-db-admin-diagnostic-prerequisites-template.json",
+    "resources": [
+      "genesis-staging-s2g-db-role-provision-execution-role",
+      "genesis-staging-s2g-db-role-provision-task-role",
+      "genesis-staging-s2g-db-admin-diagnostic-sg",
+      "RDS ingress 5432 from genesis-staging-s2g-db-admin-diagnostic-sg to sg-04aa58230942f9dc9",
+      "genesis-staging-s2g-db-admin-diagnostic ECR repository",
+      "/genesis/staging/s2g-db-admin-diagnostic CloudWatch log group"
+    ],
+    "createOnlyChangeSet": {
+      "prepareCommands": [
+        "aws cloudformation create-change-set --stack-name GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack --change-set-name <name> --change-set-type CREATE --template-body file:///tmp/genesis-staging-s2g-db-admin-diagnostic-prerequisites-template.json --capabilities CAPABILITY_NAMED_IAM --parameters ParameterKey=StagingVpcId,ParameterValue=vpc-05035503df7e142d6 ParameterKey=StagingRdsSecurityGroupId,ParameterValue=sg-04aa58230942f9dc9 ParameterKey=StagingRdsAdminSecretArn,ParameterValue=arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+        "aws cloudformation describe-change-set --stack-name GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack --change-set-name <name>"
+      ],
+      "expectedActions": [
+        "Add execution and task IAM roles (no updates to shared execution role)",
+        "Add dedicated diagnostic security group and exactly one RDS ingress rule",
+        "Add dedicated diagnostic ECR repository and CloudWatch log group"
+      ],
+      "prohibitedActions": [
+        "Any Modify/Delete/Replace action in existing stacks",
+        "Any resource outside GenesisStagingS2gDbAdminDiagnosticPrerequisitesStack"
+      ]
+    }
+  },
+  "phases": [
+    {
+      "id": "A",
+      "name": "create-dedicated-iam-roles",
+      "dependsOn": [],
+      "inputs": [
+        "infra/staging/iam/s2g-db-admin-diagnostic-execution-role-trust.json",
+        "infra/staging/iam/s2g-db-admin-diagnostic-task-role-trust.json",
+        "infra/staging/iam/s2g-db-admin-diagnostic-execution-runtime.json",
+        "infra/staging/iam/s2g-db-admin-diagnostic-task-runtime.json"
+      ],
+      "awsCommands": [
+        "aws iam create-role --role-name genesis-staging-s2g-db-role-provision-execution-role --assume-role-policy-document file://infra/staging/iam/s2g-db-admin-diagnostic-execution-role-trust.json",
+        "aws iam put-role-policy --role-name genesis-staging-s2g-db-role-provision-execution-role --policy-name S2gDbAdminDiagnosticExecutionRuntime --policy-document file://infra/staging/iam/s2g-db-admin-diagnostic-execution-runtime.json",
+        "aws iam create-role --role-name genesis-staging-s2g-db-role-provision-task-role --assume-role-policy-document file://infra/staging/iam/s2g-db-admin-diagnostic-task-role-trust.json"
+      ],
+      "expectedOutputs": [
+        "Both role ARNs resolve in iam get-role.",
+        "Execution role contains no resource wildcard except ecr:GetAuthorizationToken."
+      ],
+      "rollback": [
+        "Delete only newly created role policies and roles if downstream phases are not approved."
+      ]
+    },
+    {
+      "id": "B",
+      "name": "create-dedicated-network-boundary",
+      "dependsOn": [
+        "A"
+      ],
+      "inputs": [
+        "infra/staging/s2g-db-admin-diagnostic-network.plan.json"
+      ],
+      "awsCommands": [
+        "aws ec2 create-security-group --group-name genesis-staging-s2g-db-admin-diagnostic-sg --description \"Staging S2G DB admin diagnostic task egress-only\" --vpc-id vpc-05035503df7e142d6",
+        "aws ec2 authorize-security-group-egress --group-id <new-sg-id> --ip-permissions IpProtocol=tcp,FromPort=5432,ToPort=5432,UserIdGroupPairs=[{GroupId=sg-04aa58230942f9dc9}]",
+        "aws ec2 authorize-security-group-egress --group-id <new-sg-id> --ip-permissions IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0,Description='HTTPS via NAT for ECR/Secrets/Logs/S3'}]",
+        "aws ec2 authorize-security-group-ingress --group-id sg-04aa58230942f9dc9 --protocol tcp --port 5432 --source-group <new-sg-id>"
+      ],
+      "expectedOutputs": [
+        "Dedicated SG has zero ingress rules and one PostgreSQL egress rule.",
+        "RDS security group allows inbound 5432 from new SG."
+      ],
+      "rollback": [
+        "Revoke ingress/egress rules and delete dedicated SG if task-definition registration is not approved."
+      ]
+    },
+    {
+      "id": "B1",
+      "name": "optional-private-endpoint-hardening",
+      "dependsOn": [
+        "B"
+      ],
+      "inputs": [
+        "infra/staging/s2g-db-admin-diagnostic-network.plan.json"
+      ],
+      "awsCommands": [
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.ecr.api --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.ecr.dkr --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.secretsmanager --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.logs --vpc-endpoint-type Interface --subnet-ids subnet-0f303dea5f645e42d subnet-00a0b287895a3b18c --security-group-ids <endpoint-sg-id> --private-dns-enabled",
+        "aws ec2 create-vpc-endpoint --vpc-id vpc-05035503df7e142d6 --service-name com.amazonaws.us-west-2.s3 --vpc-endpoint-type Gateway --route-table-ids rtb-0b31fdbbaf93fdeef rtb-06a8111c846284964"
+      ],
+      "expectedOutputs": [
+        "Interface endpoints expose private DNS names for ECR API, ECR DKR, Secrets Manager, and CloudWatch Logs.",
+        "S3 gateway endpoint is associated to both task subnet route tables."
+      ],
+      "rollback": [
+        "Delete only newly created endpoints and restore NAT-only egress if endpoint mode is rejected."
+      ]
+    },
+    {
+      "id": "C",
+      "name": "create-ecr-repository-and-log-group",
+      "dependsOn": [
+        "A"
+      ],
+      "inputs": [
+        "infra/staging/s2g-db-admin-diagnostic-image.plan.json"
+      ],
+      "awsCommands": [
+        "aws ecr create-repository --repository-name genesis-staging-s2g-db-admin-diagnostic --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true",
+        "aws logs create-log-group --log-group-name /genesis/staging/s2g-db-admin-diagnostic"
+      ],
+      "expectedOutputs": [
+        "ECR repository URI recorded for task definition.",
+        "CloudWatch log group exists before task definition registration."
+      ],
+      "rollback": [
+        "Delete only the dedicated ECR repository and log group if phase D is not approved."
+      ]
+    },
+    {
+      "id": "D",
+      "name": "build-and-publish-immutable-image",
+      "dependsOn": [
+        "C"
+      ],
+      "inputs": [
+        "infra/staging/Dockerfile.s2g-db-admin-diagnostic",
+        "scripts/staging-s2g-db-admin-diagnostic.mjs"
+      ],
+      "awsCommands": [
+        "docker buildx build --platform linux/amd64 --build-arg NODE_RUNTIME_BASE=<pinned-node-image@sha256> --build-arg DISTROLESS_RUNTIME_BASE=<pinned-distroless-image@sha256> -f infra/staging/Dockerfile.s2g-db-admin-diagnostic -t <repo-uri>:<tag> .",
+        "docker push <repo-uri>:<tag>",
+        "aws ecr batch-get-image --repository-name genesis-staging-s2g-db-admin-diagnostic --image-ids imageTag=<tag> --query 'images[0].imageId.imageDigest' --output text"
+      ],
+      "expectedOutputs": [
+        "Digest-pinned image URI captured as <repo-uri>@sha256:<digest>.",
+        "Build evidence captures source SHA and vulnerability scan output."
+      ],
+      "rollback": [
+        "Do not delete historical image digests; revoke by refusing future task-definition approvals."
+      ]
+    },
+    {
+      "id": "E",
+      "name": "register-fixed-task-definition",
+      "dependsOn": [
+        "A",
+        "B",
+        "D"
+      ],
+      "inputs": [
+        "infra/staging/s2g-db-role-provision-task-definition.template.json"
+      ],
+      "awsCommands": [
+        "S2G_DB_ADMIN_DIAGNOSTIC_IMAGE_URI=<repo-uri>@sha256:<digest> envsubst < infra/staging/s2g-db-role-provision-task-definition.template.json > /tmp/s2g-db-admin-diagnostic-taskdef.json",
+        "aws ecs register-task-definition --cli-input-json file:///tmp/s2g-db-admin-diagnostic-taskdef.json"
+      ],
+      "expectedOutputs": [
+        "Task definition ARN for family genesis-staging-s2g-db-admin-diagnostic.",
+        "Registered task definition retains fixed command, fixed host/db env, two secret selectors, and no ECS Exec."
+      ],
+      "rollback": [
+        "Deregister only new revisions if approval is revoked before launcher update."
+      ]
+    },
+    {
+      "id": "F",
+      "name": "update-launcher-approved-task-while-disabled",
+      "dependsOn": [
+        "E"
+      ],
+      "inputs": [
+        "infra/staging/s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs"
+      ],
+      "awsCommands": [
+        "aws cloudformation create-change-set --stack-name GenesisStagingS2gDbAdminDiagnosticLauncherStack --change-set-name <name> --change-set-type UPDATE --parameters ParameterKey=LauncherActivationState,UsePreviousValue=true ParameterKey=ApprovedDiagnosticTaskDefinitionArn,ParameterValue=<new-task-arn> ...",
+        "aws cloudformation describe-change-set --change-set-name <name> --stack-name GenesisStagingS2gDbAdminDiagnosticLauncherStack"
+      ],
+      "expectedOutputs": [
+        "Change set shows task ARN update while LauncherActivationState remains DISABLED.",
+        "No enabled-only ECS/PassRole/Operator invoke policy attachment changes are activated."
+      ],
+      "rollback": [
+        "Delete unexecuted change set if not approved; no stack mutation occurs."
+      ]
+    }
+  ]
+}

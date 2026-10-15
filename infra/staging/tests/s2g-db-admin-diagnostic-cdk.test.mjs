@@ -1,0 +1,97 @@
+import assert from "node:assert/strict";
+import { App } from "aws-cdk-lib";
+import { Template } from "aws-cdk-lib/assertions";
+import test from "node:test";
+import { createStagingS2gDbAdminLauncherStack } from "../s2g-db-admin-launcher/cdk/staging-s2g-db-admin-launcher-stack.mjs";
+
+function synthTemplate() {
+  const app = new App();
+  const stack = createStagingS2gDbAdminLauncherStack(app, "TestStagingS2gDbAdminLauncherStack");
+  return Template.fromStack(stack).toJSON();
+}
+
+test("synthesizes isolated diagnostic launcher stack with disabled bootstrap and fixed task-family pattern", () => {
+  const template = synthTemplate();
+  const json = JSON.stringify(template);
+  assert.match(json, /DbAdminDiagnosticLauncherFunction/);
+  assert.match(json, /DbAdminDiagnosticLaunchTable/);
+  assert.match(json, /"LauncherActivationState"/);
+  assert.match(json, /"OperatorAssumerPrincipalArn"/);
+  assert.match(json, /"OperatorAssumerPrincipalProvidedCondition"/);
+  assert.match(json, /"OperatorAssumerPrincipalMustNotBeAdministratorAccess"/);
+  assert.match(json, /"Default":"DISABLED"/);
+  assert.match(json, /"AllowedValues":\["DISABLED","ENABLED"\]/);
+  assert.match(json, /"ApprovedDiagnosticTaskDefinitionArn"/);
+  assert.match(json, /genesis-staging-s2g-db-admin-diagnostic:\[1-9\]\[0-9\]\*/);
+  assert.match(json, /"Default":""/);
+});
+
+test("launcher IAM enforces fixed invoke path and excludes direct operator ecs permissions", () => {
+  const template = synthTemplate();
+  const json = JSON.stringify(template);
+  assert.match(json, /RunApprovedDiagnosticTaskOnly/);
+  assert.match(json, /PassOnlyDedicatedDiagnosticTaskRoles/);
+  assert.match(json, /InvokeDbAdminDiagnosticLauncherOnly/);
+  assert.match(json, /ApprovedDiagnosticImageDigest/);
+  assert.match(json, /LAUNCH_AUTH_SCHEMA_VERSION/);
+  assert.match(json, /STAGING_DB_ADMIN_READONLY_DIAGNOSTIC/);
+  assert.match(json, /AWS_IAM/);
+  assert.match(json, /Condition":"LauncherEnabledCondition"/);
+  assert.doesNotMatch(json, /StagingS2gDbAdminDiagnosticOperatorRole[\s\S]*ecs:RunTask/);
+  assert.doesNotMatch(json, /StagingS2gDbAdminDiagnosticOperatorRole[\s\S]*iam:PassRole/);
+  const launcherDefaultPolicy = Object.values(template.Resources).find((resource) =>
+    resource?.Type === "AWS::IAM::Policy"
+    && resource?.Properties?.PolicyDocument?.Statement?.some((statement) => statement?.Sid === "ReadAndClaimDiagnosticLaunch"));
+  assert.ok(launcherDefaultPolicy);
+  const launcherActions = launcherDefaultPolicy.Properties.PolicyDocument.Statement
+    .flatMap((statement) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+  assert.ok(!launcherActions.includes("dynamodb:PutItem"));
+  const operatorPolicy = Object.values(template.Resources).find((resource) =>
+    resource?.Type === "AWS::IAM::Policy"
+    && resource?.Properties?.PolicyDocument?.Statement?.some((statement) => statement?.Sid === "InvokeDbAdminDiagnosticLauncherOnly"));
+  assert.ok(operatorPolicy);
+  const operatorStatements = operatorPolicy.Properties.PolicyDocument.Statement;
+  const operatorActions = operatorStatements.flatMap((statement) =>
+    (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+  assert.ok(operatorActions.includes("lambda:InvokeFunctionUrl"));
+  assert.ok(operatorActions.includes("lambda:InvokeFunction"));
+  const invokeUrlStatement = operatorStatements.find((statement) =>
+    statement?.Sid === "InvokeDbAdminDiagnosticLauncherOnly");
+  assert.ok(invokeUrlStatement);
+  assert.deepEqual(invokeUrlStatement.Condition, {
+    StringEquals: {
+      "lambda:FunctionUrlAuthType": "AWS_IAM",
+    },
+  });
+  const invokeFunctionStatement = operatorStatements.find((statement) =>
+    statement?.Sid === "InvokeDbAdminDiagnosticLauncherFunctionOnlyViaUrl");
+  assert.ok(invokeFunctionStatement);
+  assert.deepEqual(invokeFunctionStatement.Condition, {
+    Bool: {
+      "lambda:InvokedViaFunctionUrl": "true",
+    },
+  });
+  assert.deepEqual(invokeUrlStatement.Resource, invokeFunctionStatement.Resource);
+  assert.ok(!operatorActions.includes("dynamodb:PutItem"));
+  assert.ok(!operatorActions.includes("lambda:*"));
+  assert.doesNotMatch(json, /StagingS2gDbAdminDiagnosticAuthorizationCreatorRole/);
+  assert.doesNotMatch(json, /DbAdminDiagnosticAuthorizationCreatorRoleArn/);
+  assert.doesNotMatch(json, /AuthorizationCreatorPrincipalArn/);
+  assert.doesNotMatch(json, /CreateLaunchAuthorizationRecordOnly/);
+  assert.doesNotMatch(json, /GenesisRuntimeStack/);
+  assert.doesNotMatch(json, /genesis-production-web/);
+  assert.doesNotMatch(json, /genesis-share-to-grow-production/);
+});
+
+test("launcher stack does not include duplicate authorization creator parameter", () => {
+  const template = synthTemplate();
+  assert.equal(template.Parameters.AuthorizationCreatorPrincipalArn, undefined);
+});
+
+test("operator trust supports staged restricted principal parameterization", () => {
+  const template = synthTemplate();
+  assert.ok(template.Parameters.OperatorAssumerPrincipalArn);
+  assert.equal(template.Parameters.OperatorAssumerPrincipalArn.Default, "");
+  const operatorRole = template.Resources.StagingS2gDbAdminDiagnosticOperatorRoleE23E7075;
+  assert.equal(operatorRole.Properties.AssumeRolePolicyDocument.Statement[0].Principal.AWS["Fn::If"][0], "OperatorAssumerPrincipalProvidedCondition");
+});

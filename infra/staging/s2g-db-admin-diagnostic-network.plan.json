@@ -1,0 +1,124 @@
+{
+  "status": "draft-not-applied",
+  "vpcId": "vpc-05035503df7e142d6",
+  "dns": {
+    "enableDnsSupport": true,
+    "enableDnsHostnames": true
+  },
+  "taskSubnets": [
+    {
+      "subnetId": "subnet-0f303dea5f645e42d",
+      "az": "us-west-2b",
+      "routeTableId": "rtb-0b31fdbbaf93fdeef",
+      "defaultRouteTarget": "nat-0ead5f6922578f9cc"
+    },
+    {
+      "subnetId": "subnet-00a0b287895a3b18c",
+      "az": "us-west-2a",
+      "routeTableId": "rtb-06a8111c846284964",
+      "defaultRouteTarget": "nat-0ead5f6922578f9cc"
+    }
+  ],
+  "internetEgressPath": {
+    "natGatewayId": "nat-0ead5f6922578f9cc",
+    "natSubnetId": "subnet-03b827de194d6533e",
+    "internetGatewayId": "igw-0057af16e88e1bd3c"
+  },
+  "existingVpcEndpoints": [],
+  "rds": {
+    "securityGroupId": "sg-04aa58230942f9dc9",
+    "endpoint": "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com",
+    "port": 5432,
+    "currentIngressSourceSecurityGroups": [
+      "sg-0687242229bc3a80e"
+    ]
+  },
+  "architectures": {
+    "A_private_endpoints": {
+      "description": "Dedicated diagnostic SG with no internet egress and interface/gateway endpoints for required AWS APIs.",
+      "requiredEndpoints": [
+        {
+          "serviceName": "com.amazonaws.us-west-2.ecr.api",
+          "type": "Interface",
+          "privateDns": true
+        },
+        {
+          "serviceName": "com.amazonaws.us-west-2.ecr.dkr",
+          "type": "Interface",
+          "privateDns": true
+        },
+        {
+          "serviceName": "com.amazonaws.us-west-2.secretsmanager",
+          "type": "Interface",
+          "privateDns": true
+        },
+        {
+          "serviceName": "com.amazonaws.us-west-2.logs",
+          "type": "Interface",
+          "privateDns": true
+        },
+        {
+          "serviceName": "com.amazonaws.us-west-2.s3",
+          "type": "Gateway",
+          "routeTableTargets": [
+            "rtb-0b31fdbbaf93fdeef",
+            "rtb-06a8111c846284964"
+          ]
+        }
+      ],
+      "diagnosticSecurityGroupEgress": [
+        {
+          "protocol": "tcp",
+          "fromPort": 5432,
+          "toPort": 5432,
+          "destinationSecurityGroupId": "sg-04aa58230942f9dc9"
+        },
+        {
+          "protocol": "tcp",
+          "fromPort": 443,
+          "toPort": 443,
+          "destinationSecurityGroupId": "sg-TO-BE-CREATED-s2g-db-admin-diagnostic-endpoints"
+        }
+      ]
+    },
+    "B_nat_path": {
+      "description": "Dedicated diagnostic SG uses existing private-subnet NAT route for ECR/S3/Secrets/Logs and direct SG-to-SG PostgreSQL.",
+      "diagnosticSecurityGroupEgress": [
+        {
+          "protocol": "tcp",
+          "fromPort": 5432,
+          "toPort": 5432,
+          "destinationSecurityGroupId": "sg-04aa58230942f9dc9"
+        },
+        {
+          "protocol": "tcp",
+          "fromPort": 443,
+          "toPort": 443,
+          "destinationCidrIpv4": "0.0.0.0/0",
+          "rationale": "HTTPS egress through private subnet NAT for ECR API/ECR DKR, S3 layer download path, Secrets Manager, and CloudWatch Logs."
+        }
+      ]
+    }
+  },
+  "recommendedArchitecture": {
+    "selection": "B_nat_path",
+    "rationale": "Current staging services already use private subnet routes to a healthy NAT gateway and no VPC endpoints are present. NAT-path design is immediately compatible and non-disruptive. Architecture A remains the hardening target for a later endpoint rollout."
+  },
+  "requiredInfrastructureDefinitions": {
+    "diagnosticSecurityGroup": {
+      "name": "genesis-staging-s2g-db-admin-diagnostic-sg",
+      "description": "Egress-only SG for staging DB admin diagnostic task",
+      "inboundRules": [],
+      "egressRules": [
+        "TCP 5432 -> sg-04aa58230942f9dc9",
+        "TCP 443 -> 0.0.0.0/0 (NAT-path mode only)",
+        "TCP 443 -> sg-TO-BE-CREATED-s2g-db-admin-diagnostic-endpoints (endpoint mode)"
+      ]
+    },
+    "rdsIngressRule": {
+      "securityGroupId": "sg-04aa58230942f9dc9",
+      "rule": "Allow TCP 5432 from genesis-staging-s2g-db-admin-diagnostic-sg"
+    }
+  }
+}
+

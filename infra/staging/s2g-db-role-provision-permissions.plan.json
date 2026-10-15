@@ -1,0 +1,100 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-diagnostic",
+  "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+  "taskDefinitionFamily": "genesis-staging-s2g-db-admin-diagnostic",
+  "subnets": [
+    "subnet-0f303dea5f645e42d",
+    "subnet-00a0b287895a3b18c"
+  ],
+  "securityGroup": "sg-TO-BE-CREATED-s2g-db-admin-diagnostic",
+  "assignPublicIp": "DISABLED",
+  "fargatePlatformVersion": "1.4.0",
+  "executionRole": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
+  "taskRole": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-task-role",
+  "adminSecretArn": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+  "newPermissions": [
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
+      "actions": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "resources": [
+        "arn:aws:ecr:us-west-2:452630323448:repository/genesis-staging-s2g-db-admin-diagnostic",
+        "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/staging/s2g-db-admin-diagnostic:log-stream:*",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP"
+      ],
+      "kmsDecryptRequired": false
+    },
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
+      "actions": [
+        "ecr:GetAuthorizationToken"
+      ],
+      "resources": [
+        "*"
+      ],
+      "kmsDecryptRequired": false
+    },
+    {
+      "principal": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-task-role",
+      "actions": [],
+      "resources": [],
+      "kmsDecryptRequired": false
+    }
+  ],
+  "existingPermissionsSufficient": [
+    {
+      "principal": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+      "actions": [
+        "ecs:RegisterTaskDefinition",
+        "ecs:DescribeTaskDefinition",
+        "ecs:DescribeTasks"
+      ],
+      "scope": "Existing deployment role permissions are sufficient for task-definition registration and diagnostics introspection."
+    }
+  ],
+  "launchControls": {
+    "directEcsRunTask": "unsafe-due-to-overrides",
+    "requiredControlPlane": "dedicated fixed-configuration launcher",
+    "recommendedLauncher": {
+      "type": "lambda",
+      "name": "genesis-staging-s2g-db-admin-diagnostic-launcher",
+      "auth": "AWS_IAM",
+      "operatorRole": "arn:aws:iam::452630323448:role/StagingS2gDbAdminDiagnosticOperatorRole",
+      "behavior": [
+        "Ignore caller taskDefinition/network/command overrides.",
+        "Run only approved task-definition revision supplied by server configuration.",
+        "Force no public IP, fixed cluster/subnets/security group.",
+        "Disallow ECS Exec."
+      ]
+    }
+  },
+  "modes": {
+    "diagnosticOnly": {
+      "script": "scripts/staging-s2g-db-admin-diagnostic.mjs",
+      "writesData": false
+    },
+    "provisioningPlannedNotExecuted": {
+      "script": "DISABLED_IN_THIS_REVISION",
+      "requiresSeparateImplementation": true
+    }
+  },
+  "provisioningBoundary": {
+    "allowedTargetRole": "genesis_share_to_grow_snapshot_reader",
+    "allowedDatabase": "genesis_staging",
+    "allowedTable": "public.genesis_foundation_state",
+    "forbidden": [
+      "arbitrary SQL from operators",
+      "production hostnames",
+      "additional role creation",
+      "schema/table mutations outside grants for target role"
+    ]
+  }
+}

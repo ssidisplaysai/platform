@@ -1,0 +1,132 @@
+{
+  "status": "draft-not-applied",
+  "scope": "staging-only-s2g-db-admin-diagnostic-launcher",
+  "activationModel": {
+    "parameter": "LauncherActivationState",
+    "default": "DISABLED",
+    "allowedValues": ["DISABLED", "ENABLED"]
+  },
+  "clusterArn": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production",
+  "approvedDiagnosticTaskFamily": "genesis-staging-s2g-db-admin-diagnostic",
+  "requiredTaskArnPattern": "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-staging-s2g-db-admin-diagnostic:<revision>",
+  "network": {
+    "subnets": ["subnet-0f303dea5f645e42d", "subnet-00a0b287895a3b18c"],
+    "securityGroups": ["sg-0e9dcd277642bdb63"],
+    "identity": "arn:aws:ecs:us-west-2:452630323448:cluster/genesis-production|subnet-0f303dea5f645e42d,subnet-00a0b287895a3b18c|sg-0e9dcd277642bdb63",
+    "assignPublicIp": "DISABLED",
+    "enableExecuteCommand": false
+  },
+  "approvedImageDigest": "sha256:4603f32f34be3dcf4c4c80fee1c521d2427fc95b54d6e031fb0fa868143be7b5",
+  "fixedCommand": [
+    "node",
+    "scripts/staging-s2g-db-admin-diagnostic.mjs"
+  ],
+  "authorization": {
+    "tableName": "genesis-staging-s2g-db-admin-diagnostic-launches",
+    "key": "runId",
+    "schemaVersion": "2026-10-13",
+    "purpose": "STAGING_DB_ADMIN_READONLY_DIAGNOSTIC",
+    "allowedStates": ["AUTHORIZED", "CLAIMED", "LAUNCHED", "LAUNCH_FAILED", "OUTCOME_UNKNOWN"],
+    "requiredAuthorizedFields": [
+      "runId",
+      "launchState",
+      "approvedDiagnosticTaskDefinitionArn",
+      "approvedClusterArn",
+      "approvedDiagnosticImageDigest",
+      "approvedNetworkIdentity",
+      "authorizedOperatorArn",
+      "authorizationCreatorArn",
+      "expectedAccountId",
+      "expectedRegion",
+      "createdAtEpoch",
+      "expiresAtEpoch",
+      "purpose",
+      "schemaVersion",
+      "maxLaunchAttempts"
+    ],
+    "claimTransition": {
+      "from": "AUTHORIZED",
+      "to": "CLAIMED",
+      "maxLaunchAttempts": 1,
+      "upsertAllowed": false
+    },
+    "clientToken": "runId",
+    "reclaimFromClaimedAfterTtl": false
+  },
+  "canonicalAuthorizationWriterBoundary": {
+    "roleName": "genesis-staging-s2g-db-admin-authorization-writer-role",
+    "sourcePrincipalRoleName": "AWSReservedSSO_GenesisS2GDiagAuthCreator_a8cbf54ac63d3f12",
+    "assumeRoleRestriction": "Source principal may assume canonical writer role only.",
+    "allowedActions": ["dynamodb:PutItem"],
+    "leadingKeyPrefix": "s2g-dbdiag-*",
+    "requiredLeadingKeyCondition": {
+      "ForAllValues:StringLike": "dynamodb:LeadingKeys",
+      "Null": {
+        "dynamodb:LeadingKeys": "false"
+      }
+    },
+    "requiredConditionExpression": "attribute_not_exists(runId)",
+    "expirationSecondsDefault": 300,
+    "expirationSecondsMax": 300,
+    "maxLaunchAttempts": 1
+  },
+  "newRoles": [
+    {
+      "roleLogicalName": "DbAdminDiagnosticLauncherExecutionRole",
+      "purpose": "Runs launcher lambda and can only inspect/launch approved ECS task and track launch claims."
+    },
+    {
+      "roleName": "genesis-staging-s2g-db-role-provision-execution-role",
+      "purpose": "ECS execution role reading exact staging RDS admin secret only."
+    },
+    {
+      "roleName": "genesis-staging-s2g-db-role-provision-task-role",
+      "purpose": "No AWS API permissions; diagnostic queries only."
+    },
+    {
+      "roleLogicalName": "StagingS2gDbAdminDiagnosticOperatorRole",
+      "purpose": "Can invoke launcher URL only. No direct ECS/IAM authority."
+    },
+    {
+      "roleName": "genesis-staging-s2g-db-admin-authorization-writer-role",
+      "purpose": "Canonical one-time authorization writer role provisioned outside the launcher stack."
+    }
+  ],
+  "operatorTrustBoundary": {
+    "operatorRoleLogicalName": "StagingS2gDbAdminDiagnosticOperatorRole",
+    "legacyTrustedPrincipalParameter": "OperatorPrincipalArn",
+    "restrictedTrustedPrincipalParameter": "OperatorAssumerPrincipalArn",
+    "restrictedPermissionSetName": "GenesisS2GDiagOperator",
+    "restrictedPermissionSetScope": {
+      "allowedActions": ["sts:AssumeRole"],
+      "allowedResource": "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma",
+      "prohibitedDirectActions": [
+        "lambda:InvokeFunctionUrl",
+        "ecs:RunTask",
+        "iam:PassRole",
+        "dynamodb:PutItem",
+        "secretsmanager:GetSecretValue"
+      ]
+    },
+    "rolloutStages": [
+      "Create restricted permission set GenesisS2GDiagOperator.",
+      "Assign the permission set to the approved Identity Center user.",
+      "Verify provisioned AWSReservedSSO role ARN for restricted operator source identity.",
+      "Prepare launcher stack update setting OperatorAssumerPrincipalArn to the verified restricted source role ARN.",
+      "Deploy trust update under separate approval while launcher remains DISABLED.",
+      "Verify restricted operator source role can assume operator role and AdministratorAccess source role can no longer assume operator role."
+    ]
+  },
+  "secretBoundary": {
+    "approvedAdminSecretArn": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP",
+    "allowedActions": ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+    "kmsDecryptRequired": false
+  },
+  "operatorRestrictions": [
+    "No direct ecs:RunTask permission",
+    "No direct iam:PassRole permission",
+    "Function URL invocation requires lambda:InvokeFunctionUrl and lambda:InvokeFunction with lambda:InvokedViaFunctionUrl=true",
+    "No caller-supplied task/network/command overrides",
+    "No caller-supplied SQL or provisioning token"
+  ]
+}

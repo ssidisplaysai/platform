@@ -1,0 +1,76 @@
+{
+  "family": "genesis-staging-s2g-db-admin-diagnostic",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "taskRoleArn": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-task-role",
+  "executionRoleArn": "arn:aws:iam::452630323448:role/genesis-staging-s2g-db-role-provision-execution-role",
+  "containerDefinitions": [
+    {
+      "name": "S2gDbAdminDiagnostic",
+      "image": "${S2G_DB_ADMIN_DIAGNOSTIC_IMAGE_URI}",
+      "essential": true,
+      "readonlyRootFilesystem": true,
+      "user": "1000:1000",
+      "command": [
+        "node",
+        "scripts/staging-s2g-db-admin-diagnostic.mjs"
+      ],
+      "environment": [
+        {
+          "name": "GENESIS_ENVIRONMENT",
+          "value": "staging"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "genesis_staging"
+        },
+        {
+          "name": "GENESIS_RDS_CA_CERT",
+          "value": "/app/certs/rds-global-bundle.pem"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_ADMIN_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP:username::"
+        },
+        {
+          "name": "DB_ADMIN_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-west-2:452630323448:secret:rds!db-c18c1e63-98a4-4072-9654-9df53b9fe2e5-NcAenP:password::"
+        }
+      ],
+      "linuxParameters": {
+        "initProcessEnabled": true,
+        "tmpfs": [
+          {
+            "containerPath": "/tmp",
+            "size": 128,
+            "mountOptions": ["rw", "noexec", "nosuid", "nodev"]
+          }
+        ]
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/genesis/staging/s2g-db-admin-diagnostic",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "diagnostic"
+        }
+      }
+    }
+  ]
+}

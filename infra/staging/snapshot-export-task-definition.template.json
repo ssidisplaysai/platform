@@ -1,0 +1,122 @@
+{
+  "family": "genesis-staging-snapshot-export",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "1024",
+  "memory": "2048",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "taskRoleArn": "${SNAPSHOT_EXPORTER_TASK_ROLE_ARN}",
+  "executionRoleArn": "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+  "volumes": [
+    {
+      "name": "genesis-persistence",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "${EFS_FILE_SYSTEM_ID}",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "${EFS_ACCESS_POINT_ID}",
+          "iam": "DISABLED"
+        }
+      }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "name": "StagingSnapshotExport",
+      "image": "${SNAPSHOT_EXPORT_IMAGE_URI}",
+      "essential": true,
+      "readonlyRootFilesystem": true,
+      "user": "1000:1000",
+      "command": [
+        "node",
+        "scripts/share-to-grow-snapshot-export.mjs",
+        "--run-id",
+        "${RECONCILIATION_RUN_ID}"
+      ],
+      "environment": [
+        {
+          "name": "GENESIS_ENVIRONMENT",
+          "value": "staging"
+        },
+        {
+          "name": "GENESIS_STATE_BACKEND",
+          "value": "postgres"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "genesis-staging-postgres.cnok4aok0ihf.us-west-2.rds.amazonaws.com"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "genesis_staging"
+        },
+        {
+          "name": "GENESIS_RDS_CA_CERT",
+          "value": "/app/certs/rds-global-bundle.pem"
+        },
+        {
+          "name": "S2G_SNAPSHOT_EXPORT_BUCKET",
+          "value": "${SNAPSHOT_BUCKET}"
+        },
+        {
+          "name": "S2G_SNAPSHOT_EXPORT_KMS_KEY_ARN",
+          "value": "${SNAPSHOT_KMS_KEY_ARN}"
+        },
+        {
+          "name": "S2G_SNAPSHOT_EXPECTED_BUCKET_OWNER",
+          "value": "452630323448"
+        },
+        {
+          "name": "S2G_SNAPSHOT_EXPECTED_DB_USERNAME",
+          "value": "genesis_share_to_grow_snapshot_reader"
+        },
+        {
+          "name": "S2G_EFS_SOURCE_PATH",
+          "value": "/mnt/genesis-persistence/foundation/share-to-grow-repository.json"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_USERNAME",
+          "valueFrom": "${SNAPSHOT_DB_READER_SECRET_ARN}:username::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "${SNAPSHOT_DB_READER_SECRET_ARN}:password::"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "genesis-persistence",
+          "containerPath": "/mnt/genesis-persistence",
+          "readOnly": true
+        }
+      ],
+      "linuxParameters": {
+        "initProcessEnabled": true,
+        "tmpfs": [
+          {
+            "containerPath": "/tmp",
+            "size": 256,
+            "mountOptions": ["rw", "noexec", "nosuid", "nodev"]
+          }
+        ]
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/genesis/staging/web",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "snapshot-export"
+        }
+      }
+    }
+  ]
+}
