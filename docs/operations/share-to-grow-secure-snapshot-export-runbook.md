@@ -191,25 +191,30 @@ Hard requirements:
 3. Run offline invoke-signing preflight before any live Function URL request:
    - `npm run preflight:invoke-offline -- --function-url "<url>" --operator-caller-arn "<sts-arn>" --authorized-operator-arn "<sts-arn>" --access-key-id "<key>" --secret-access-key "<secret>" --session-token "<token>" --credential-expiration-iso "<iso>" --request-body-file "<path-to-json-body>" --max-attempts 1 --retry-mode standard --invocation-command-line 'curl.exe --retry 0 --aws-sigv4 "aws:amz:us-west-2:lambda"'`
    - gate requirements: exact `YYYYMMDD/us-west-2/lambda/aws4_request` credential scope, required session token header, dedicated operator-role STS session, exact authorizedOperatorArn match, and no extra request-body fields.
-4. Invoke launch broker URL with signed IAM request and only `runId`.
-5. Broker validates:
+4. Use the SDK invocation runner entrypoint for deterministic transport behavior:
+   - default offline-only execution (no network): `npm run invoke:runner:s2g-db-admin-launcher -- --function-url "<url>" --operator-caller-arn "<sts-arn>" --authorized-operator-arn "<sts-arn>" --access-key-id "<key>" --secret-access-key "<secret>" --session-token "<token>" --credential-expiration-iso "<iso>" --request-body-file "<path-to-json-body>" --max-attempts 1 --retry-mode standard`
+   - live mode requires explicit `--live` plus fresh owner-approval and authorization gate fields (`--owner-approval-reference`, `--owner-approval-issued-at-epoch`, `--approved-run-id`, `--authorization-launch-state AUTHORIZED`, `--authorization-expires-at-epoch`, `--launcher-activation-state ENABLED`, `--snapshot-broker-activation-state DISABLED`).
+   - transport never retries, transmits at most one request, and verifies signed-request integrity before/after send.
+5. For local simulation tests, provide a localhost `--transport-url` and keep `Host` set to the canonical Function URL hostname in the signed request.
+6. Invoke launch broker URL with signed IAM request and only `runId`.
+7. Broker validates:
    - caller identity,
    - run authorization record (`APPROVED` + operator binding),
    - exact approved task definition revision,
    - digest-pinned container image,
    - fixed staging network config and `enableExecuteCommand=false`,
    - launch claim state (`APPROVED -> CLAIMED`) with short claim TTL to prevent concurrent duplicate launches.
-6. Retry behavior:
+8. Retry behavior:
    - if broker returns `CLAIM_IN_PROGRESS`, wait for claim TTL window and retry same `runId`,
    - broker `RunTask` uses `clientToken=runId` so ambiguous retry cannot create duplicate tasks.
-7. Confirm launched task is in staging cluster/subnets/security group only.
-8. Read CloudWatch logs and verify only metadata appears:
+9. Confirm launched task is in staging cluster/subnets/security group only.
+10. Read CloudWatch logs and verify only metadata appears:
    - runId
    - namespace
    - revision/schemaVersion/updatedAt
    - raw/canonical SHA256 hashes
    - collection counts
-9. Confirm snapshot objects written only under:
+11. Confirm snapshot objects written only under:
    - `exports/<reconciliation-run-id>/postgres.snapshot.json`
    - `exports/<reconciliation-run-id>/filesystem.snapshot.json`
 

@@ -9,6 +9,7 @@ export const EXPECTED_FUNCTION_URL_HOST = "r7sknifhujrb2ypc7rj3ycr4k40rbalj.lamb
 export const EXPECTED_DEDICATED_OPERATOR_ROLE_ARN = "arn:aws:iam::452630323448:role/GenesisStagingS2gDbAdminD-StagingS2gDbAdminDiagnost-zeoxqigBe1Ma";
 export const RUN_ID_PATTERN = /^s2g-dbdiag-[a-z0-9-]{3,55}$/;
 const AMZ_DATE_PATTERN = /^[0-9]{8}T[0-9]{6}Z$/;
+const OWNER_APPROVAL_REFERENCE_PATTERN = /^OWNER_APPROVAL:[A-Za-z0-9:_-]{6,}$/;
 
 function failure(code, message = code) {
   const error = new Error(message);
@@ -158,6 +159,60 @@ function assertHeadersForSigV4(signedHeaders, signedHeaderNames, expectedRegion,
   assertTrue(signedHeaderNames.includes("content-type"), "SIGV4_CONTENT_TYPE_UNSIGNED", "Content-Type header must be signed.");
   assertTrue(signedHeaderNames.includes("x-amz-date"), "SIGV4_DATE_UNSIGNED", "x-amz-date header must be signed.");
   assertTrue(signedHeaderNames.includes("x-amz-security-token"), "SIGV4_SESSION_TOKEN_UNSIGNED", "Session token header must be signed.");
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function requestTransportDigest(request) {
+  const normalizedHeaders = {};
+  const inputHeaders = request?.headers ?? {};
+  for (const key of Object.keys(inputHeaders).sort()) {
+    normalizedHeaders[key.toLowerCase()] = inputHeaders[key];
+  }
+  return sha256Hex(stableStringify({
+    method: request?.method ?? "",
+    url: request?.url ?? "",
+    headers: normalizedHeaders,
+    body: request?.body ?? "",
+  }));
+}
+
+function validateLiveInvocationGate({
+  live,
+  approvedRunId,
+  ownerApprovalReference,
+  ownerApprovalIssuedAtEpoch,
+  authorizationLaunchState,
+  authorizationExpiresAtEpoch,
+  launcherActivationState,
+  snapshotBrokerActivationState,
+  nowEpoch,
+  operatorCallerArn,
+  authorizedOperatorArn,
+  runId,
+}) {
+  if (!live) return;
+  assertTrue(ownerApprovalReference && OWNER_APPROVAL_REFERENCE_PATTERN.test(ownerApprovalReference), "OWNER_APPROVAL_REFERENCE_INVALID", "Live mode requires a valid owner approval reference.");
+  assertTrue(Number.isFinite(ownerApprovalIssuedAtEpoch), "OWNER_APPROVAL_TIME_INVALID", "Live mode requires ownerApprovalIssuedAtEpoch.");
+  assertTrue(ownerApprovalIssuedAtEpoch <= nowEpoch, "OWNER_APPROVAL_TIME_INVALID", "Owner approval timestamp cannot be in the future.");
+  assertTrue((nowEpoch - ownerApprovalIssuedAtEpoch) <= 300, "OWNER_APPROVAL_STALE", "Owner approval is older than 5 minutes.");
+  assertTrue(approvedRunId === runId, "APPROVED_RUN_ID_MISMATCH", "approvedRunId must exactly match signed request runId.");
+  assertTrue(authorizationLaunchState === "AUTHORIZED", "AUTHORIZATION_STATE_INVALID", "Authorization launch state must be AUTHORIZED.");
+  assertTrue(Number.isFinite(authorizationExpiresAtEpoch), "AUTHORIZATION_EXPIRY_INVALID", "authorizationExpiresAtEpoch is required for live mode.");
+  assertTrue(authorizationExpiresAtEpoch > nowEpoch, "AUTHORIZATION_EXPIRED", "Authorization has expired.");
+  assertTrue((authorizationExpiresAtEpoch - nowEpoch) <= 300, "AUTHORIZATION_WINDOW_INVALID", "Authorization expiry must be within 5 minutes.");
+  assertTrue(launcherActivationState === "ENABLED", "LAUNCHER_STATE_INVALID", "Launcher activation state must be ENABLED before live invocation.");
+  assertTrue(snapshotBrokerActivationState === "DISABLED", "SNAPSHOT_BROKER_STATE_INVALID", "Snapshot broker must remain DISABLED.");
+  assertTrue(operatorCallerArn === authorizedOperatorArn, "AUTHORIZED_OPERATOR_MISMATCH", "Operator caller ARN must equal authorizedOperatorArn.");
 }
 
 function redactInspection(prepared, runId, expectedOperatorArn, retryPolicy) {
@@ -352,13 +407,20 @@ export async function executeSignedInvokeRequest({
   if (!allowLiveSend) {
     throw failure("LIVE_SEND_NOT_ALLOWED", "Live send mode requires explicit allowLiveSend=true.");
   }
+  const digestBefore = requestTransportDigest(prepared.request);
   const send = transport ?? createHttpsTransport();
   const response = await send(prepared.request);
+  const digestAfter = requestTransportDigest(prepared.request);
+  assertTrue(digestAfter === digestBefore, "SIGNED_REQUEST_MUTATED", "Signed request mutated during transport.");
   return {
     status: "PASS",
     mode: "live-send",
     transmitted: true,
     attemptCount: 1,
+    transportIntegrity: {
+      requestDigest: digestBefore,
+      unchanged: true,
+    },
     inspection: prepared.inspection,
     response: {
       statusCode: response.statusCode,
@@ -430,5 +492,79 @@ export async function validateOfflineInvocationPreflight(input) {
       payloadHash: prepared.inspection.bodySha256,
     },
     inspection: prepared.inspection,
+  };
+}
+
+export async function runSdkFunctionUrlInvocation(input) {
+  const {
+    live = false,
+    ownerApprovalReference = "",
+    ownerApprovalIssuedAtEpoch = Number.NaN,
+    approvedRunId = "",
+    authorizationLaunchState = "",
+    authorizationExpiresAtEpoch = Number.NaN,
+    launcherActivationState = "",
+    snapshotBrokerActivationState = "",
+    nowEpoch = Math.floor(Date.now() / 1000),
+    transport,
+    ...shared
+  } = input;
+
+  const prepared = await buildSignedInvokeRequest(shared);
+  verifySignedInvokeRequest(prepared, {
+    expectedRegion: EXPECTED_REGION,
+    expectedService: EXPECTED_SERVICE,
+    expectedHost: EXPECTED_FUNCTION_URL_HOST,
+  });
+
+  validateLiveInvocationGate({
+    live,
+    approvedRunId,
+    ownerApprovalReference,
+    ownerApprovalIssuedAtEpoch,
+    authorizationLaunchState,
+    authorizationExpiresAtEpoch,
+    launcherActivationState,
+    snapshotBrokerActivationState,
+    nowEpoch,
+    operatorCallerArn: shared.operatorCallerArn,
+    authorizedOperatorArn: shared.authorizedOperatorArn,
+    runId: prepared.runId,
+  });
+
+  const execution = await executeSignedInvokeRequest({
+    prepared,
+    mode: live ? "live-send" : "offline",
+    maxAttempts: shared.maxAttempts ?? 1,
+    allowLiveSend: live,
+    transport,
+  });
+
+  return {
+    status: "PASS",
+    mode: execution.mode,
+    transmitted: execution.transmitted,
+    attemptCount: execution.attemptCount ?? 0,
+    invokedAt: new Date().toISOString(),
+    ownerApprovalReference: live ? ownerApprovalReference : null,
+    operatorCallerArn: shared.operatorCallerArn,
+    authorizedOperatorArn: shared.authorizedOperatorArn,
+    runId: prepared.runId,
+    credentialScope: `${prepared.scope.dateStamp}/${prepared.scope.region}/${prepared.scope.service}/aws4_request`,
+    signedHeaders: prepared.signedHeaderNames,
+    bodySha256: prepared.request.headers["x-amz-content-sha256"],
+    requestId: execution.response?.headers?.["x-amzn-requestid"] ?? execution.response?.headers?.["x-amz-request-id"] ?? null,
+    httpStatus: execution.response?.statusCode ?? null,
+    inspection: prepared.inspection,
+    transportIntegrity: execution.transportIntegrity ?? {
+      requestDigest: requestTransportDigest(prepared.request),
+      unchanged: true,
+    },
+    responseSummary: execution.response
+      ? {
+        statusCode: execution.response.statusCode,
+        headerNames: Object.keys(execution.response.headers ?? {}).sort(),
+      }
+      : null,
   };
 }
