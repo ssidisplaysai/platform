@@ -150,6 +150,7 @@ jobs:
           echo "arn=$ARN" >> "$GITHUB_OUTPUT"
 
       - name: Update ONLY the existing staging service
+        id: update_service
         run: |
           aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
             --task-definition "${{ steps.taskdef.outputs.arn }}" --desired-count 1 --force-new-deployment
@@ -195,3 +196,21 @@ jobs:
           echo "PREVIOUS_STAGING_TASK_DEFINITION=${PREVIOUS_STAGING_TASK_DEFINITION:-unknown}"
           echo "Rollback command:"
           echo "aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition ${PREVIOUS_STAGING_TASK_DEFINITION:-<set-task-def-arn>} --desired-count 1 --force-new-deployment"
+
+      - name: Automatic safe rollback on post-deploy validation failure
+        if: failure() && steps.update_service.outcome == 'success' && steps.taskdef.outputs.arn != '' && steps.baseline.outputs.previous_task_definition != ''
+        run: |
+          set -euo pipefail
+          current_td="$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)"
+          candidate_td="${{ steps.taskdef.outputs.arn }}"
+          previous_td="${{ steps.baseline.outputs.previous_task_definition }}"
+          if ! node infra/staging/rollback-race-guard.mjs --current "$current_td" --candidate "$candidate_td"; then
+            echo "ROLLBACK_SKIPPED_RACE_PROTECTION=true"
+            echo "Current task definition ($current_td) no longer matches this workflow candidate ($candidate_td); refusing rollback."
+            exit 0
+          fi
+          echo "ROLLBACK_EXECUTED=true"
+          echo "ROLLBACK_TO=$previous_td"
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --task-definition "$previous_td" --desired-count 1 --force-new-deployment
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
