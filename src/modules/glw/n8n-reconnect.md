@@ -15,16 +15,13 @@ This module provides the staging-safe callback reconciliation gate for GLW page-
 
 ### PageEngines-scoped real-dispatch binding (fail-closed)
 
-To permit real PageEngines dispatch through existing MCP transport, configure all of:
+PageEngines dispatch authority now resolves from persisted foundation records:
 
-- `GENESIS_PAGEENGINES_ORGANIZATION_ID`
-- `GENESIS_PAGEENGINES_SITE_ID`
-- `GENESIS_PAGEENGINES_PRODUCT_ID`
-- `GENESIS_PAGEENGINES_WORKFLOW_PROFILE_REFERENCE`
-- `GENESIS_PAGEENGINES_WORDPRESS_CREDENTIAL_REFERENCE`
-- `GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID`
+- Site repository record (`organizationId`, `siteId`, canonical/domain/WordPress API host, workflow profile binding, credential reference)
+- Product repository record (organization match + site assignment)
+- Integration profile repository workflow profile (`providerReference=provider-n8n`, credential reference, isolated workflow reference)
 
-Optional:
+Optional host override:
 
 - `GENESIS_PAGEENGINES_WORDPRESS_HOST` (defaults to `staging.pageengines.com`)
 

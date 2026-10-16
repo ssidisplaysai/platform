@@ -1,3 +1,6 @@
+import { getIntegrationProfileById } from "@/modules/foundation/integration-profile-repository";
+import { getProductById } from "@/modules/foundation/product-repository";
+import { getSiteById } from "@/modules/foundation/site-repository";
 import type { SiteConfiguration } from "@/modules/foundation/types";
 import type { GlwGenerationRequest } from "./page-generation";
 import type { GlwN8nDraftRequest } from "./page-execution";
@@ -12,14 +15,14 @@ const PAGEENGINES_HOMEPAGE_CONTRACT_MARKERS = [
   "no fabricated results",
 ] as const;
 
-export type PageenginesDispatchConfiguration = {
+type PageenginesAuthorityBinding = {
   organizationId: string;
   siteId: string;
   productId: string;
   workflowProfileReference: string;
   wordpressCredentialReference: string;
   wordpressHost: string;
-  workflowId: string | null;
+  workflowId: string;
 };
 
 function nonEmpty(value: string | null | undefined): string | null {
@@ -66,38 +69,6 @@ function siteLooksLikePageengines(input: {
   return hosts.some((host) => host.includes("pageengines"));
 }
 
-export function resolvePageenginesDispatchConfiguration(
-  environment: NodeJS.ProcessEnv = process.env,
-): PageenginesDispatchConfiguration | null {
-  const organizationId = nonEmpty(environment.GENESIS_PAGEENGINES_ORGANIZATION_ID);
-  const siteId = nonEmpty(environment.GENESIS_PAGEENGINES_SITE_ID);
-  const productId = nonEmpty(environment.GENESIS_PAGEENGINES_PRODUCT_ID);
-  const workflowProfileReference = nonEmpty(environment.GENESIS_PAGEENGINES_WORKFLOW_PROFILE_REFERENCE);
-  const wordpressCredentialReference = nonEmpty(environment.GENESIS_PAGEENGINES_WORDPRESS_CREDENTIAL_REFERENCE);
-  const workflowId = nonEmpty(environment.GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID);
-  const wordpressHost = expectedWordPressHost(environment);
-
-  if (
-    !organizationId
-    || !siteId
-    || !productId
-    || !workflowProfileReference
-    || !wordpressCredentialReference
-  ) {
-    return null;
-  }
-
-  return {
-    organizationId,
-    siteId,
-    productId,
-    workflowProfileReference,
-    wordpressCredentialReference,
-    wordpressHost,
-    workflowId,
-  };
-}
-
 function assertPageenginesHostMatches(input: {
   expectedHost: string;
   siteDomain: string | null | undefined;
@@ -128,6 +99,108 @@ function assertPageenginesCompositionContract(additionalInstructions: string | n
   }
 }
 
+function resolvePageenginesBindingFromFoundation(input: {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  fallbackWorkflowId: string;
+  environment: NodeJS.ProcessEnv;
+}): PageenginesAuthorityBinding {
+  const site = getSiteById(input.siteId);
+  if (!site) {
+    throw new Error("PageEngines authority rejected missing site foundation record.");
+  }
+
+  if (site.organizationId !== input.organizationId) {
+    throw new Error("PageEngines dispatch rejected organization scope mismatch.");
+  }
+
+  const workflowProfileReference = nonEmpty(site.integrations.workflowReference);
+  if (!workflowProfileReference) {
+    throw new Error("PageEngines authority rejected missing workflow profile binding.");
+  }
+
+  const wordpressCredentialReference = nonEmpty(site.integrations.wordpressCredentialReference);
+  if (!wordpressCredentialReference) {
+    throw new Error("PageEngines authority rejected missing WordPress credential binding.");
+  }
+
+  const profile = getIntegrationProfileById(workflowProfileReference);
+  if (!profile || profile.organizationId !== input.organizationId || profile.profileType !== "workflow" || !profile.enabled || profile.status !== "active") {
+    throw new Error("PageEngines authority rejected workflow profile mismatch.");
+  }
+
+  if (!profile.assignedSiteIds.includes(site.siteId)) {
+    throw new Error("PageEngines authority rejected workflow profile site assignment mismatch.");
+  }
+
+  if (profile.references.providerReference !== "provider-n8n") {
+    throw new Error("PageEngines authority rejected workflow provider scope mismatch.");
+  }
+
+  const workflowCredentialReference = nonEmpty(profile.references.credentialReference);
+  if (!workflowCredentialReference || workflowCredentialReference !== wordpressCredentialReference) {
+    throw new Error("PageEngines authority rejected credential scope mismatch.");
+  }
+
+  const workflowId = nonEmpty(profile.references.workflowReference);
+  if (!workflowId) {
+    throw new Error("PageEngines dispatch requires a workflow profile workflow reference.");
+  }
+  if (workflowId === input.fallbackWorkflowId) {
+    throw new Error("PageEngines dispatch rejected LED Warehouse workflow binding.");
+  }
+
+  const product = getProductById(input.productId);
+  if (!product || product.organizationId !== input.organizationId) {
+    throw new Error("PageEngines authority rejected product mismatch.");
+  }
+  if (!product.assignedSiteIds.includes(site.siteId)) {
+    throw new Error("PageEngines authority rejected product-to-site assignment mismatch.");
+  }
+
+  return {
+    organizationId: input.organizationId,
+    siteId: site.siteId,
+    productId: input.productId,
+    workflowProfileReference,
+    wordpressCredentialReference,
+    wordpressHost: expectedWordPressHost(input.environment),
+    workflowId,
+  };
+}
+
+function assertDispatchConstraints(input: {
+  request: GlwN8nDraftRequest;
+  binding: PageenginesAuthorityBinding;
+}): void {
+  if (input.request.workspaceId !== input.binding.organizationId) {
+    throw new Error("PageEngines dispatch rejected organization scope mismatch.");
+  }
+  if (input.request.site.id !== input.binding.siteId) {
+    throw new Error("PageEngines dispatch rejected site scope mismatch.");
+  }
+  if (input.request.page.productId !== input.binding.productId) {
+    throw new Error("PageEngines dispatch rejected product scope mismatch.");
+  }
+  if (input.request.page.pageType !== "general_service") {
+    throw new Error("PageEngines dispatch requires general_service page type for the first homepage draft.");
+  }
+  if (input.request.operation !== "CREATE_GENERAL" || input.request.wordpressObjectId) {
+    throw new Error("PageEngines dispatch requires create-only authority with no WordPress object override.");
+  }
+  if (input.request.publishingSettings.status !== "draft" || input.request.page.status !== "draft") {
+    throw new Error("PageEngines dispatch rejected non-draft publication intent.");
+  }
+  assertPageenginesCompositionContract(input.request.workflowContext.additionalInstructions);
+  assertPageenginesHostMatches({
+    expectedHost: input.binding.wordpressHost,
+    siteDomain: input.request.site.domain,
+    siteCanonicalUrl: input.request.site.canonicalUrl,
+    siteWordPressApiBaseUrl: input.request.site.wordpressApiBaseUrl,
+  });
+}
+
 export function resolveWorkflowIdForDispatch(input: {
   request: GlwN8nDraftRequest;
   environment?: NodeJS.ProcessEnv;
@@ -145,48 +218,58 @@ export function resolveWorkflowIdForDispatch(input: {
   });
   if (!isPageenginesCandidate) return input.fallbackWorkflowId;
 
-  const configuration = resolvePageenginesDispatchConfiguration(environment);
-  if (!configuration) {
-    throw new Error(
-      "PageEngines dispatch authority is not configured. Configure GENESIS_PAGEENGINES_ORGANIZATION_ID, GENESIS_PAGEENGINES_SITE_ID, GENESIS_PAGEENGINES_PRODUCT_ID, GENESIS_PAGEENGINES_WORKFLOW_PROFILE_REFERENCE, and GENESIS_PAGEENGINES_WORDPRESS_CREDENTIAL_REFERENCE before dispatch.",
-    );
-  }
-
-  if (input.request.workspaceId !== configuration.organizationId) {
-    throw new Error("PageEngines dispatch rejected organization scope mismatch.");
-  }
-  if (input.request.site.id !== configuration.siteId) {
-    throw new Error("PageEngines dispatch rejected site scope mismatch.");
-  }
-  if (input.request.page.productId !== configuration.productId) {
-    throw new Error("PageEngines dispatch rejected product scope mismatch.");
-  }
-  if (input.request.page.pageType !== "general_service") {
-    throw new Error("PageEngines dispatch requires general_service page type for the first homepage draft.");
-  }
-  if (input.request.operation !== "CREATE_GENERAL" || input.request.wordpressObjectId) {
-    throw new Error("PageEngines dispatch requires create-only authority with no WordPress object override.");
-  }
-  if (input.request.publishingSettings.status !== "draft" || input.request.page.status !== "draft") {
-    throw new Error("PageEngines dispatch rejected non-draft publication intent.");
-  }
-  assertPageenginesCompositionContract(input.request.workflowContext.additionalInstructions);
-
-  assertPageenginesHostMatches({
-    expectedHost: configuration.wordpressHost,
-    siteDomain: input.request.site.domain,
-    siteCanonicalUrl: input.request.site.canonicalUrl,
-    siteWordPressApiBaseUrl: input.request.site.wordpressApiBaseUrl,
+  const binding = resolvePageenginesBindingFromFoundation({
+    organizationId: input.request.workspaceId,
+    siteId: input.request.site.id,
+    productId: input.request.page.productId,
+    fallbackWorkflowId: input.fallbackWorkflowId,
+    environment,
   });
 
-  const workflowId = configuration.workflowId;
-  if (!workflowId) {
-    throw new Error("PageEngines dispatch requires GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID.");
+  assertDispatchConstraints({
+    request: input.request,
+    binding,
+  });
+
+  return binding.workflowId;
+}
+
+function assertMutationConstraints(input: {
+  request: GlwGenerationRequest;
+  binding: PageenginesAuthorityBinding;
+  siteRecord: SiteConfiguration;
+}): void {
+  if (input.request.organizationId !== input.binding.organizationId || input.siteRecord.organizationId !== input.binding.organizationId) {
+    throw new Error("PageEngines authority rejected organization mismatch.");
   }
-  if (workflowId === input.fallbackWorkflowId) {
-    throw new Error("PageEngines dispatch rejected LED Warehouse workflow binding.");
+  if (input.request.siteId !== input.binding.siteId || input.siteRecord.siteId !== input.binding.siteId) {
+    throw new Error("PageEngines authority rejected site mismatch.");
   }
-  return workflowId;
+  if (input.request.productId !== input.binding.productId) {
+    throw new Error("PageEngines authority rejected product mismatch.");
+  }
+  if (input.siteRecord.integrations.workflowReference !== input.binding.workflowProfileReference) {
+    throw new Error("PageEngines authority rejected workflow profile mismatch.");
+  }
+  if (input.siteRecord.integrations.wordpressCredentialReference !== input.binding.wordpressCredentialReference) {
+    throw new Error("PageEngines authority rejected credential scope mismatch.");
+  }
+  assertPageenginesHostMatches({
+    expectedHost: input.binding.wordpressHost,
+    siteDomain: input.siteRecord.domain,
+    siteCanonicalUrl: input.siteRecord.canonicalUrl,
+    siteWordPressApiBaseUrl: input.siteRecord.integrations.wordpressApiBaseUrl,
+  });
+  if (input.request.publicationIntent !== "draft") {
+    throw new Error("PageEngines authority rejected non-draft publication intent.");
+  }
+  if (input.request.pageType !== "general_service") {
+    throw new Error("PageEngines authority requires general_service page type for the first homepage draft.");
+  }
+  if (input.request.plannedOperation !== "CREATE_GENERAL" || input.request.wordpressObjectId) {
+    throw new Error("PageEngines authority requires create-only homepage draft initialization.");
+  }
+  assertPageenginesCompositionContract(input.request.additionalInstructions);
 }
 
 export function assertPageenginesMutationAuthorityBinding(input: {
@@ -206,42 +289,17 @@ export function assertPageenginesMutationAuthorityBinding(input: {
   });
   if (!candidate) return;
 
-  const configuration = resolvePageenginesDispatchConfiguration(environment);
-  if (!configuration) {
-    throw new Error(
-      "PageEngines authority binding is incomplete. Configure GENESIS_PAGEENGINES_ORGANIZATION_ID, GENESIS_PAGEENGINES_SITE_ID, GENESIS_PAGEENGINES_PRODUCT_ID, GENESIS_PAGEENGINES_WORKFLOW_PROFILE_REFERENCE, and GENESIS_PAGEENGINES_WORDPRESS_CREDENTIAL_REFERENCE.",
-    );
-  }
-
-  if (input.request.organizationId !== configuration.organizationId || input.siteRecord.organizationId !== configuration.organizationId) {
-    throw new Error("PageEngines authority rejected organization mismatch.");
-  }
-  if (input.request.siteId !== configuration.siteId || input.siteRecord.siteId !== configuration.siteId) {
-    throw new Error("PageEngines authority rejected site mismatch.");
-  }
-  if (input.request.productId !== configuration.productId) {
-    throw new Error("PageEngines authority rejected product mismatch.");
-  }
-  if (input.siteRecord.integrations.workflowReference !== configuration.workflowProfileReference) {
-    throw new Error("PageEngines authority rejected workflow profile mismatch.");
-  }
-  if (input.siteRecord.integrations.wordpressCredentialReference !== configuration.wordpressCredentialReference) {
-    throw new Error("PageEngines authority rejected credential scope mismatch.");
-  }
-  assertPageenginesHostMatches({
-    expectedHost: configuration.wordpressHost,
-    siteDomain: input.siteRecord.domain,
-    siteCanonicalUrl: input.siteRecord.canonicalUrl,
-    siteWordPressApiBaseUrl: input.siteRecord.integrations.wordpressApiBaseUrl,
+  const binding = resolvePageenginesBindingFromFoundation({
+    organizationId: input.request.organizationId,
+    siteId: input.request.siteId,
+    productId: input.request.productId,
+    fallbackWorkflowId: "__not_used_for_mutation_guard__",
+    environment,
   });
-  if (input.request.publicationIntent !== "draft") {
-    throw new Error("PageEngines authority rejected non-draft publication intent.");
-  }
-  if (input.request.pageType !== "general_service") {
-    throw new Error("PageEngines authority requires general_service page type for the first homepage draft.");
-  }
-  if (input.request.plannedOperation !== "CREATE_GENERAL" || input.request.wordpressObjectId) {
-    throw new Error("PageEngines authority requires create-only homepage draft initialization.");
-  }
-  assertPageenginesCompositionContract(input.request.additionalInstructions);
+
+  assertMutationConstraints({
+    request: input.request,
+    binding,
+    siteRecord: input.siteRecord,
+  });
 }

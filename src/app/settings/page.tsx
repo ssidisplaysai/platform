@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { createFoundationContext } from "@/modules/foundation/context";
 import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
+import { OrganizationSettingsPanel } from "@/modules/foundation/OrganizationSettingsPanel";
 import { FOUNDATION_SETTINGS_SECTIONS } from "@/modules/foundation/settings";
 
 export default function SettingsPage() {
@@ -54,6 +55,8 @@ export default function SettingsPage() {
             );
           })}
         </ul>
+
+        <OrganizationSettingsPanel canManageSettings={canManageSettings} />
       </section>
     </AppShell>
   );
