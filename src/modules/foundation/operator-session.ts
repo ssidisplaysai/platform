@@ -34,6 +34,14 @@ const sessionLifetime = (environment: NodeJS.ProcessEnv = process.env) => { cons
 export type AuthenticatedOperatorPrincipal = { principalId: string; email: string; roles: readonly AppRole[]; capabilities: readonly PermissionAction[]; sessionId: string; authenticatedAt: string; expiresAt: string; authenticationAuthority: typeof OPERATOR_SESSION_AUTHORITY };
 export type OperatorSessionResolution = { ok: true; principal: AuthenticatedOperatorPrincipal; csrfToken: string | null } | { ok: false; state: "NOT_AUTHENTICATED" | "SESSION_EXPIRED" | "SESSION_REVOKED" | "SESSION_TAMPERED" | "DIRECTORY_UNAVAILABLE"; principal: null; csrfToken: null };
 export type OperatorSessionSecurityPosture = { tokenDigestSecretSource: "ENV" | "PERSISTED_GENERATED"; persistenceRoot: string };
+export type OperatorAuthenticationFailureCategory = "directory_unavailable_or_invalid" | "operator_identity_not_found" | "password_verification_failed" | "session_creation_failed" | "unexpected_auth_error";
+
+export class OperatorAuthenticationError extends Error {
+  constructor(public readonly category: OperatorAuthenticationFailureCategory, message: string) {
+    super(message);
+    this.name = "OperatorAuthenticationError";
+  }
+}
 
 function resolveOperatorSessionPersistenceRoot(environment: NodeJS.ProcessEnv = process.env): string {
   const configuredSessionRoot = environment.GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR?.trim();
@@ -86,7 +94,43 @@ function cookieOptions(request: NextRequest, httpOnly: boolean) { return { httpO
 export async function createScryptPasswordHash(password: string, salt = randomBytes(16)): Promise<string> { if (password.length < 12) throw new Error("OPERATOR_PASSWORD_TOO_SHORT"); const derived = await scrypt(password, salt, 64) as Buffer; return `scrypt$${salt.toString("base64url")}$${derived.toString("base64url")}`; }
 async function verifyPassword(password: string, encoded: string) { const [scheme, saltValue, hashValue] = encoded.split("$"); if (scheme !== "scrypt" || !saltValue || !hashValue) return false; const expected = Buffer.from(hashValue, "base64url"); const actual = await scrypt(password, Buffer.from(saltValue, "base64url"), expected.length) as Buffer; return actual.length === expected.length && timingSafeEqual(actual, expected); }
 
-export async function authenticateOperator(input: { identity: string; password: string; now?: Date; environment?: NodeJS.ProcessEnv }) { const environment = input.environment ?? process.env; const identity = normalize(input.identity).toLowerCase(); const entries = directory(environment); const entry = entries.find((candidate) => candidate.enabled !== false && (candidate.email === identity || candidate.principalId.toLowerCase() === identity)); const passwordHash = entry?.passwordHash ?? "scrypt$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"; const valid = await verifyPassword(input.password, passwordHash).catch(() => false); if (!entry || !valid) throw new Error("OPERATOR_AUTHENTICATION_FAILED"); const now = input.now ?? new Date(); const token = randomBytes(32).toString("base64url"); const csrfToken = randomBytes(32).toString("base64url"); const session: SessionRecord = { sessionId: `genesis-session-${randomUUID()}`, principalId: entry.principalId, principalEmail: entry.email, principalRoles: [...entry.roles], tokenHash: digest(token, environment), csrfHash: digest(csrfToken, environment), authenticatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + sessionLifetime(environment) * 1000).toISOString(), revokedAt: null }; mutate((state) => { state.sessions.push(session); return null; }, environment); return { token, csrfToken, principal: buildPrincipal(session, entry) };
+export async function authenticateOperator(input: { identity: string; password: string; now?: Date; environment?: NodeJS.ProcessEnv }) {
+  const environment = input.environment ?? process.env;
+  const identity = normalize(input.identity).toLowerCase();
+  const entries = (() => {
+    try {
+      return directory(environment);
+    } catch (error) {
+      throw new OperatorAuthenticationError("directory_unavailable_or_invalid", "OPERATOR_AUTHENTICATION_FAILED");
+    }
+  })();
+  const entry = entries.find((candidate) => candidate.enabled !== false && (candidate.email === identity || candidate.principalId.toLowerCase() === identity));
+  if (!entry) throw new OperatorAuthenticationError("operator_identity_not_found", "OPERATOR_AUTHENTICATION_FAILED");
+  const valid = await verifyPassword(input.password, entry.passwordHash).catch(() => false);
+  if (!valid) throw new OperatorAuthenticationError("password_verification_failed", "OPERATOR_AUTHENTICATION_FAILED");
+  const now = input.now ?? new Date();
+  const token = randomBytes(32).toString("base64url");
+  const csrfToken = randomBytes(32).toString("base64url");
+  const session: SessionRecord = {
+    sessionId: `genesis-session-${randomUUID()}`,
+    principalId: entry.principalId,
+    principalEmail: entry.email,
+    principalRoles: [...entry.roles],
+    tokenHash: digest(token, environment),
+    csrfHash: digest(csrfToken, environment),
+    authenticatedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + sessionLifetime(environment) * 1000).toISOString(),
+    revokedAt: null,
+  };
+  try {
+    mutate((state) => {
+      state.sessions.push(session);
+      return null;
+    }, environment);
+  } catch {
+    throw new OperatorAuthenticationError("session_creation_failed", "OPERATOR_AUTHENTICATION_FAILED");
+  }
+  return { token, csrfToken, principal: buildPrincipal(session, entry) };
 }
 
 function buildPrincipal(session: SessionRecord, entry?: DirectoryEntry): AuthenticatedOperatorPrincipal { const roles = entry?.roles ?? session.principalRoles; const email = entry?.email ?? session.principalEmail; return { principalId: session.principalId, email, roles, capabilities: [...resolvePermissions(roles)], sessionId: session.sessionId, authenticatedAt: session.authenticatedAt, expiresAt: session.expiresAt, authenticationAuthority: OPERATOR_SESSION_AUTHORITY }; }
