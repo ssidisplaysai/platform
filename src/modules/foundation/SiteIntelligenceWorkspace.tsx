@@ -20,6 +20,7 @@ import { SiteIntelligenceReferenceLibrary } from "./SiteIntelligenceReferenceLib
 import { SiteCapabilityOwnerWorkflow } from "./SiteCapabilityOwnerWorkflow";
 import { SiteCreativeDirectionWorkflow } from "./SiteCreativeDirectionWorkflow";
 import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "./site-capability-transition";
+import { siteIntelligenceRequestHeaders } from "./site-intelligence-request-headers";
 
 type Props = {
   organizationId: string;
@@ -29,12 +30,7 @@ type Props = {
 };
 
 function headers(organizationId: string, siteId: string) {
-  return {
-    "Content-Type": "application/json",
-    "x-gcp-roles": "ops_manager",
-    "x-gcp-organization-id": organizationId,
-    "x-gcp-site-id": siteId,
-  };
+  return siteIntelligenceRequestHeaders({ organizationId, siteId });
 }
 
 export function SiteIntelligenceWorkspace(props: Props) {
@@ -76,7 +72,11 @@ export function SiteIntelligenceWorkspace(props: Props) {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence`, {
           method: "POST",
-          headers: headers(props.organizationId, props.siteId),
+          headers: siteIntelligenceRequestHeaders({
+            organizationId: props.organizationId,
+            siteId: props.siteId,
+            mutation: true,
+          }),
           body: JSON.stringify({ ...body, expectedRevision, actor: "site-owner" }),
         });
         const payload = await response.json() as { workspace?: Workspace; creativeReviewHandoff?: CreativeReviewHandoff; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };

@@ -134,6 +134,8 @@ describe("site intelligence UI contract", () => {
   test("workspace exposes real multiple-file upload with conservative classification", () => {
     expect(library).toContain('type="file"'); expect(library).toContain("multiple"); expect(library).toContain("UPLOAD {files.length");
     expect(library).toContain('useState<SiteAssetClassification>("OWNER_SUPPLIED_REFERENCE")');
+    expect(library).toContain("siteIntelligenceRequestHeaders");
+    expect(library).toContain("jsonContentType: false");
     expect(library).toContain("Uploaded Assets"); expect(library).toContain("not publishable");
   });
 
@@ -143,6 +145,7 @@ describe("site intelligence UI contract", () => {
     expect(workspace).toContain("SiteIntelligenceReferenceLibrary");
     expect(library).toContain('action: "ADD_URL_REFERENCE"');
     expect(library).toContain('action: "UPDATE_CREATIVE_INPUT"');
+    expect(workspace).toContain("mutation: true");
     expect(library).toContain('setReference("")');
     expect(library).toContain('setNotes("")');
   });
