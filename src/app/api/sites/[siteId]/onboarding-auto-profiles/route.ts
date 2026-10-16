@@ -9,6 +9,7 @@ import {
   applyAutoPreparedProfileOverrides,
   buildNewProfileFromAutoPreparedProposal,
   createAutoPreparedProfilesPreview,
+  type AutoPreparedEligibleLogoAsset,
   type AutoPreparedProfileOverride,
 } from "@/modules/foundation/onboarding-auto-profile-preparation";
 import {
@@ -53,6 +54,40 @@ function likedCreativeAssetIds(siteId: string): string[] {
     .map((input) => String(input.binaryAsset?.assetId));
 }
 
+function eligibleLogoAssets(site: { organizationId: string; siteId: string }): AutoPreparedEligibleLogoAsset[] {
+  const workspace = getSiteIntelligenceWorkspace(site.siteId);
+  if (!workspace) {
+    return [];
+  }
+  return workspace.creativeInputs
+    .filter((input) => (
+      Boolean(input.binaryAsset?.assetId)
+      && input.binaryAsset?.organizationId === site.organizationId
+      && input.binaryAsset?.siteId === site.siteId
+      && (input.classification === "OWNER_SUPPLIED_REFERENCE" || input.classification === "OWNER_APPROVED_PUBLISHABLE")
+      && (input.sentiment === "LIKE" || input.sentiment === "REFERENCE_ONLY")
+      && input.binaryAsset?.mediaType.startsWith("image/")
+    ))
+    .map((input) => ({
+      assetId: String(input.binaryAsset?.assetId),
+      fileName: String(input.binaryAsset?.originalFileName ?? ""),
+      mediaType: String(input.binaryAsset?.mediaType ?? "application/octet-stream"),
+      classification: input.classification,
+      sentiment: input.sentiment,
+      notes: input.notes,
+      assetUrl: `/api/sites/${encodeURIComponent(site.siteId)}/intelligence/assets/${encodeURIComponent(String(input.binaryAsset?.assetId ?? ""))}?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`,
+    }))
+    .sort((a, b) => a.fileName.localeCompare(b.fileName));
+}
+
+function parseSiteIntelligenceAssetReference(reference: string | null | undefined): string | null {
+  if (!reference || !reference.startsWith("site-intelligence-asset:")) {
+    return null;
+  }
+  const assetId = reference.slice("site-intelligence-asset:".length).trim();
+  return assetId.length > 0 ? assetId : null;
+}
+
 export async function POST(request: NextRequest, context: Context) {
   const auth = authorizeRequest(request, "sites:manage_integrations");
   if (!auth.ok) {
@@ -70,6 +105,7 @@ export async function POST(request: NextRequest, context: Context) {
     overrides?: AutoPreparedProfileOverride[];
   } | null;
   const action = body?.action ?? "PREVIEW";
+  const logoAssets = eligibleLogoAssets({ organizationId: site.organizationId, siteId: site.siteId });
 
   const organizationProfiles = listIntegrationProfiles({
     organizationId: site.organizationId,
@@ -79,6 +115,7 @@ export async function POST(request: NextRequest, context: Context) {
     site,
     organizationProfiles,
     likedCreativeAssetIds: likedCreativeAssetIds(site.siteId),
+    eligibleLogoAssets: logoAssets,
   });
 
   if (action === "PREVIEW") {
@@ -94,11 +131,30 @@ export async function POST(request: NextRequest, context: Context) {
   if (!body?.fingerprint || body.fingerprint !== preview.fingerprint) {
     return NextResponse.json({ error: "AUTO_PREPARE_PREVIEW_OUTDATED" }, { status: 409 });
   }
+  const brandOverride = body.overrides?.find((override) => override.profileType === "brand");
+  if (brandOverride?.selectedLogoAssetId && brandOverride.logoApprovalConfirmed !== true) {
+    return NextResponse.json({ error: "AUTO_PREPARE_LOGO_APPROVAL_REQUIRED" }, { status: 400 });
+  }
 
   const proposals = applyAutoPreparedProfileOverrides({
     preview,
     overrides: body.overrides,
   });
+  const brandProposal = proposals.find((proposal) => proposal.profileType === "brand");
+  const brandLogoAssetId = parseSiteIntelligenceAssetReference(
+    brandProposal?.references.logoReference ?? null,
+  );
+  if (brandLogoAssetId) {
+    if (!brandOverride || brandOverride.logoApprovalConfirmed !== true) {
+      return NextResponse.json({ error: "AUTO_PREPARE_LOGO_APPROVAL_REQUIRED" }, { status: 400 });
+    }
+    if (brandOverride.selectedLogoAssetId !== brandLogoAssetId) {
+      return NextResponse.json({ error: "AUTO_PREPARE_LOGO_SELECTION_MISMATCH" }, { status: 409 });
+    }
+    if (!logoAssets.some((asset) => asset.assetId === brandLogoAssetId)) {
+      return NextResponse.json({ error: "AUTO_PREPARE_LOGO_ASSET_INVALID" }, { status: 422 });
+    }
+  }
   const blockedProposal = proposals.find((proposal) => (
     proposal.mode === "proposed" && proposal.diagnostics.blockers.length > 0
   ));

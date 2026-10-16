@@ -10,6 +10,16 @@ import type {
 const PREPARED_PROFILE_TYPES = ["brand", "seo", "prompt", "image"] as const;
 type PreparedProfileType = (typeof PREPARED_PROFILE_TYPES)[number];
 
+export type AutoPreparedEligibleLogoAsset = {
+  assetId: string;
+  fileName: string;
+  mediaType: string;
+  classification: "OWNER_SUPPLIED_REFERENCE" | "OWNER_APPROVED_PUBLISHABLE";
+  sentiment: "LIKE" | "REFERENCE_ONLY";
+  notes: string | null;
+  assetUrl?: string;
+};
+
 export type AutoPreparedProfileProposal = {
   profileType: PreparedProfileType;
   mode: "existing" | "proposed";
@@ -41,6 +51,7 @@ export type AutoPreparedProfilesPreview = {
   organizationId: string;
   siteId: string;
   fingerprint: string;
+  eligibleLogoAssets: AutoPreparedEligibleLogoAsset[];
   proposals: AutoPreparedProfileProposal[];
   workflow: AutoPreparedWorkflowStatus;
 };
@@ -50,6 +61,8 @@ export type AutoPreparedProfileOverride = {
   profileName?: string;
   description?: string;
   instructionBody?: string;
+  selectedLogoAssetId?: string | null;
+  logoApprovalConfirmed?: boolean;
   references?: Partial<IntegrationProfileReferenceSet>;
 };
 
@@ -233,6 +246,7 @@ function deriveReferenceDiagnostics(input: {
   profileType: PreparedProfileType;
   references: Partial<IntegrationProfileReferenceSet>;
   likedCreativeAssetId: string | null;
+  eligibleLogoAssetIds?: readonly string[];
 }): AutoPreparedProfileProposal["diagnostics"] {
   const keysByType: Record<PreparedProfileType, Array<keyof IntegrationProfileReferenceSet>> = {
     brand: ["logoReference", "assetReference", "colorPaletteReference", "typographyReference", "voiceReference", "defaultCtaReference"],
@@ -255,10 +269,22 @@ function deriveReferenceDiagnostics(input: {
       };
     }
     if (key === "logoReference") {
+      if (value.startsWith("site-intelligence-asset:")) {
+        const assetId = value.slice("site-intelligence-asset:".length);
+        const eligible = input.eligibleLogoAssetIds?.includes(assetId) ?? false;
+        return {
+          key,
+          value,
+          status: eligible ? "verified_asset" as const : "unresolved_symbolic" as const,
+          message: eligible
+            ? "Logo reference resolves to an eligible owner-selected site intelligence asset."
+            : "Logo reference does not resolve to an eligible in-scope asset.",
+        };
+      }
       return {
         key,
         value,
-        status: value.startsWith("logo-") ? "unresolved_symbolic" as const : "unresolved_symbolic" as const,
+        status: "unresolved_symbolic" as const,
         message: "Logo references must point to an approved logo authority; symbolic values are not treated as approved logos.",
       };
     }
@@ -312,6 +338,7 @@ export function createAutoPreparedProfilesPreview(input: {
   site: SiteConfiguration;
   organizationProfiles: readonly IntegrationProfileConfiguration[];
   likedCreativeAssetIds?: readonly string[];
+  eligibleLogoAssets?: readonly AutoPreparedEligibleLogoAsset[];
 }): AutoPreparedProfilesPreview {
   const likedCreativeAssetId = inferCreativeReferenceAssetId({
     likedCreativeAssetIds: input.likedCreativeAssetIds,
@@ -349,6 +376,7 @@ export function createAutoPreparedProfilesPreview(input: {
           profileType,
           references: existingBySiteReference.references,
           likedCreativeAssetId,
+          eligibleLogoAssetIds: input.eligibleLogoAssets?.map((asset) => asset.assetId),
         }),
         existingReason: "Already bound to this site.",
       };
@@ -376,6 +404,7 @@ export function createAutoPreparedProfilesPreview(input: {
           profileType,
           references: existingByDeterministicId.references,
           likedCreativeAssetId,
+          eligibleLogoAssetIds: input.eligibleLogoAssets?.map((asset) => asset.assetId),
         }),
         existingReason: "Existing deterministic profile will be reused.",
       };
@@ -409,6 +438,7 @@ export function createAutoPreparedProfilesPreview(input: {
         profileType,
         references,
         likedCreativeAssetId,
+        eligibleLogoAssetIds: input.eligibleLogoAssets?.map((asset) => asset.assetId),
       }),
       existingReason: null,
     };
@@ -436,6 +466,7 @@ export function createAutoPreparedProfilesPreview(input: {
       proposals,
       workflow,
     }),
+    eligibleLogoAssets: [...(input.eligibleLogoAssets ?? [])],
     proposals,
     workflow,
   };
@@ -444,6 +475,7 @@ export function createAutoPreparedProfilesPreview(input: {
 function mergeOverrides(
   proposal: AutoPreparedProfileProposal,
   overrides: Map<PreparedProfileType, AutoPreparedProfileOverride>,
+  eligibleLogoAssetIds: readonly string[],
 ): AutoPreparedProfileProposal {
   const override = overrides.get(proposal.profileType);
   if (!override || proposal.mode === "existing") {
@@ -458,14 +490,21 @@ function mergeOverrides(
     references: {
       ...proposal.references,
       ...(override.references ?? {}),
+      ...(proposal.profileType === "brand" && override.logoApprovalConfirmed && nonEmpty(override.selectedLogoAssetId)
+        ? { logoReference: `site-intelligence-asset:${override.selectedLogoAssetId}` }
+        : {}),
     },
     diagnostics: deriveReferenceDiagnostics({
       profileType: proposal.profileType,
       references: {
         ...proposal.references,
         ...(override.references ?? {}),
+        ...(proposal.profileType === "brand" && override.logoApprovalConfirmed && nonEmpty(override.selectedLogoAssetId)
+          ? { logoReference: `site-intelligence-asset:${override.selectedLogoAssetId}` }
+          : {}),
       },
       likedCreativeAssetId: null,
+      eligibleLogoAssetIds,
     }),
   };
 }
@@ -481,7 +520,8 @@ export function applyAutoPreparedProfileOverrides(input: {
     }
     map.set(override.profileType, override);
   }
-  return input.preview.proposals.map((proposal) => mergeOverrides(proposal, map));
+  const eligibleLogoAssetIds = input.preview.eligibleLogoAssets.map((asset) => asset.assetId);
+  return input.preview.proposals.map((proposal) => mergeOverrides(proposal, map, eligibleLogoAssetIds));
 }
 
 export function buildNewProfileFromAutoPreparedProposal(input: {

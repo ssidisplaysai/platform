@@ -44,6 +44,8 @@ Fresh-site onboarding supports an owner-approved **Auto-Prepare Profiles** actio
 - Preview is required before persistence.
 - The owner can review and edit proposed profile values, including inspectable instruction bodies that persist into profile notes.
 - Owner-supplied creative references are treated as inspiration by default and are **not** auto-promoted to `logoReference`.
+- Brand proposals include a **Select Approved Logo** control that lists eligible in-scope uploaded image assets.
+- Logo assignment requires explicit owner confirmation in the apply request; ordinary LIKE/reference classification alone is not sufficient.
 - Missing approved logo authority blocks apply until the owner provides an approved logo reference.
 - Proposal diagnostics explicitly flag blockers, warnings, unresolved symbolic references, and unverified provider declarations.
 - Records are scoped to the current organization and site; existing matching records are reused.
