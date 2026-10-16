@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
+import type { AppRole } from "@/modules/foundation/types";
 import type { Company } from "@/types/models/Company";
 
 type ApiOrganizationListResponse = {
@@ -13,7 +15,46 @@ type ApiCreateResponse = {
   issues?: Array<{ field: string; message: string }>;
 };
 
+type OperatorSessionStatusResponse = {
+  authenticated?: boolean;
+  principal?: {
+    roles?: unknown;
+  } | null;
+};
+
+const KNOWN_ROLES: readonly AppRole[] = [
+  "platform_admin",
+  "ops_manager",
+  "operations",
+  "company_operator",
+  "analyst",
+  "manufacturing_planner",
+  "manufacturing_engineer",
+  "production_supervisor",
+  "executive",
+  "administrator",
+  "viewer",
+];
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isAppRole(value: string): value is AppRole {
+  return KNOWN_ROLES.includes(value as AppRole);
+}
+
+export function canManageSettingsFromSessionStatus(payload: unknown): boolean {
+  if (!isObject(payload) || payload.authenticated !== true) return false;
+  const principal = payload.principal;
+  if (!isObject(principal) || !Array.isArray(principal.roles)) return false;
+  const roles = principal.roles.filter((role): role is AppRole => typeof role === "string" && isAppRole(role));
+  if (roles.length === 0) return false;
+  return hasPermission(resolvePermissions(roles), "settings:manage");
+}
+
 export function OrganizationSettingsPanel(input: { canManageSettings: boolean }) {
+  const [canManageSettings, setCanManageSettings] = useState(input.canManageSettings);
   const [organizations, setOrganizations] = useState<Company[]>([]);
   const [organizationName, setOrganizationName] = useState("");
   const [organizationId, setOrganizationId] = useState("");
@@ -49,8 +90,22 @@ export function OrganizationSettingsPanel(input: { canManageSettings: boolean })
     });
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/operator-session", { cache: "no-store" })
+      .then(async (response) => {
+        if (!active || !response.ok) return;
+        const payload = (await response.json()) as OperatorSessionStatusResponse;
+        setCanManageSettings(canManageSettingsFromSessionStatus(payload));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
   async function createOrganization() {
-    if (!input.canManageSettings) {
+    if (!canManageSettings) {
       setError("Organization creation requires owner settings permissions.");
       return;
     }
@@ -112,7 +167,7 @@ export function OrganizationSettingsPanel(input: { canManageSettings: boolean })
             onChange={(event) => setOrganizationName(event.target.value)}
             className="mt-1 h-11 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-white outline-none focus:border-red-500"
             placeholder="PageEngines"
-            disabled={!input.canManageSettings || busy}
+            disabled={!canManageSettings || busy}
           />
         </label>
         <label className="text-sm text-zinc-300">
@@ -122,7 +177,7 @@ export function OrganizationSettingsPanel(input: { canManageSettings: boolean })
             onChange={(event) => setOrganizationId(event.target.value)}
             className="mt-1 h-11 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-white outline-none focus:border-red-500"
             placeholder="pageengines"
-            disabled={!input.canManageSettings || busy}
+            disabled={!canManageSettings || busy}
           />
         </label>
       </div>
@@ -131,12 +186,12 @@ export function OrganizationSettingsPanel(input: { canManageSettings: boolean })
         <button
           type="button"
           onClick={createOrganization}
-          disabled={!input.canManageSettings || busy || !organizationName.trim() || !organizationId.trim()}
+          disabled={!canManageSettings || busy || !organizationName.trim() || !organizationId.trim()}
           className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? "Creating..." : "Create Organization"}
         </button>
-        {!input.canManageSettings ? (
+        {!canManageSettings ? (
           <p className="text-xs text-amber-300">Owner settings permission required.</p>
         ) : null}
       </div>
