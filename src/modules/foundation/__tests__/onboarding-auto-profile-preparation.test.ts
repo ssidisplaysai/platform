@@ -119,6 +119,14 @@ describe("onboarding auto profile preparation", () => {
       site: siteFixture(),
       organizationProfiles: [],
       likedCreativeAssetIds: ["asset-owner-liked-1"],
+      eligibleLogoAssets: [{
+        assetId: "asset-owner-liked-1",
+        fileName: "PageEngines_Neon_Growth_Logo.png",
+        mediaType: "image/png",
+        classification: "OWNER_SUPPLIED_REFERENCE",
+        sentiment: "LIKE",
+        notes: "Owner approved for logo use.",
+      }],
     });
 
     expect(preview.proposals).toHaveLength(4);
@@ -129,6 +137,7 @@ describe("onboarding auto profile preparation", () => {
     expect(brand?.diagnostics.blockers).toContain("Approved logo authority is required before brand profile can be operationally ready.");
     expect(brand?.instructionBody).toContain("Grow Your Business Where It Matters Most.");
     expect(preview.workflow.configured).toBe(false);
+    expect(preview.eligibleLogoAssets).toHaveLength(1);
   });
 
   test("reuses existing in-scope profile bindings", () => {
@@ -170,6 +179,33 @@ describe("onboarding auto profile preparation", () => {
     expect(seo?.profileName).toBe("Custom PageEngines SEO");
     expect(seo?.instructionBody).toBe("Custom SEO instruction body");
     expect(seo?.references.titleStrategyReference).toBe("titlestrategy-pageengines-custom");
+  });
+
+  test("maps approved logo selection to site-intelligence asset reference", () => {
+    const preview = createAutoPreparedProfilesPreview({
+      site: siteFixture(),
+      organizationProfiles: [],
+      eligibleLogoAssets: [{
+        assetId: "site-asset-pageengines-logo-approved",
+        fileName: "PageEngines_Neon_Growth_Logo.png",
+        mediaType: "image/png",
+        classification: "OWNER_SUPPLIED_REFERENCE",
+        sentiment: "LIKE",
+        notes: "Owner approved for logo use.",
+      }],
+    });
+    const updated = applyAutoPreparedProfileOverrides({
+      preview,
+      overrides: [{
+        profileType: "brand",
+        selectedLogoAssetId: "site-asset-pageengines-logo-approved",
+        logoApprovalConfirmed: true,
+      }],
+    });
+    const brand = updated.find((proposal) => proposal.profileType === "brand");
+    expect(brand?.references.logoReference).toBe("site-intelligence-asset:site-asset-pageengines-logo-approved");
+    const logoDiagnostic = brand?.diagnostics.references.find((item) => item.key === "logoReference");
+    expect(logoDiagnostic?.status).toBe("verified_asset");
   });
 
   test("builds a creation payload from a proposed profile", () => {

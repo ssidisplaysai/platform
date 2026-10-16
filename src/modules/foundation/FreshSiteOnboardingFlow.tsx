@@ -205,6 +205,8 @@ export function FreshSiteOnboardingFlow(input: {
     profileName: string;
     description: string;
     instructionBody: string;
+    selectedLogoAssetId: string;
+    logoApprovalConfirmed: boolean;
     references: Record<string, string>;
   }>>({});
 
@@ -485,13 +487,22 @@ export function FreshSiteOnboardingFlow(input: {
       profileName: string;
       description: string;
       instructionBody: string;
+      selectedLogoAssetId: string;
+      logoApprovalConfirmed: boolean;
       references: Record<string, string>;
     }> = {};
     for (const proposal of preview.proposals) {
+      const selectedLogoAssetId = proposal.profileType === "brand"
+        && typeof proposal.references.logoReference === "string"
+        && proposal.references.logoReference.startsWith("site-intelligence-asset:")
+        ? proposal.references.logoReference.slice("site-intelligence-asset:".length)
+        : "";
       next[proposal.profileType] = {
         profileName: proposal.profileName,
         description: proposal.description,
         instructionBody: proposal.instructionBody,
+        selectedLogoAssetId,
+        logoApprovalConfirmed: false,
         references: Object.entries(proposal.references).reduce<Record<string, string>>((accumulator, [key, value]) => {
           if (typeof value === "string") {
             accumulator[key] = value;
@@ -540,6 +551,8 @@ export function FreshSiteOnboardingFlow(input: {
             profileName: edit?.profileName ?? proposal.profileName,
             description: edit?.description ?? proposal.description,
             instructionBody: edit?.instructionBody ?? proposal.instructionBody,
+            selectedLogoAssetId: edit?.selectedLogoAssetId ?? "",
+            logoApprovalConfirmed: Boolean(edit?.logoApprovalConfirmed),
             references: edit?.references ?? {},
           };
         });
@@ -732,17 +745,86 @@ export function FreshSiteOnboardingFlow(input: {
                         {proposal.mode === "proposed" ? (
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
                             <label className="text-xs text-zinc-300 sm:col-span-2">Profile Name
-                              <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
+                              <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
                             </label>
                             <label className="text-xs text-zinc-300 sm:col-span-2">Description
-                              <textarea rows={2} value={edit?.description ?? proposal.description} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: event.target.value, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                              <textarea rows={2} value={edit?.description ?? proposal.description} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: event.target.value, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
                             </label>
                             <label className="text-xs text-zinc-300 sm:col-span-2">Instruction Body (persisted to profile notes)
-                              <textarea rows={8} value={edit?.instructionBody ?? proposal.instructionBody} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: event.target.value, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                              <textarea rows={8} value={edit?.instructionBody ?? proposal.instructionBody} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: event.target.value, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
                             </label>
                             {fields.map((field) => (
                               <label key={field.key} className="text-xs text-zinc-300">
                                 {field.label}
+                                {proposal.profileType === "brand" && field.key === "logoReference" ? (
+                                  <div className="mt-2 space-y-2">
+                                    <select
+                                      value={edit?.selectedLogoAssetId ?? ""}
+                                      onChange={(event) => setAutoPrepareEdits((current) => {
+                                        const selectedLogoAssetId = event.target.value;
+                                        const selectedReference = selectedLogoAssetId
+                                          ? `site-intelligence-asset:${selectedLogoAssetId}`
+                                          : "";
+                                        return {
+                                          ...current,
+                                          [proposal.profileType]: {
+                                            profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
+                                            description: current[proposal.profileType]?.description ?? proposal.description,
+                                            instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
+                                            selectedLogoAssetId,
+                                            logoApprovalConfirmed: false,
+                                            references: {
+                                              ...(current[proposal.profileType]?.references ?? {}),
+                                              logoReference: selectedReference,
+                                            },
+                                          },
+                                        };
+                                      })}
+                                      className="h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white"
+                                    >
+                                      <option value="">Select Approved Logo</option>
+                                      {autoPreparePreview.eligibleLogoAssets.map((asset) => (
+                                        <option key={asset.assetId} value={asset.assetId}>{asset.fileName}</option>
+                                      ))}
+                                    </select>
+                                    {edit?.selectedLogoAssetId ? (
+                                      <label className="flex items-center gap-2 text-xs text-zinc-300">
+                                        <input
+                                          type="checkbox"
+                                          checked={Boolean(edit?.logoApprovalConfirmed)}
+                                          onChange={(event) => setAutoPrepareEdits((current) => ({
+                                            ...current,
+                                            [proposal.profileType]: {
+                                              profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
+                                              description: current[proposal.profileType]?.description ?? proposal.description,
+                                              instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
+                                              selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "",
+                                              logoApprovalConfirmed: event.target.checked,
+                                              references: current[proposal.profileType]?.references ?? {},
+                                            },
+                                          }))}
+                                        />
+                                        I approve this selected asset for official brand-logo use.
+                                      </label>
+                                    ) : null}
+                                    <div className="max-h-56 space-y-2 overflow-auto border border-zinc-800 bg-zinc-900/50 p-2">
+                                      {autoPreparePreview.eligibleLogoAssets.length === 0 ? (
+                                        <p className="text-xs text-zinc-500">No eligible image assets found for logo selection yet.</p>
+                                      ) : (
+                                        autoPreparePreview.eligibleLogoAssets.map((asset) => (
+                                          <div key={asset.assetId} className={`flex items-center gap-2 border p-2 ${edit?.selectedLogoAssetId === asset.assetId ? "border-emerald-600 bg-emerald-900/20" : "border-zinc-800"}`}>
+                                            <img src={asset.assetUrl} alt={asset.fileName} className="h-10 w-10 rounded border border-zinc-700 object-cover bg-zinc-950" />
+                                            <div className="min-w-0 text-[11px] text-zinc-300">
+                                              <p className="truncate font-semibold text-zinc-200">{asset.fileName}</p>
+                                              <p className="truncate">{asset.classification} · {asset.sentiment}</p>
+                                              {asset.notes ? <p className="truncate text-zinc-400">{asset.notes}</p> : null}
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : null}
                                 <input
                                   value={edit?.references?.[field.key] ?? ""}
                                   onChange={(event) => setAutoPrepareEdits((current) => ({
@@ -751,6 +833,8 @@ export function FreshSiteOnboardingFlow(input: {
                                       profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
                                       description: current[proposal.profileType]?.description ?? proposal.description,
                                       instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
+                                      selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "",
+                                      logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false,
                                       references: {
                                         ...(current[proposal.profileType]?.references ?? {}),
                                         [field.key]: event.target.value,

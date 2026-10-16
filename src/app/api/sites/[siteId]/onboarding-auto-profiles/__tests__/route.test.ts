@@ -14,9 +14,11 @@ import {
 } from "@/modules/foundation/operator-session";
 import { createSite, getSiteById, resetSiteRepositoryForTests, updateSite } from "@/modules/foundation/site-repository";
 import { listIntegrationProfiles, resetIntegrationProfileRepositoryForTests } from "@/modules/foundation/integration-profile-repository";
+import { addCreativeInput, ensureSiteIntelligenceWorkspace } from "@/modules/foundation/site-intelligence-repository";
 
 const organizationId = "pageengines";
 const siteId = "site-pageengines-pageengines-staging";
+const otherSiteId = "site-led-display-warehouse-shared";
 const baseUrl = `https://genesi-runti-8hl31agbz6rt-743202067.us-west-2.elb.amazonaws.com/api/sites/${encodeURIComponent(siteId)}/onboarding-auto-profiles`;
 
 function request(input: {
@@ -47,6 +49,8 @@ describe("onboarding auto profiles route", () => {
   let persistenceRoot = "";
   let cookie = "";
   let csrfToken = "";
+  let approvedLogoAssetId = "";
+  let otherOrgAssetId = "";
 
   beforeEach(async () => {
     persistenceRoot = mkdtempSync(join(tmpdir(), "genesis-auto-profiles-"));
@@ -98,6 +102,37 @@ describe("onboarding auto profiles route", () => {
         notes: null,
       });
     }
+    if (!getSiteById(otherSiteId)) {
+      createSite({
+        organizationId: "led-display-warehouse",
+        siteName: "LDW Shared",
+        displayName: "LDW Shared",
+        slug: "ldw-shared",
+        domain: "shared.leddisplaywarehouse.com",
+        canonicalUrl: "https://shared.leddisplaywarehouse.com",
+        primaryAddress: null,
+        environment: "staging",
+        enabled: false,
+        publicationPolicy: "draft_only",
+        defaultContentType: "article",
+        defaultPublicationStatus: "draft",
+        defaultAuthorReference: null,
+        defaultCategoryReferences: [],
+        integrations: {
+          wordpressApiBaseUrl: "https://shared.leddisplaywarehouse.com/wp-json/wp/v2",
+          wordpressCredentialReference: null,
+          workflowReference: null,
+        },
+        profiles: {
+          promptProfileReference: null,
+          imageProfileReference: null,
+          seoProfileReference: null,
+          brandProfileReference: null,
+          analyticsProfileReference: null,
+        },
+        notes: null,
+      });
+    }
     updateSite(siteId, {
       profiles: {
         promptProfileReference: null,
@@ -108,6 +143,92 @@ describe("onboarding auto profiles route", () => {
       },
       integrations: {
         workflowReference: null,
+      },
+    });
+    const workspace = ensureSiteIntelligenceWorkspace({
+      organizationId,
+      siteId,
+      publicBrandIdentity: "PageEngines",
+      actor: "site-owner",
+    });
+    approvedLogoAssetId = "site-asset-pageengines-logo-approved";
+    addCreativeInput({
+      organizationId,
+      siteId,
+      expectedRevision: workspace.revision,
+      actor: "site-owner",
+      reason: "Adding owner-approved logo candidate for auto-prepare tests.",
+      creativeInput: {
+        inputId: "creative-input-logo-approved",
+        kind: "IMAGE",
+        reference: "asset:pageengines-logo",
+        sentiment: "LIKE",
+        classification: "OWNER_SUPPLIED_REFERENCE",
+        notes: "Owner approved for brand identity and website use.",
+        suppliedBy: "site-owner",
+        suppliedAt: "2026-10-16T00:00:00.000Z",
+        binaryAsset: {
+          assetId: approvedLogoAssetId,
+          sha256: "sha256-pageengines-logo-approved",
+          originalFileName: "PageEngines_Neon_Growth_Logo.png",
+          mediaType: "image/png",
+          sizeBytes: 104857,
+          uploadedAt: "2026-10-16T00:00:00.000Z",
+          uploadedBy: "site-owner",
+          organizationId,
+          siteId,
+          providerReference: "site-intelligence-asset:site-asset-pageengines-logo-approved",
+          provenance: {
+            sourceType: "OWNER_UPLOAD",
+            sourceReference: "upload://pageengines/logo.png",
+            recordedAt: "2026-10-16T00:00:00.000Z",
+          },
+          classification: "OWNER_SUPPLIED_REFERENCE",
+          note: "Owner approved for brand identity and website use.",
+        },
+      },
+    });
+    const otherWorkspace = ensureSiteIntelligenceWorkspace({
+      organizationId: "led-display-warehouse",
+      siteId: otherSiteId,
+      publicBrandIdentity: "LDW Shared",
+      actor: "site-owner",
+    });
+    otherOrgAssetId = "site-asset-ledw-logo";
+    addCreativeInput({
+      organizationId: "led-display-warehouse",
+      siteId: otherSiteId,
+      expectedRevision: otherWorkspace.revision,
+      actor: "site-owner",
+      reason: "Adding out-of-scope logo for cross-org rejection test.",
+      creativeInput: {
+        inputId: "creative-input-logo-other-org",
+        kind: "IMAGE",
+        reference: "asset:ledw-logo",
+        sentiment: "LIKE",
+        classification: "OWNER_SUPPLIED_REFERENCE",
+        notes: "Out-of-scope logo.",
+        suppliedBy: "site-owner",
+        suppliedAt: "2026-10-16T00:00:00.000Z",
+        binaryAsset: {
+          assetId: otherOrgAssetId,
+          sha256: "sha256-ledw-logo",
+          originalFileName: "LDW_Logo.png",
+          mediaType: "image/png",
+          sizeBytes: 20480,
+          uploadedAt: "2026-10-16T00:00:00.000Z",
+          uploadedBy: "site-owner",
+          organizationId: "led-display-warehouse",
+          siteId: otherSiteId,
+          providerReference: "site-intelligence-asset:site-asset-ledw-logo",
+          provenance: {
+            sourceType: "OWNER_UPLOAD",
+            sourceReference: "upload://ldw/logo.png",
+            recordedAt: "2026-10-16T00:00:00.000Z",
+          },
+          classification: "OWNER_SUPPLIED_REFERENCE",
+          note: "Out-of-scope logo.",
+        },
       },
     });
     const session = await authenticateOperator({
@@ -170,9 +291,8 @@ describe("onboarding auto profiles route", () => {
         fingerprint: previewPayload.preview.fingerprint,
         overrides: [{
           profileType: "brand",
-          references: {
-            logoReference: "logo-pageengines-approved-v1",
-          },
+          selectedLogoAssetId: approvedLogoAssetId,
+          logoApprovalConfirmed: true,
         }],
       },
     }), { params: Promise.resolve({ siteId }) });
@@ -209,9 +329,8 @@ describe("onboarding auto profiles route", () => {
         fingerprint: secondPayload.preview.fingerprint,
         overrides: [{
           profileType: "brand",
-          references: {
-            logoReference: "logo-pageengines-approved-v1",
-          },
+          selectedLogoAssetId: approvedLogoAssetId,
+          logoApprovalConfirmed: true,
         }],
       },
     }), { params: Promise.resolve({ siteId }) });
@@ -243,6 +362,80 @@ describe("onboarding auto profiles route", () => {
     }), { params: Promise.resolve({ siteId }) });
     expect(applyResponse.status).toBe(422);
     expect((await applyResponse.json()).error).toBe("AUTO_PREPARE_PROPOSAL_BLOCKED");
+  });
+
+  test("requires explicit owner approval confirmation for selected logo asset", async () => {
+    const previewResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: { action: "PREVIEW" },
+    }), { params: Promise.resolve({ siteId }) });
+    const previewPayload = await previewResponse.json() as {
+      preview: { fingerprint: string };
+      confirmationRequired: string;
+    };
+    const applyResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: {
+        action: "APPLY",
+        confirm: previewPayload.confirmationRequired,
+        fingerprint: previewPayload.preview.fingerprint,
+        overrides: [{
+          profileType: "brand",
+          selectedLogoAssetId: approvedLogoAssetId,
+          logoApprovalConfirmed: false,
+        }],
+      },
+    }), { params: Promise.resolve({ siteId }) });
+    expect(applyResponse.status).toBe(400);
+    expect((await applyResponse.json()).error).toBe("AUTO_PREPARE_LOGO_APPROVAL_REQUIRED");
+  });
+
+  test("rejects missing and out-of-scope logo assets", async () => {
+    const previewResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: { action: "PREVIEW" },
+    }), { params: Promise.resolve({ siteId }) });
+    const previewPayload = await previewResponse.json() as {
+      preview: { fingerprint: string };
+      confirmationRequired: string;
+    };
+
+    const invalidAssetResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: {
+        action: "APPLY",
+        confirm: previewPayload.confirmationRequired,
+        fingerprint: previewPayload.preview.fingerprint,
+        overrides: [{
+          profileType: "brand",
+          selectedLogoAssetId: "site-asset-missing-logo",
+          logoApprovalConfirmed: true,
+        }],
+      },
+    }), { params: Promise.resolve({ siteId }) });
+    expect(invalidAssetResponse.status).toBe(422);
+    expect((await invalidAssetResponse.json()).error).toBe("AUTO_PREPARE_LOGO_ASSET_INVALID");
+
+    const outOfScopeResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: {
+        action: "APPLY",
+        confirm: previewPayload.confirmationRequired,
+        fingerprint: previewPayload.preview.fingerprint,
+        overrides: [{
+          profileType: "brand",
+          selectedLogoAssetId: otherOrgAssetId,
+          logoApprovalConfirmed: true,
+        }],
+      },
+    }), { params: Promise.resolve({ siteId }) });
+    expect(outOfScopeResponse.status).toBe(422);
+    expect((await outOfScopeResponse.json()).error).toBe("AUTO_PREPARE_LOGO_ASSET_INVALID");
   });
 
   test("rejects cross-organization scope access", async () => {
