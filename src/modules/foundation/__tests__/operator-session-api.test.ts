@@ -24,6 +24,18 @@ test("authenticated status check renews bounded cookies and extends session expi
 	expect(renewedCookies.some((value) => value.startsWith(`${OPERATOR_CSRF_COOKIE}=`) && /Max-Age=3600/i.test(value))).toBe(true);
 });
 test("login denies cross-origin and invalid credentials before creating cookies", async () => { const crossOrigin = await POST(new NextRequest("https://genesis.example/api/operator-session", { method: "POST", headers: { origin: "https://attacker.example", "content-type": "application/json" }, body: JSON.stringify({ identity: "operator@example.com", password }) })); expect(crossOrigin.status).toBe(403); expect(crossOrigin.headers.getSetCookie()).toHaveLength(0); const invalid = await POST(new NextRequest("https://genesis.example/api/operator-session", { method: "POST", headers: { origin: "https://genesis.example", "content-type": "application/json" }, body: JSON.stringify({ identity: "operator@example.com", password: "incorrect password" }) })); expect(invalid.status).toBe(401); });
+test("staging accepts trusted public staging origin even when backend request host is internal", async () => {
+	process.env.GENESIS_ENVIRONMENT = "staging";
+	const login = await POST(new NextRequest("https://genesi-runti-8hl31agbz6rt-743202067.us-west-2.elb.amazonaws.com/api/operator-session", { method: "POST", headers: { origin: "https://staging.glwplatform.com", "content-type": "application/json" }, body: JSON.stringify({ identity: "operator@example.com", password }) }));
+	expect(login.status).toBe(200);
+	expect(login.headers.getSetCookie()).toHaveLength(2);
+});
+test("staging still rejects non-trusted origin when backend request host is internal", async () => {
+	process.env.GENESIS_ENVIRONMENT = "staging";
+	const denied = await POST(new NextRequest("https://genesi-runti-8hl31agbz6rt-743202067.us-west-2.elb.amazonaws.com/api/operator-session", { method: "POST", headers: { origin: "https://attacker.example", "content-type": "application/json" }, body: JSON.stringify({ identity: "operator@example.com", password }) }));
+	expect(denied.status).toBe(403);
+	expect(denied.headers.getSetCookie()).toHaveLength(0);
+});
 test("HTTPS login marks both session transport cookies Secure", async () => { const login = await POST(new NextRequest("https://genesis.example/api/operator-session", { method: "POST", headers: { origin: "https://genesis.example", "content-type": "application/json" }, body: JSON.stringify({ identity: "operator@example.com", password }) })); expect(login.headers.getSetCookie()).toHaveLength(2); expect(login.headers.getSetCookie().every((cookie) => /Secure/i.test(cookie))).toBe(true); });
 test("logout requires same-origin session-bound CSRF and revokes the session", async () => { const login = await POST(new NextRequest("https://genesis.example/api/operator-session", { method: "POST", headers: { origin: "https://genesis.example", "content-type": "application/json" }, body: JSON.stringify({ identity: "operator@example.com", password }) })); const values = Object.fromEntries(login.headers.getSetCookie().map((value) => value.split(";")[0].split("="))); const cookie = `${OPERATOR_SESSION_COOKIE}=${values[OPERATOR_SESSION_COOKIE]}; ${OPERATOR_CSRF_COOKIE}=${values[OPERATOR_CSRF_COOKIE]}`; const logout = await DELETE(new NextRequest("https://genesis.example/api/operator-session", { method: "DELETE", headers: { origin: "https://genesis.example", cookie, [OPERATOR_CSRF_HEADER]: values[OPERATOR_CSRF_COOKIE] } })); expect(logout.status).toBe(200); const status = await GET(new NextRequest("https://genesis.example/api/operator-session", { headers: { cookie } })); expect(status.status).toBe(401); expect(await status.json()).toMatchObject({ state: "SESSION_REVOKED", authenticated: false }); });
 

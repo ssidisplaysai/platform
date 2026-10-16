@@ -4,7 +4,13 @@ import { authenticateOperator, clearOperatorSessionCookies, OPERATOR_CSRF_HEADER
 
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "no-store, private" };
-const sameOrigin = (request: NextRequest) => request.headers.get("origin") === request.nextUrl.origin;
+const STAGING_PUBLIC_ORIGIN = "https://staging.glwplatform.com";
+const sameOrigin = (request: NextRequest, environment: NodeJS.ProcessEnv = process.env) => {
+	const origin = request.headers.get("origin");
+	if (!origin) return false;
+	if (origin === request.nextUrl.origin) return true;
+	return environment.GENESIS_ENVIRONMENT === "staging" && origin === STAGING_PUBLIC_ORIGIN;
+};
 const authDiagnosticsEnabled = (environment: NodeJS.ProcessEnv = process.env) => environment.GENESIS_OPERATOR_AUTH_DIAGNOSTICS === "true" && environment.GENESIS_ENVIRONMENT === "staging";
 const authFailureCategory = new Set<OperatorAuthenticationFailureCategory>(["directory_unavailable_or_invalid", "operator_identity_not_found", "password_verification_failed", "session_creation_failed", "unexpected_auth_error"]);
 
