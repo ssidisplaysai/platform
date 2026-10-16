@@ -3,6 +3,7 @@ import { buildOnboardingProfileInput, createOnboardingProfileId, type Onboarding
 import type {
   IntegrationProfileConfiguration,
   IntegrationProfileReferenceSet,
+  NewIntegrationProfileInput,
   SiteConfiguration,
 } from "./types";
 
@@ -15,7 +16,18 @@ export type AutoPreparedProfileProposal = {
   profileId: string;
   profileName: string;
   description: string;
+  instructionBody: string;
   references: Partial<IntegrationProfileReferenceSet>;
+  diagnostics: {
+    blockers: string[];
+    warnings: string[];
+    references: Array<{
+      key: keyof IntegrationProfileReferenceSet;
+      value: string | null;
+      status: "verified_asset" | "supported_inline_instruction" | "declared_provider_unverified" | "unresolved_symbolic" | "missing";
+      message: string;
+    }>;
+  };
   existingReason: string | null;
 };
 
@@ -37,6 +49,7 @@ export type AutoPreparedProfileOverride = {
   profileType: PreparedProfileType;
   profileName?: string;
   description?: string;
+  instructionBody?: string;
   references?: Partial<IntegrationProfileReferenceSet>;
 };
 
@@ -87,6 +100,53 @@ function inferCreativeReferenceAssetId(input: {
   return input.likedCreativeAssetIds?.find((assetId) => nonEmpty(assetId)) ?? null;
 }
 
+function proposalInstructionBody(input: {
+  site: SiteConfiguration;
+  profileType: PreparedProfileType;
+}): string {
+  const primaryDomain = input.site.domain ?? "pageengines.com";
+  const linesByType: Record<PreparedProfileType, string[]> = {
+    brand: [
+      "Positioning: PageEngines is for local-business growth.",
+      "Headline: Grow Your Business Where It Matters Most.",
+      "Audience: businesses throughout the United States; each campaign targets the customer's city, service area, metro, or nearby communities.",
+      "Do not frame PageEngines as Sacramento-specific.",
+      "Visual direction: dark navy/black foundation, electric blue/cyan accents, illuminated local-market maps, location pins, premium typography, modern responsive layout.",
+      "NationwidePages.com is a separate multi-market/nationwide offering; reference contextually only.",
+      "No unverified testimonials, rankings, or growth statistics.",
+      "Creative references marked OWNER_SUPPLIED_REFERENCE are inspiration by default, not approved logos.",
+      `Primary domain discipline: ${primaryDomain}.`,
+    ],
+    seo: [
+      "Create accurate title tags and meta descriptions aligned to local-business growth intent.",
+      "Use page-appropriate schema and canonical discipline without implying physical offices in every target city.",
+      "Prioritize useful original local content and avoid duplicate doorway/location pages.",
+      "Require responsive layouts and clear internal linking.",
+      "Include contextual cross-link language to NationwidePages.com for businesses needing multi-market expansion.",
+      "Preserve four-stage framework messaging: Target Your Area, Build Local Pages, Optimize for Search, Track and Grow.",
+      "Do not include fabricated rankings, guarantees, or unverified performance claims.",
+    ],
+    prompt: [
+      "Generate premium, original local-growth marketing copy for PageEngines.",
+      "Use the four-stage framework verbatim: Target Your Area, Build Local Pages, Optimize for Search, Track and Grow.",
+      "Emphasize local-market customer acquisition, visibility, and conversion pathways.",
+      "Do not claim Sacramento-specific brand identity.",
+      "Include contextual mention of NationwidePages.com as separate nationwide expansion solution.",
+      "Treat any statistics/testimonials seen in visual references as illustrative, not factual claims.",
+      "Never invent testimonials, customer logos, rankings, traffic increases, or lead guarantees.",
+    ],
+    image: [
+      "Generate or select premium local-market imagery aligned to dark navy/cyan system.",
+      "Use illuminated local maps, location pins, modern business/technology motifs, and responsive hero/support compositions.",
+      "Avoid generic admin-dashboard screenshots as customer-facing marketing imagery.",
+      "Avoid Sacramento-specific identifiers unless explicitly requested for a customer-specific page.",
+      "Ensure accessible alternatives and image-to-section relevance.",
+      "Preserve contextual cross-link support to NationwidePages.com without presenting it as already operational.",
+    ],
+  };
+  return linesByType[input.profileType].join("\n");
+}
+
 function proposedReferences(input: {
   site: SiteConfiguration;
   profileType: PreparedProfileType;
@@ -97,9 +157,10 @@ function proposedReferences(input: {
   switch (input.profileType) {
     case "brand":
       return {
-        logoReference: input.likedCreativeAssetId
+        logoReference: null,
+        assetReference: input.likedCreativeAssetId
           ? `site-intelligence-asset:${input.likedCreativeAssetId}`
-          : `logo-owner-supplied-${identity}`,
+          : null,
         colorPaletteReference: `palette-${identity}-dark-navy-electric-cyan-v1`,
         typographyReference: `typography-${identity}-modern-high-legibility-v1`,
         voiceReference: `voice-${identity}-local-business-growth-v1`,
@@ -119,13 +180,13 @@ function proposedReferences(input: {
       return {
         brandReference: input.brandProfileId,
         providerReference: "provider-openai-text",
-        promptReference: `promptref-${identity}-local-growth-positioning-v1`,
+        promptReference: `inline:prompt-${identity}-local-growth-positioning-v1`,
       };
     case "image":
       return {
         brandReference: input.brandProfileId,
         providerReference: "provider-openai-image",
-        promptReference: `imgpromptref-${identity}-dark-navy-cyan-local-market-v1`,
+        promptReference: `inline:image-prompt-${identity}-dark-navy-cyan-local-market-v1`,
       };
   }
 }
@@ -168,6 +229,85 @@ function createFingerprint(input: {
     .digest("hex");
 }
 
+function deriveReferenceDiagnostics(input: {
+  profileType: PreparedProfileType;
+  references: Partial<IntegrationProfileReferenceSet>;
+  likedCreativeAssetId: string | null;
+}): AutoPreparedProfileProposal["diagnostics"] {
+  const keysByType: Record<PreparedProfileType, Array<keyof IntegrationProfileReferenceSet>> = {
+    brand: ["logoReference", "assetReference", "colorPaletteReference", "typographyReference", "voiceReference", "defaultCtaReference"],
+    seo: ["titleStrategyReference", "metaStrategyReference", "schemaReference", "openGraphReference", "slugStrategyReference", "canonicalPolicyReference"],
+    prompt: ["promptReference", "providerReference"],
+    image: ["promptReference", "providerReference"],
+  };
+  const references = keysByType[input.profileType].map((key) => {
+    const value = input.references[key] ?? null;
+    if (!value) {
+      return { key, value: null, status: "missing" as const, message: `${key} is missing.` };
+    }
+    if (key === "assetReference" && value.startsWith("site-intelligence-asset:")) {
+      const expected = input.likedCreativeAssetId ? `site-intelligence-asset:${input.likedCreativeAssetId}` : null;
+      return {
+        key,
+        value,
+        status: expected && value === expected ? "verified_asset" as const : "unresolved_symbolic" as const,
+        message: expected && value === expected ? "Verified against current liked creative asset." : "Asset reference is not verified against current liked creative asset.",
+      };
+    }
+    if (key === "logoReference") {
+      return {
+        key,
+        value,
+        status: value.startsWith("logo-") ? "unresolved_symbolic" as const : "unresolved_symbolic" as const,
+        message: "Logo references must point to an approved logo authority; symbolic values are not treated as approved logos.",
+      };
+    }
+    if (key === "providerReference" && (value === "provider-openai-text" || value === "provider-openai-image")) {
+      return {
+        key,
+        value,
+        status: "declared_provider_unverified",
+        message: "Provider reference is declared but operational verification is still required.",
+      };
+    }
+    if (value.startsWith("inline:")) {
+      return {
+        key,
+        value,
+        status: "supported_inline_instruction",
+        message: "Supported inline instruction reference; inspectable body is stored in profile notes.",
+      };
+    }
+    if (value.startsWith("site-intelligence-asset:")) {
+      return {
+        key,
+        value,
+        status: "unresolved_symbolic",
+        message: "Creative reference assets are inspiration by default and not automatically approved as logos.",
+      };
+    }
+    return {
+      key,
+      value,
+      status: "unresolved_symbolic",
+      message: "Symbolic authority reference requires an explicitly resolved backing record.",
+    };
+  });
+
+  const blockers: string[] = [];
+  const warnings: string[] = [];
+  if (input.profileType === "brand" && !input.references.logoReference) {
+    blockers.push("Approved logo authority is required before brand profile can be operationally ready.");
+  }
+  if (references.some((item) => item.status === "declared_provider_unverified")) {
+    warnings.push("Provider references are declared but not operationally verified.");
+  }
+  if (references.some((item) => item.status === "unresolved_symbolic")) {
+    warnings.push("Some references are symbolic and require resolution before final readiness.");
+  }
+  return { blockers, warnings, references };
+}
+
 export function createAutoPreparedProfilesPreview(input: {
   site: SiteConfiguration;
   organizationProfiles: readonly IntegrationProfileConfiguration[];
@@ -196,13 +336,20 @@ export function createAutoPreparedProfilesPreview(input: {
         ))
       : null;
     if (existingBySiteReference) {
+      const existingInstructionBody = (existingBySiteReference.notes ?? "").trim();
       return {
         profileType,
         mode: "existing",
         profileId: existingBySiteReference.profileId,
         profileName: existingBySiteReference.profileName,
         description: existingBySiteReference.description ?? "",
+        instructionBody: existingInstructionBody,
         references: existingBySiteReference.references,
+        diagnostics: deriveReferenceDiagnostics({
+          profileType,
+          references: existingBySiteReference.references,
+          likedCreativeAssetId,
+        }),
         existingReason: "Already bound to this site.",
       };
     }
@@ -216,13 +363,20 @@ export function createAutoPreparedProfilesPreview(input: {
       && profile.profileType === profileType
     ));
     if (existingByDeterministicId) {
+      const existingInstructionBody = (existingByDeterministicId.notes ?? "").trim();
       return {
         profileType,
         mode: "existing",
         profileId: existingByDeterministicId.profileId,
         profileName: existingByDeterministicId.profileName,
         description: existingByDeterministicId.description ?? "",
+        instructionBody: existingInstructionBody,
         references: existingByDeterministicId.references,
+        diagnostics: deriveReferenceDiagnostics({
+          profileType,
+          references: existingByDeterministicId.references,
+          likedCreativeAssetId,
+        }),
         existingReason: "Existing deterministic profile will be reused.",
       };
     }
@@ -232,6 +386,16 @@ export function createAutoPreparedProfilesPreview(input: {
       : (existingBySiteReference?.profileId
         ?? input.site.profiles.brandProfileReference
         ?? provisionalBrandProfileId);
+    const references = proposedReferences({
+      site: input.site,
+      profileType,
+      likedCreativeAssetId,
+      brandProfileId,
+    });
+    const instructionBody = proposalInstructionBody({
+      site: input.site,
+      profileType,
+    });
 
     return {
       profileType,
@@ -239,11 +403,12 @@ export function createAutoPreparedProfilesPreview(input: {
       profileId: metadata.profileId,
       profileName: metadata.profileName,
       description: metadata.description,
-      references: proposedReferences({
-        site: input.site,
+      instructionBody,
+      references,
+      diagnostics: deriveReferenceDiagnostics({
         profileType,
+        references,
         likedCreativeAssetId,
-        brandProfileId,
       }),
       existingReason: null,
     };
@@ -289,10 +454,19 @@ function mergeOverrides(
     ...proposal,
     profileName: override.profileName?.trim() || proposal.profileName,
     description: override.description?.trim() || proposal.description,
+    instructionBody: override.instructionBody?.trim() || proposal.instructionBody,
     references: {
       ...proposal.references,
       ...(override.references ?? {}),
     },
+    diagnostics: deriveReferenceDiagnostics({
+      profileType: proposal.profileType,
+      references: {
+        ...proposal.references,
+        ...(override.references ?? {}),
+      },
+      likedCreativeAssetId: null,
+    }),
   };
 }
 
@@ -313,13 +487,18 @@ export function applyAutoPreparedProfileOverrides(input: {
 export function buildNewProfileFromAutoPreparedProposal(input: {
   organizationId: string;
   proposal: AutoPreparedProfileProposal;
-}) {
-  return buildOnboardingProfileInput({
+}): NewIntegrationProfileInput {
+  const profile = buildOnboardingProfileInput({
     organizationId: input.organizationId,
     profileType: input.proposal.profileType,
     profileName: input.proposal.profileName,
     description: input.proposal.description,
     references: input.proposal.references,
   });
+  return {
+    ...profile,
+    notes: input.proposal.instructionBody.trim().length > 0
+      ? input.proposal.instructionBody
+      : profile.notes,
+  };
 }
-

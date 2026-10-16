@@ -99,6 +99,16 @@ export async function POST(request: NextRequest, context: Context) {
     preview,
     overrides: body.overrides,
   });
+  const blockedProposal = proposals.find((proposal) => (
+    proposal.mode === "proposed" && proposal.diagnostics.blockers.length > 0
+  ));
+  if (blockedProposal) {
+    return NextResponse.json({
+      error: "AUTO_PREPARE_PROPOSAL_BLOCKED",
+      profileType: blockedProposal.profileType,
+      blockers: blockedProposal.diagnostics.blockers,
+    }, { status: 422 });
+  }
 
   const resolved = {
     brandProfileReference: site.profiles.brandProfileReference,
@@ -218,4 +228,3 @@ export async function POST(request: NextRequest, context: Context) {
     workflowPending: !updatedSite.site.integrations.workflowReference,
   });
 }
-

@@ -123,8 +123,11 @@ describe("onboarding auto profile preparation", () => {
 
     expect(preview.proposals).toHaveLength(4);
     expect(preview.proposals.every((proposal) => proposal.mode === "proposed")).toBe(true);
-    expect(preview.proposals.find((proposal) => proposal.profileType === "brand")?.references.logoReference)
-      .toBe("site-intelligence-asset:asset-owner-liked-1");
+    const brand = preview.proposals.find((proposal) => proposal.profileType === "brand");
+    expect(brand?.references.logoReference).toBeNull();
+    expect(brand?.references.assetReference).toBe("site-intelligence-asset:asset-owner-liked-1");
+    expect(brand?.diagnostics.blockers).toContain("Approved logo authority is required before brand profile can be operationally ready.");
+    expect(brand?.instructionBody).toContain("Grow Your Business Where It Matters Most.");
     expect(preview.workflow.configured).toBe(false);
   });
 
@@ -157,6 +160,7 @@ describe("onboarding auto profile preparation", () => {
       overrides: [{
         profileType: "seo",
         profileName: "Custom PageEngines SEO",
+        instructionBody: "Custom SEO instruction body",
         references: {
           titleStrategyReference: "titlestrategy-pageengines-custom",
         },
@@ -164,6 +168,7 @@ describe("onboarding auto profile preparation", () => {
     });
     const seo = updated.find((proposal) => proposal.profileType === "seo");
     expect(seo?.profileName).toBe("Custom PageEngines SEO");
+    expect(seo?.instructionBody).toBe("Custom SEO instruction body");
     expect(seo?.references.titleStrategyReference).toBe("titlestrategy-pageengines-custom");
   });
 
@@ -182,6 +187,6 @@ describe("onboarding auto profile preparation", () => {
     expect(input.profileType).toBe("brand");
     expect(input.organizationId).toBe("pageengines");
     expect(input.profileName).toContain("PageEngines");
+    expect(input.notes).toContain("Positioning: PageEngines is for local-business growth.");
   });
 });
-
