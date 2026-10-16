@@ -40,3 +40,23 @@ test("same-origin internal mutation forwarding preserves session and CSRF author
 		rmSync(root, { recursive: true, force: true });
 	}
 });
+
+test("staging trusted public origin is accepted for CSRF-bound mutations behind internal runtime origin", async () => {
+	const originalRoot = process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+	const root = mkdtempSync(join(tmpdir(), "genesis-staging-origin-auth-"));
+	process.env.GCP_FOUNDATION_PERSISTENCE_DIR = root;
+	try {
+		const password = "correct horse battery staple";
+		const environment = { ...production, GENESIS_ENVIRONMENT: "staging", GENESIS_OPERATOR_DIRECTORY_JSON: JSON.stringify([{ principalId: "operator-001", email: "operator@example.com", roles: ["platform_admin"], passwordHash: await createScryptPasswordHash(password, Buffer.alloc(16, 23)) }]) };
+		const session = await authenticateOperator({ identity: "operator-001", password, environment });
+		const cookie = `${OPERATOR_SESSION_COOKIE}=${session.token}; ${OPERATOR_CSRF_COOKIE}=${session.csrfToken}`;
+		const proxiedMutation = new NextRequest("https://genesi-runti-8hl31agbz6rt-743202067.us-west-2.elb.amazonaws.com/api/organizations", { method: "POST", headers: { cookie, origin: "https://staging.glwplatform.com", [OPERATOR_CSRF_HEADER]: session.csrfToken } });
+		expect(authorizeRequest(proxiedMutation, "settings:manage", environment)).toMatchObject({ ok: true, roles: ["platform_admin"] });
+		const untrustedOrigin = new NextRequest("https://genesi-runti-8hl31agbz6rt-743202067.us-west-2.elb.amazonaws.com/api/organizations", { method: "POST", headers: { cookie, origin: "https://evil.example", [OPERATOR_CSRF_HEADER]: session.csrfToken } });
+		expect(authorizeRequest(untrustedOrigin, "settings:manage", environment)).toMatchObject({ ok: false, status: 403, error: "Forbidden" });
+	} finally {
+		if (originalRoot === undefined) delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+		else process.env.GCP_FOUNDATION_PERSISTENCE_DIR = originalRoot;
+		rmSync(root, { recursive: true, force: true });
+	}
+});

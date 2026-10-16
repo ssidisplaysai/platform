@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { authenticateOperator, clearOperatorSessionCookies, OPERATOR_CSRF_HEADER, OPERATOR_SESSION_COOKIE, OperatorAuthenticationError, OperatorAuthenticationFailureCategory, refreshOperatorSessionExpiry, resolveAuthenticatedOperatorPrincipal, revokeOperatorSession, setOperatorSessionCookies, validateOperatorMutationRequest } from "@/modules/foundation/operator-session";
+import { authenticateOperator, clearOperatorSessionCookies, OPERATOR_CSRF_HEADER, OPERATOR_SESSION_COOKIE, OperatorAuthenticationError, OperatorAuthenticationFailureCategory, refreshOperatorSessionExpiry, resolveAuthenticatedOperatorPrincipal, revokeOperatorSession, setOperatorSessionCookies, STAGING_PUBLIC_ORIGIN, validateOperatorMutationRequest } from "@/modules/foundation/operator-session";
 
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "no-store, private" };
-const STAGING_PUBLIC_ORIGIN = "https://staging.glwplatform.com";
 const sameOrigin = (request: NextRequest, environment: NodeJS.ProcessEnv = process.env) => {
 	const origin = request.headers.get("origin");
 	if (!origin) return false;

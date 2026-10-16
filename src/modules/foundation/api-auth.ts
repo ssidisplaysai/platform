@@ -64,7 +64,10 @@ export function authorizeRequest(
     };
   }
 
-  if (!["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase()) && !validateOperatorMutationRequest(request, resolution)) {
+  if (
+    !["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase()) &&
+    !validateOperatorMutationRequest(request, resolution, environment)
+  ) {
     return {
       ok: false,
       status: 403,

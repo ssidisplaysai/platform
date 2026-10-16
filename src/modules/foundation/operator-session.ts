@@ -12,6 +12,7 @@ import type { AppRole, PermissionAction } from "./types";
 export const OPERATOR_SESSION_COOKIE = "genesis_operator_session";
 export const OPERATOR_CSRF_COOKIE = "genesis_operator_csrf";
 export const OPERATOR_CSRF_HEADER = "x-genesis-csrf-token";
+export const STAGING_PUBLIC_ORIGIN = "https://staging.glwplatform.com";
 export const OPERATOR_SESSION_AUTHORITY = "GENESIS_SERVER_SESSION_V1" as const;
 export const OPERATOR_SESSION_LIFETIME_SECONDS = 3600;
 const TRUSTED_LOCAL_OPERATOR_SESSION_ID = "trusted-local-operator";
@@ -181,7 +182,8 @@ export function validateOperatorMutationRequest(request: NextRequest, resolution
   if (!resolution.ok) return false;
   if (environment.NODE_ENV === "test" && resolution.principal.email === "test-principal@invalid.test") return true;
   const origin = request.headers.get("origin");
-  if (!origin || origin !== request.nextUrl.origin) return false;
+  const trustedStagingOrigin = environment.GENESIS_ENVIRONMENT === "staging" && origin === STAGING_PUBLIC_ORIGIN;
+  if (!origin || (origin !== request.nextUrl.origin && !trustedStagingOrigin)) return false;
   if (
     environment.GENESIS_TRUSTED_LOCAL_OPERATOR === "true" &&
     resolution.principal.sessionId === "trusted-local-operator"
