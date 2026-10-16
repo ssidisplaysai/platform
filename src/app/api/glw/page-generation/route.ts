@@ -76,6 +76,7 @@ import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-c
 import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-title-suppression";
 import { renderOutdoorSphereRichWordPress } from "@/modules/glw/outdoor-sphere-rich-wordpress-render";
 import { resolveOutdoorSphereGovernedCtaUrl } from "@/modules/glw/outdoor-sphere-governed-cta-url";
+import { assertPageenginesMutationAuthorityBinding } from "@/modules/glw/pageengines-dispatch-authority";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -1371,6 +1372,16 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
 }
 
 async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  try {
+    assertPageenginesMutationAuthorityBinding({ request, siteRecord });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "PageEngines authority binding is required before generation.",
+      code: "PAGEENGINES_AUTHORITY_BINDING_REQUIRED",
+      status: 409,
+    } as const;
+  }
+
   const apiBaseUrl = siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
   const credentialReference = siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
   const credential = resolveWordPressCredentialReference(credentialReference);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CompanyRepository } from "@/core/repositories/CompanyRepository";
+import type { Company } from "@/types/models/Company";
 import { OnboardingProfileCreator } from "./OnboardingProfileCreator";
 import {
   applyCreatedOnboardingProfile,
@@ -55,6 +55,10 @@ type SelectedOnboardingProfiles = {
 type ExistingAuthorityProfileSnapshot = {
   profiles?: Partial<SiteConfiguration["profiles"]> | null;
   integrations?: Partial<SiteConfiguration["integrations"]> | null;
+};
+
+type OrganizationsResponse = {
+  organizations: Company[];
 };
 
 function isSelectableProfileReference(
@@ -141,10 +145,10 @@ export function FreshSiteOnboardingFlow(input: {
   mode?: "create" | "configure";
 } = {}) {
   const configureMode = input.mode === "configure" && Boolean(input.initialSite);
-  const organizations = CompanyRepository.getActive();
+  const [organizations, setOrganizations] = useState<Company[]>([]);
   const [step, setStep] = useState<Step>(configureMode ? 4 : 1);
   const [intent, setIntent] = useState<"fresh" | "existing">("fresh");
-  const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? organizations[0]?.id ?? "");
+  const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? "");
   const [siteName, setSiteName] = useState(input.initialSite?.siteName ?? "");
   const [displayName, setDisplayName] = useState(input.initialSite?.displayName ?? "");
   const [domain, setDomain] = useState(input.initialSite?.domain ?? "");
@@ -183,6 +187,43 @@ export function FreshSiteOnboardingFlow(input: {
   const cleanDomain = normalizedDomain(domain);
   const inferredApiUrl = cleanDomain ? `https://${cleanDomain}/wp-json/wp/v2` : "";
   const organizationName = organizations.find((organization) => organization.id === organizationId)?.name ?? organizationId;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOrganizations() {
+      try {
+        const response = await fetch("/api/organizations?status=active", {
+          method: "GET",
+          headers: {
+            "x-gcp-roles": "ops_manager",
+          },
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as OrganizationsResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? `Failed to load organizations (${response.status}).`);
+        }
+        if (cancelled) {
+          return;
+        }
+        setOrganizations(payload.organizations);
+        setOrganizationId((current) => {
+          if (current && payload.organizations.some((organization) => organization.id === current)) {
+            return current;
+          }
+          return payload.organizations[0]?.id ?? "";
+        });
+      } catch (caught) {
+        if (!cancelled) {
+          setError(caught instanceof Error ? caught.message : "Unable to load organizations.");
+        }
+      }
+    }
+    loadOrganizations();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -477,7 +518,7 @@ export function FreshSiteOnboardingFlow(input: {
               {intent === "existing" ? <p className="mt-3 border-l-2 border-emerald-500 pl-3 text-sm text-emerald-200">Genesis will bind an existing site authority when domain identity already exists; otherwise it creates a safe draft-only Genesis context without mutating WordPress.</p> : null}
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-zinc-300">Organization<select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white">{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>
+              <label className="text-sm text-zinc-300">Organization<select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white" disabled={organizations.length === 0}>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>
               <label className="text-sm text-zinc-300">Environment<select value={environment} onChange={(event) => { setEnvironment(event.target.value as SiteEnvironment); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white"><option value="production">Production</option><option value="staging">Staging</option><option value="development">Development</option></select></label>
               <label className="text-sm text-zinc-300">Site Name<input required value={siteName} onChange={(event) => { setSiteName(event.target.value); resetEvidence(); }} placeholder="Example Fresh Site" className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white outline-none focus:border-red-500" /></label>
               <label className="text-sm text-zinc-300">Display Name<input required value={displayName} onChange={(event) => { setDisplayName(event.target.value); resetEvidence(); }} placeholder="Example Fresh Site" className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white outline-none focus:border-red-500" /></label>

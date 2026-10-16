@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CompanyRepository } from "@/core/repositories/CompanyRepository";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { inspectFreshWordPressSite, readWordPressOperatorCapabilities } from "@/modules/foundation/fresh-site-onboarding";
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { getSiteById, updateSite } from "@/modules/foundation/site-repository";
+import { getOrganizationById } from "@/modules/foundation/organization-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { createWordPressEstateReader } from "@/modules/foundation/wordpress-estate-reader";
 import type { SiteConfiguration } from "@/modules/foundation/types";
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const assessment = await inspectFreshWordPressSite({
     site: connectedSite,
     reader: createWordPressEstateReader({ authority }),
-    organizationActive: CompanyRepository.getById(existing.organizationId)?.status === "active",
+    organizationActive: getOrganizationById(existing.organizationId)?.status === "active",
     permissions: resolvePermissions(auth.roles),
     capabilities,
   });

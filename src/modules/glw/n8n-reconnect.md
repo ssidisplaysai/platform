@@ -13,6 +13,25 @@ This module provides the staging-safe callback reconciliation gate for GLW page-
 - `GLW_N8N_NON_MUTATING_TEST`  
   When `true`, MCP dispatch uses a synthetic accepted execution and does not invoke `execute_workflow`.
 
+### PageEngines-scoped real-dispatch binding (fail-closed)
+
+PageEngines dispatch authority now resolves from persisted foundation records:
+
+- Site repository record (`organizationId`, `siteId`, canonical/domain/WordPress API host, workflow profile binding, credential reference)
+- Product repository record (organization match + site assignment)
+- Integration profile repository workflow profile (`providerReference=provider-n8n`, credential reference, isolated workflow reference)
+
+Optional host override:
+
+- `GENESIS_PAGEENGINES_WORDPRESS_HOST` (defaults to `staging.pageengines.com`)
+
+Guard behavior:
+
+- Rejects organization/site/product/workflow-profile/credential mismatches.
+- Rejects non-draft publication intent and update operations for first homepage initialization.
+- Rejects LEDW recovery workflow reuse for PageEngines dispatch.
+- Rejects WordPress/canonical/domain targets outside `staging.pageengines.com`.
+
 ## Callback contract behavior
 
 - Accepts `jobId` (or legacy `id`), `executionId`, and status.
