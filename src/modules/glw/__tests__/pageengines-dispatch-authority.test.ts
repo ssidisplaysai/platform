@@ -70,7 +70,7 @@ function createPageenginesRequest(): GlwGenerationRequest {
     publicationIntent: "draft",
     plannedOperation: "CREATE_GENERAL",
     wordpressObjectId: null,
-    additionalInstructions: "PAGEENGINES_HOMEPAGE_CONTRACT_V1",
+    additionalInstructions: "PAGEENGINES_HOMEPAGE_CONTRACT_V1; distinctive hero section; platform positioning; responsive mobile and desktop layout; clear CTAs; no fabricated results.",
     organizationId: "pageengines",
     siteName: "PageEngines",
     siteDomain: "staging.pageengines.com",
@@ -169,4 +169,3 @@ describe("PageEngines dispatch authority binding", () => {
     })).not.toThrow();
   });
 });
-

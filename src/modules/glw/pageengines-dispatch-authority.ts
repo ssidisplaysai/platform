@@ -3,6 +3,14 @@ import type { GlwGenerationRequest } from "./page-generation";
 import type { GlwN8nDraftRequest } from "./page-execution";
 
 const DEFAULT_PAGEENGINES_WORDPRESS_HOST = "staging.pageengines.com";
+const PAGEENGINES_HOMEPAGE_CONTRACT_MARKERS = [
+  "pageengines_homepage_contract_v1",
+  "distinctive hero section",
+  "platform positioning",
+  "responsive mobile and desktop layout",
+  "clear ctas",
+  "no fabricated results",
+] as const;
 
 export type PageenginesDispatchConfiguration = {
   organizationId: string;
@@ -110,6 +118,16 @@ function assertPageenginesHostMatches(input: {
   }
 }
 
+function assertPageenginesCompositionContract(additionalInstructions: string | null | undefined): void {
+  const normalized = (additionalInstructions ?? "").trim().toLowerCase();
+  const missing = PAGEENGINES_HOMEPAGE_CONTRACT_MARKERS.filter((marker) => !normalized.includes(marker));
+  if (missing.length > 0) {
+    throw new Error(
+      "PageEngines homepage generation requires the full PAGEENGINES_HOMEPAGE_CONTRACT_V1 composition instructions.",
+    );
+  }
+}
+
 export function resolveWorkflowIdForDispatch(input: {
   request: GlwN8nDraftRequest;
   environment?: NodeJS.ProcessEnv;
@@ -152,6 +170,7 @@ export function resolveWorkflowIdForDispatch(input: {
   if (input.request.publishingSettings.status !== "draft" || input.request.page.status !== "draft") {
     throw new Error("PageEngines dispatch rejected non-draft publication intent.");
   }
+  assertPageenginesCompositionContract(input.request.workflowContext.additionalInstructions);
 
   assertPageenginesHostMatches({
     expectedHost: configuration.wordpressHost,
@@ -224,5 +243,5 @@ export function assertPageenginesMutationAuthorityBinding(input: {
   if (input.request.plannedOperation !== "CREATE_GENERAL" || input.request.wordpressObjectId) {
     throw new Error("PageEngines authority requires create-only homepage draft initialization.");
   }
+  assertPageenginesCompositionContract(input.request.additionalInstructions);
 }
-

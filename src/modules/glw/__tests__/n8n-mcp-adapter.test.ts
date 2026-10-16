@@ -129,6 +129,7 @@ function successfulExecution(executionId = "123") {
 }
 
 function pageenginesDraftRequest(): GlwN8nDraftRequest {
+  const additionalInstructions = "PAGEENGINES_HOMEPAGE_CONTRACT_V1; distinctive hero section; platform positioning; responsive mobile and desktop layout; clear CTAs; no fabricated results.";
   return {
     ...mappedRequest,
     operation: "CREATE_GENERAL",
@@ -155,7 +156,14 @@ function pageenginesDraftRequest(): GlwN8nDraftRequest {
       city: "",
       citySlug: "",
       city_slug: "",
+      additionalInstructions,
+      additional_instructions: additionalInstructions,
       status: "draft",
+    },
+    workflowContext: {
+      ...mappedRequest.workflowContext,
+      workspaceId: "pageengines",
+      additionalInstructions,
     },
   };
 }
