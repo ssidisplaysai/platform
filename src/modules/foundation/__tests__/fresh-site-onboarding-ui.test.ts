@@ -83,7 +83,9 @@ describe("fresh-site onboarding UI contract", () => {
   });
 
   test("profile creation uses onboarding scope and has no campaign or WordPress mutation", () => {
-    expect(profileCreator).toContain('"x-gcp-organization-id": input.organizationId');
+    expect(profileCreator).toContain("onboardingProfileCreateHeaders");
+    expect(profileCreator).toContain('"x-gcp-organization-id": organizationId');
+    expect(profileCreator).toContain("operatorMutationHeaders");
     expect(profileCreator).toContain('fetch("/api/profiles"');
     expect(profileCreator).not.toContain("/api/glw/");
     expect(profileCreator).not.toContain("wp-json");
