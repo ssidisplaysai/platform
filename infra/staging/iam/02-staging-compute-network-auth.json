@@ -169,6 +169,17 @@
         "cognito-idp:CreateUserPoolClient"
       ],
       "Resource": "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON"
+    },
+    {
+      "Sid": "SecretsStagingWooApiDescribe",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/woocommerce-api-consumer-key-L3ASM1",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/woocommerce-api-consumer-secret-Cpe0yS"
+      ]
     }
   ]
 }
