@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { GET as getSites } from "@/app/api/sites/route";
 import { GET as getSiteById, PATCH as patchSite } from "@/app/api/sites/[siteId]/route";
-import { resetSiteRepositoryForTests } from "@/modules/foundation/site-repository";
+import { createSite, resetSiteRepositoryForTests } from "@/modules/foundation/site-repository";
 
 function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
@@ -45,6 +45,61 @@ describe("GCP-0002C site API authorization conformance", () => {
       headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
     expect(operator.status).toBe(200);
+  });
+
+  test("platform admin can list all authorized organizations and optional organization filter", async () => {
+    createSite({
+      organizationId: "ssi",
+      siteName: "SSI Staging",
+      displayName: "SSI Staging",
+      slug: "ssi-staging",
+      domain: "staging.ssidisplays.com",
+      primaryAddress: {
+        addressLine1: "100 Main St",
+        addressLine2: null,
+        city: "Dallas",
+        stateRegion: "TX",
+        postalCode: "75001",
+        countryCode: "US",
+      },
+      canonicalUrl: "https://staging.ssidisplays.com",
+      environment: "staging",
+      enabled: false,
+      publicationPolicy: "draft_only",
+      defaultContentType: "article",
+      defaultPublicationStatus: "draft",
+      defaultAuthorReference: null,
+      defaultCategoryReferences: [],
+      integrations: {
+        wordpressApiBaseUrl: "https://staging.ssidisplays.com/wp-json/wp/v2",
+        wordpressCredentialReference: null,
+        workflowReference: null,
+      },
+      profiles: {
+        promptProfileReference: null,
+        imageProfileReference: null,
+        seoProfileReference: null,
+        brandProfileReference: null,
+        analyticsProfileReference: null,
+      },
+      notes: "staging test site",
+    });
+
+    const allOrganizations = await getSites(request("http://localhost/api/sites", {
+      headers: authHeaders({ role: "platform_admin" }),
+    }));
+    expect(allOrganizations.status).toBe(200);
+    const allPayload = await allOrganizations.json() as { sites: Array<{ organizationId: string }> };
+    expect(allPayload.sites.some((site) => site.organizationId === "ssi")).toBe(true);
+    expect(allPayload.sites.some((site) => site.organizationId === "led-display-warehouse")).toBe(true);
+
+    const filtered = await getSites(request("http://localhost/api/sites?organizationId=ssi", {
+      headers: authHeaders({ role: "platform_admin" }),
+    }));
+    expect(filtered.status).toBe(200);
+    const filteredPayload = await filtered.json() as { sites: Array<{ organizationId: string }> };
+    expect(filteredPayload.sites.length).toBeGreaterThan(0);
+    expect(filteredPayload.sites.every((site) => site.organizationId === "ssi")).toBe(true);
   });
 
   test("site detail read cannot bypass collection scope", async () => {

@@ -9,6 +9,7 @@ import {
   filterReadyOnboardingProfiles,
 } from "./onboarding-profile-creation";
 import { operatorMutationHeaders } from "./operator-session-client";
+import { resolveOnboardingResumeStep } from "./site-onboarding-resume";
 import { findFreshSiteCollision, type FreshSiteCollision } from "./fresh-site-create-mode";
 import { createSiteId, slugifySiteName } from "./site-identity";
 import type {
@@ -151,8 +152,9 @@ export function FreshSiteOnboardingFlow(input: {
   mode?: "create" | "configure";
 } = {}) {
   const configureMode = input.mode === "configure" && Boolean(input.initialSite);
+  const resumeStep = input.initialSite ? resolveOnboardingResumeStep(input.initialSite) : 1;
   const [organizations, setOrganizations] = useState<Company[]>([]);
-  const [step, setStep] = useState<Step>(configureMode ? 4 : 1);
+  const [step, setStep] = useState<Step>(configureMode ? resumeStep : 1);
   const [intent, setIntent] = useState<"fresh" | "existing">("fresh");
   const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? "");
   const [siteName, setSiteName] = useState(input.initialSite?.siteName ?? "");
