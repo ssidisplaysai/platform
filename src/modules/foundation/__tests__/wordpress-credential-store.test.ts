@@ -11,6 +11,7 @@ describe("WordPress credential storage", () => {
   beforeEach(() => {
     directory = fs.mkdtempSync(path.join(os.tmpdir(), "genesis-wp-credential-"));
     process.env.GCP_FOUNDATION_PERSISTENCE_DIR = directory;
+    process.env.GENESIS_ENVIRONMENT = "staging";
     process.env.GENESIS_CREDENTIAL_MASTER_KEY = Buffer.alloc(32, 7).toString("base64");
   });
 
@@ -36,5 +37,39 @@ describe("WordPress credential storage", () => {
       username: "genesis-operator",
       applicationPassword: "abcdefghijklmnop",
     });
+  });
+
+  test("staging generates and reuses a persisted fallback master key when env key is absent", () => {
+    delete process.env.GENESIS_CREDENTIAL_MASTER_KEY;
+    process.env.GENESIS_ENVIRONMENT = "staging";
+
+    const stored = storeWordPressCredential({
+      organizationId: "pageengines",
+      siteId: "site-pageengines-pageengines-staging",
+      username: "genesis-api",
+      applicationPassword: "mnop qrst uvwx yzab",
+    });
+
+    expect(resolveStoredWordPressCredential(stored.reference)).toEqual({
+      username: "genesis-api",
+      applicationPassword: "mnopqrstuvwxyzab",
+    });
+    expect(
+      fs.existsSync(path.join(directory, "wordpress-credential-master-key.json")),
+    ).toBe(true);
+  });
+
+  test("production fails closed when master key is not configured", () => {
+    delete process.env.GENESIS_CREDENTIAL_MASTER_KEY;
+    process.env.GENESIS_ENVIRONMENT = "production";
+
+    expect(() =>
+      storeWordPressCredential({
+        organizationId: "pageengines",
+        siteId: "site-pageengines-pageengines-staging",
+        username: "genesis-api",
+        applicationPassword: "mnop qrst uvwx yzab",
+      }),
+    ).toThrow("GENESIS_CREDENTIAL_MASTER_KEY is required in production.");
   });
 });

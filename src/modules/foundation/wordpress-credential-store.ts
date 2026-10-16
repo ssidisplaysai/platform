@@ -14,6 +14,8 @@ import {
 import type { ResolvedWordPressCredential } from "./wordpress-credential-resolver";
 
 const PERSISTENCE_NAMESPACE = "wordpress-credential-store";
+const MASTER_KEY_FALLBACK_NAMESPACE =
+  "wordpress-credential-master-key";
 const ALGORITHM = "aes-256-gcm";
 
 type EncryptedWordPressCredentialRecord = {
@@ -29,6 +31,10 @@ type EncryptedWordPressCredentialRecord = {
 
 type WordPressCredentialStoreState = {
   credentials: EncryptedWordPressCredentialRecord[];
+};
+
+type CredentialMasterKeyState = {
+  key: string;
 };
 
 const credentialStore =
@@ -91,21 +97,71 @@ function resolveMasterKey(): Buffer {
   const encoded =
     process.env.GENESIS_CREDENTIAL_MASTER_KEY?.trim();
 
-  if (!encoded) {
-    throw new Error(
-      "GENESIS_CREDENTIAL_MASTER_KEY is not configured.",
-    );
+  if (encoded) {
+    const key = Buffer.from(encoded, "base64");
+
+    if (key.length !== 32) {
+      throw new Error(
+        "GENESIS_CREDENTIAL_MASTER_KEY must decode to exactly 32 bytes.",
+      );
+    }
+
+    return key;
   }
 
-  const key = Buffer.from(encoded, "base64");
+  if (
+    process.env.GENESIS_ENVIRONMENT === "staging"
+    || process.env.NODE_ENV === "test"
+  ) {
+    const loaded =
+      loadPersistedState<CredentialMasterKeyState>({
+        namespace: MASTER_KEY_FALLBACK_NAMESPACE,
+        seedFactory: () => ({
+          key: randomBytes(32).toString("base64"),
+        }),
+      });
 
-  if (key.length !== 32) {
-    throw new Error(
-      "GENESIS_CREDENTIAL_MASTER_KEY must decode to exactly 32 bytes.",
-    );
+    const persistedKey =
+      loaded.state.key?.trim();
+
+    if (!persistedKey) {
+      throw new Error(
+        "GENESIS_CREDENTIAL_MASTER_KEY_FALLBACK_UNAVAILABLE",
+      );
+    }
+
+    const key = Buffer.from(persistedKey, "base64");
+    if (key.length !== 32) {
+      throw new Error(
+        "GENESIS_CREDENTIAL_MASTER_KEY_FALLBACK_INVALID_LENGTH",
+      );
+    }
+
+    if (loaded.seeded) {
+      savePersistedState<CredentialMasterKeyState>({
+        namespace: MASTER_KEY_FALLBACK_NAMESPACE,
+        state: loaded.state,
+        expectedRevision: loaded.revision,
+      });
+    }
+
+    return key;
   }
 
-  return key;
+  throw new Error(
+    "GENESIS_CREDENTIAL_MASTER_KEY is not configured.",
+  );
+}
+
+function ensureKeyConfiguredForProtectedEnvironments(): void {
+  if (
+    process.env.GENESIS_ENVIRONMENT === "production"
+    && !process.env.GENESIS_CREDENTIAL_MASTER_KEY?.trim()
+  ) {
+    throw new Error(
+      "GENESIS_CREDENTIAL_MASTER_KEY is required in production.",
+    );
+  }
 }
 
 function encryptCredential(
@@ -199,6 +255,7 @@ export function storeWordPressCredential(input: {
 }): {
   reference: string;
 } {
+  ensureKeyConfiguredForProtectedEnvironments();
   loadState();
   const username = input.username.trim();
   const applicationPassword =

@@ -31,6 +31,7 @@ fail the infrastructure safety gate.
 - Always set by staging: `NODE_ENV`, `GENESIS_ENVIRONMENT=staging`, `GENESIS_STONER_GYM_RECRUITED_CREATORS=jessica`, `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` (staging secret), `GCP_FOUNDATION_PERSISTENCE_DIR`, `GIT_COMMIT`, `GENESIS_RUNTIME_SHA`, staging log group, digest-pinned staging image.
 - Denied: production persistence path, WordPress bridge credentials, anything matching password/WordPress/DB/payout/payment/webhook/AWS patterns.
 - Review-required secrets (not copied until a human moves them into `secrets.allow`): `GENESIS_OPENAI_API_KEY`, `OPENAI_API_KEY`, `GENESIS_CREDENTIAL_MASTER_KEY`. Share-to-Grow does not need them.
+- For staging-only Foundation credential onboarding, if `GENESIS_CREDENTIAL_MASTER_KEY` is not provided, Genesis derives and persists a dedicated staging fallback key in Foundation persistence. Production still requires an explicit configured master key.
 - Any copied secret is referenced by ARN; the staging execution role is granted read on exactly those ARNs (production secret values and policies are not modified).
 
 ## EFS persistence bridge (STAGING ONLY)
