@@ -98,4 +98,12 @@ describe("fresh-site onboarding UI contract", () => {
     expect(source).toContain("setSelectedProfiles(result.selection)");
     expect(source).toContain("filterReadyOnboardingProfiles");
   });
+
+  test("includes owner-approved auto-prepare preview/apply without removing manual controls", () => {
+    expect(source).toContain("Auto-Prepare Profiles (Owner Approved)");
+    expect(source).toContain("Preview Auto-Prepare");
+    expect(source).toContain("Approve & Apply Auto-Prepared Profiles");
+    expect(source).toContain("OnboardingProfileCreator");
+    expect(source).toContain("Workflow remains pending until an isolated workflow reference is verified.");
+  });
 });
