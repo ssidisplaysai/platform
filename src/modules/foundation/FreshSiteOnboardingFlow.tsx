@@ -7,6 +7,7 @@ import { OnboardingProfileCreator } from "./OnboardingProfileCreator";
 import {
   applyCreatedOnboardingProfile,
   filterReadyOnboardingProfiles,
+  ONBOARDING_PROFILE_REFERENCE_FIELDS,
 } from "./onboarding-profile-creation";
 import { operatorMutationHeaders } from "./operator-session-client";
 import { resolveOnboardingResumeStep } from "./site-onboarding-resume";
@@ -22,6 +23,7 @@ import type {
   SitePublicationPolicy,
   SiteReadinessResult,
 } from "./types";
+import type { AutoPreparedProfilesPreview } from "./onboarding-auto-profile-preparation";
 import type {
   FreshSiteCompletionState,
   FreshSiteInventory,
@@ -57,6 +59,14 @@ type SelectedOnboardingProfiles = {
 type ExistingAuthorityProfileSnapshot = {
   profiles?: Partial<SiteConfiguration["profiles"]> | null;
   integrations?: Partial<SiteConfiguration["integrations"]> | null;
+};
+
+type AutoPrepareResponse = {
+  preview?: AutoPreparedProfilesPreview;
+  confirmationRequired?: string;
+  selectedProfiles?: SelectedOnboardingProfiles;
+  workflowPending?: boolean;
+  site?: SiteConfiguration;
 };
 
 type OrganizationsResponse = {
@@ -189,6 +199,13 @@ export function FreshSiteOnboardingFlow(input: {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [collision, setCollision] = useState<FreshSiteCollision | null>(null);
+  const [autoPreparePreview, setAutoPreparePreview] = useState<AutoPreparedProfilesPreview | null>(null);
+  const [autoPrepareConfirmation, setAutoPrepareConfirmation] = useState("");
+  const [autoPrepareEdits, setAutoPrepareEdits] = useState<Record<string, {
+    profileName: string;
+    description: string;
+    references: Record<string, string>;
+  }>>({});
 
   const slug = useMemo(() => slugifySiteName(siteName), [siteName]);
   const prospectiveSiteId = organizationId && slug ? createSiteId(organizationId, slug) : "Generated after site name";
@@ -274,6 +291,9 @@ export function FreshSiteOnboardingFlow(input: {
     setAssessment(null);
     setCollision(null);
     setStep(1);
+    setAutoPreparePreview(null);
+    setAutoPrepareEdits({});
+    setAutoPrepareConfirmation("");
   }
 
   async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
@@ -459,6 +479,105 @@ export function FreshSiteOnboardingFlow(input: {
     setSelectedProfiles(result.selection);
   }
 
+  function hydrateAutoPrepareEdits(preview: AutoPreparedProfilesPreview) {
+    const next: Record<string, { profileName: string; description: string; references: Record<string, string> }> = {};
+    for (const proposal of preview.proposals) {
+      next[proposal.profileType] = {
+        profileName: proposal.profileName,
+        description: proposal.description,
+        references: Object.entries(proposal.references).reduce<Record<string, string>>((accumulator, [key, value]) => {
+          if (typeof value === "string") {
+            accumulator[key] = value;
+          }
+          return accumulator;
+        }, {}),
+      };
+    }
+    setAutoPrepareEdits(next);
+  }
+
+  async function previewAutoPrepareProfiles() {
+    if (!site) return;
+    setBusy("auto-prepare-preview");
+    setError(null);
+    try {
+      const payload = await requestJson<AutoPrepareResponse>(`/api/sites/${encodeURIComponent(site.siteId)}/onboarding-auto-profiles`, {
+        method: "POST",
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
+        body: JSON.stringify({ action: "PREVIEW" }),
+      });
+      if (!payload.preview) {
+        throw new Error("Auto-prepare preview was not returned.");
+      }
+      setAutoPreparePreview(payload.preview);
+      setAutoPrepareConfirmation(payload.confirmationRequired ?? "");
+      hydrateAutoPrepareEdits(payload.preview);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Auto-prepare preview failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function applyAutoPrepareProfiles() {
+    if (!site || !autoPreparePreview || !autoPrepareConfirmation) return;
+    setBusy("auto-prepare-apply");
+    setError(null);
+    try {
+      const overrides = autoPreparePreview.proposals
+        .filter((proposal) => proposal.mode === "proposed")
+        .map((proposal) => {
+          const edit = autoPrepareEdits[proposal.profileType];
+          return {
+            profileType: proposal.profileType,
+            profileName: edit?.profileName ?? proposal.profileName,
+            description: edit?.description ?? proposal.description,
+            references: edit?.references ?? {},
+          };
+        });
+      const payload = await requestJson<AutoPrepareResponse>(`/api/sites/${encodeURIComponent(site.siteId)}/onboarding-auto-profiles`, {
+        method: "POST",
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
+        body: JSON.stringify({
+          action: "APPLY",
+          confirm: autoPrepareConfirmation,
+          fingerprint: autoPreparePreview.fingerprint,
+          overrides,
+        }),
+      });
+      if (!payload.selectedProfiles) {
+        throw new Error("Auto-prepared profile bindings were not returned.");
+      }
+      if (payload.site) {
+        setSite(payload.site);
+      }
+      setSelectedProfiles(payload.selectedProfiles);
+      const [profileResponse, readinessResponse] = await Promise.all([
+        fetch(`/api/profiles?organizationId=${encodeURIComponent(organizationId)}&enabled=true`, {
+          headers: onboardingRequestHeaders(organizationId),
+          cache: "no-store",
+        }),
+        fetch("/api/profiles/readiness", {
+          headers: onboardingRequestHeaders(organizationId),
+          cache: "no-store",
+        }),
+      ]);
+      const profilePayload = (await profileResponse.json()) as { profiles?: IntegrationProfileConfiguration[] };
+      const readinessPayload = (await readinessResponse.json()) as { readiness?: Array<{ profileId: string; ready: boolean }> };
+      if (profileResponse.ok && readinessResponse.ok) {
+        setProfiles(filterReadyOnboardingProfiles({
+          organizationId,
+          profiles: profilePayload.profiles ?? [],
+          readiness: readinessPayload.readiness ?? [],
+        }));
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Auto-prepare apply failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveConfiguration() {
     if (!site) return;
     setBusy("configuration");
@@ -577,6 +696,68 @@ export function FreshSiteOnboardingFlow(input: {
         {step === 4 && site ? (
           <div className="space-y-6">
             <div><h3 className="text-lg font-semibold text-white">Configure Genesis authority</h3><p className="mt-1 text-sm text-zinc-400">Select only active profiles registered for {organizationId}. No settings are copied from another site automatically.</p></div>
+            <section className="border border-zinc-800 bg-zinc-900/60 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Auto-Prepare Profiles (Owner Approved)</h4>
+                  <p className="mt-1 text-xs text-zinc-400">Preview reusable Brand, SEO, Prompt, and Image profile proposals from current site identity and approved references before persisting anything. Workflow remains pending until an isolated workflow reference is verified.</p>
+                </div>
+                <button type="button" onClick={previewAutoPrepareProfiles} disabled={busy !== null} className="border border-zinc-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{busy === "auto-prepare-preview" ? "Preparing..." : "Preview Auto-Prepare"}</button>
+              </div>
+              {autoPreparePreview ? (
+                <div className="mt-4 space-y-3">
+                  {autoPreparePreview.proposals.map((proposal) => {
+                    const fields = ONBOARDING_PROFILE_REFERENCE_FIELDS[proposal.profileType];
+                    const edit = autoPrepareEdits[proposal.profileType];
+                    return (
+                      <article key={proposal.profileType} className="border border-zinc-700 bg-zinc-950/70 p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-300">{proposal.profileType}</p>
+                          <span className={`text-xs ${proposal.mode === "existing" ? "text-emerald-300" : "text-amber-300"}`}>{proposal.mode === "existing" ? "Reuse existing" : "Create on approval"}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-zinc-500 break-all">{proposal.profileId}</p>
+                        {proposal.mode === "proposed" ? (
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <label className="text-xs text-zinc-300 sm:col-span-2">Profile Name
+                              <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
+                            </label>
+                            <label className="text-xs text-zinc-300 sm:col-span-2">Description
+                              <textarea rows={2} value={edit?.description ?? proposal.description} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: event.target.value, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                            </label>
+                            {fields.map((field) => (
+                              <label key={field.key} className="text-xs text-zinc-300">
+                                {field.label}
+                                <input
+                                  value={edit?.references?.[field.key] ?? ""}
+                                  onChange={(event) => setAutoPrepareEdits((current) => ({
+                                    ...current,
+                                    [proposal.profileType]: {
+                                      profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
+                                      description: current[proposal.profileType]?.description ?? proposal.description,
+                                      references: {
+                                        ...(current[proposal.profileType]?.references ?? {}),
+                                        [field.key]: event.target.value,
+                                      },
+                                    },
+                                  }))}
+                                  className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white"
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-xs text-zinc-400">{proposal.existingReason}</p>
+                        )}
+                      </article>
+                    );
+                  })}
+                  <p className={`text-xs ${autoPreparePreview.workflow.configured ? "text-emerald-300" : "text-amber-300"}`}>{autoPreparePreview.workflow.reason}</p>
+                  <div className="flex justify-end">
+                    <button type="button" disabled={busy !== null} onClick={applyAutoPrepareProfiles} className="bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">{busy === "auto-prepare-apply" ? "Applying..." : "Approve & Apply Auto-Prepared Profiles"}</button>
+                  </div>
+                </div>
+              ) : null}
+            </section>
             <div className="grid gap-4 md:grid-cols-2">
               {PROFILE_FIELDS.map((item) => {
                 const available = profilesOfType(item.type);
