@@ -12,6 +12,7 @@ import { GLW_N8N_WORKFLOW_ID } from "./n8n-draft-adapter";
 import { validateGlwN8nMcpDraftRequest } from "./n8n-mcp-recovery-contract";
 import { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
 import { isGlwN8nNonMutatingTestMode } from "./n8n-reconnect";
+import { resolveWorkflowIdForDispatch } from "./pageengines-dispatch-authority";
 
 export const GLW_N8N_MCP_TRANSPORT = "N8N_MCP" as const;
 export { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
@@ -252,8 +253,13 @@ export function createGlwN8nMcpDispatcher(input?: {
           status: "accepted",
         };
       }
+      const workflowId = resolveWorkflowIdForDispatch({
+        request: validatedRequest,
+        environment,
+        fallbackWorkflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+      });
       const result = await callTool("execute_workflow", {
-        workflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+        workflowId,
         executionMode: "production",
         triggerNodeName: "GLW MCP Recovery Webhook",
         inputs: {

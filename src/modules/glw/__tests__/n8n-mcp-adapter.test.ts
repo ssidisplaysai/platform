@@ -71,6 +71,19 @@ function environment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   };
 }
 
+function pageenginesAuthorityEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return environment({
+    GENESIS_PAGEENGINES_ORGANIZATION_ID: "pageengines",
+    GENESIS_PAGEENGINES_SITE_ID: "site-pageengines-staging",
+    GENESIS_PAGEENGINES_PRODUCT_ID: "prod-pageengines-homepage-service",
+    GENESIS_PAGEENGINES_WORKFLOW_PROFILE_REFERENCE: "profile-workflow-pageengines-staging",
+    GENESIS_PAGEENGINES_WORDPRESS_CREDENTIAL_REFERENCE: "credref-wp-pageengines-staging",
+    GENESIS_PAGEENGINES_WORDPRESS_HOST: "staging.pageengines.com",
+    GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID: "PwkflowPageEng001",
+    ...overrides,
+  });
+}
+
 function nodeRun(json: Record<string, unknown>) {
   return [{ data: { main: [[{ json }]] } }];
 }
@@ -111,6 +124,38 @@ function successfulExecution(executionId = "123") {
           },
         },
       },
+    },
+  };
+}
+
+function pageenginesDraftRequest(): GlwN8nDraftRequest {
+  return {
+    ...mappedRequest,
+    operation: "CREATE_GENERAL",
+    wordpressObjectId: null,
+    workspaceId: "pageengines",
+    workspace_id: "pageengines",
+    site: {
+      ...mappedRequest.site,
+      id: "site-pageengines-staging",
+      name: "PageEngines Staging",
+      domain: "staging.pageengines.com",
+      canonicalUrl: "https://staging.pageengines.com",
+      wordpressApiBaseUrl: "https://staging.pageengines.com/wp-json/wp/v2",
+    },
+    page: {
+      ...mappedRequest.page,
+      pageType: "general_service",
+      page_type: "general_service",
+      productId: "prod-pageengines-homepage-service",
+      product: "PageEngines Homepage Service",
+      productTopic: "PageEngines Homepage Service",
+      product_topic: "PageEngines Homepage Service",
+      state: "",
+      city: "",
+      citySlug: "",
+      city_slug: "",
+      status: "draft",
     },
   };
 }
@@ -278,6 +323,53 @@ describe("GLW n8n MCP recovery adapter", () => {
     });
     expect(validateLiveExecuteArguments(callTool.mock.calls[0][1])).toBe(true);
     expect(Object.keys(callTool.mock.calls[0][1])).toEqual(["workflowId", "executionMode", "triggerNodeName", "inputs"]);
+  });
+
+  test("rejects PageEngines dispatch when workflow identity is missing", async () => {
+    const callTool = jest.fn();
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment({
+        GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID: "",
+      }),
+      callTool,
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).rejects.toThrow(
+      "GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID",
+    );
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
+  test("rejects PageEngines dispatch when workflow points to legacy LEDW recovery flow", async () => {
+    const callTool = jest.fn();
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment({
+        GENESIS_PAGEENGINES_N8N_MCP_WORKFLOW_ID: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+      }),
+      callTool,
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).rejects.toThrow(
+      "LED Warehouse workflow binding",
+    );
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
+  test("uses isolated PageEngines workflow identity when scoped dispatch authority matches", async () => {
+    const callTool = jest.fn().mockResolvedValue({
+      structuredContent: { status: "started", executionId: "123" },
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment(),
+      callTool,
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).resolves.toMatchObject({
+      kind: "accepted",
+      executionId: "123",
+      status: "accepted",
+    });
+    expect(callTool).toHaveBeenCalledWith(
+      "execute_workflow",
+      expect.objectContaining({ workflowId: "PwkflowPageEng001" }),
+    );
   });
 
   test("live schema fixture rejects a missing webhook trigger name", () => {
