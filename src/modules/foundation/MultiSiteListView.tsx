@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { CompanyRepository } from "@/core/repositories/CompanyRepository";
+import { useEffect, useMemo, useState } from "react";
+import type { Company } from "@/types/models/Company";
 import { filterSites, SITE_ENVIRONMENTS, SITE_HEALTH_STATES, SITE_LIFECYCLE_STATES } from "./site-selectors";
-import { listFoundationSitesForContext } from "./site-context-source";
+import { isOnboardingResumable, resolveOnboardingResumeStep } from "./site-onboarding-resume";
 import type {
   SiteConfiguration,
   SiteEnvironment,
@@ -16,25 +16,10 @@ import { evaluateSiteReadiness } from "./site-readiness";
 import { resolvePermissions } from "./permissions";
 
 export function MultiSiteListView() {
-  const initialState = useMemo(() => {
-    try {
-      return {
-        loading: false,
-        error: null as string | null,
-        sites: listFoundationSitesForContext(),
-      };
-    } catch (error) {
-      return {
-        loading: false,
-        error: error instanceof Error ? error.message : "Unable to load sites.",
-        sites: [] as readonly SiteConfiguration[],
-      };
-    }
-  }, []);
-
-  const [loading] = useState(initialState.loading);
-  const [error] = useState<string | null>(initialState.error);
-  const [sites] = useState<readonly SiteConfiguration[]>(initialState.sites);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sites, setSites] = useState<readonly SiteConfiguration[]>([]);
+  const [organizations, setOrganizations] = useState<Company[]>([]);
   const [filters, setFilters] = useState<SiteListFilters>({
     query: "",
   });
@@ -43,7 +28,72 @@ export function MultiSiteListView() {
 
   const filteredSites = useMemo(() => filterSites(sites, filters), [sites, filters]);
 
-  const organizations = CompanyRepository.getAll();
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadData() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [siteResponse, organizationResponse] = await Promise.all([
+          fetch("/api/sites", {
+            method: "GET",
+            headers: {
+              "x-gcp-roles": "ops_manager",
+            },
+            cache: "no-store",
+          }),
+          fetch("/api/organizations?status=active", {
+            method: "GET",
+            headers: {
+              "x-gcp-roles": "ops_manager",
+            },
+            cache: "no-store",
+          }),
+        ]);
+
+        const sitePayload = (await siteResponse.json()) as {
+          sites?: SiteConfiguration[];
+          error?: string;
+        };
+        if (!siteResponse.ok || !Array.isArray(sitePayload.sites)) {
+          throw new Error(sitePayload.error ?? `Unable to load sites (${siteResponse.status}).`);
+        }
+
+        const organizationPayload = (await organizationResponse.json()) as {
+          organizations?: Company[];
+          error?: string;
+        };
+        if (!organizationResponse.ok || !Array.isArray(organizationPayload.organizations)) {
+          throw new Error(organizationPayload.error ?? `Unable to load organizations (${organizationResponse.status}).`);
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setSites(sitePayload.sites);
+        setOrganizations(organizationPayload.organizations);
+      } catch (cause) {
+        if (!cancelled) {
+          setError(cause instanceof Error ? cause.message : "Unable to load sites.");
+          setSites([]);
+          setOrganizations([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -166,6 +216,7 @@ export function MultiSiteListView() {
                 <th className="px-4 py-3">Last Publish</th>
                 <th className="px-4 py-3">Last Test</th>
                 <th className="px-4 py-3">Enabled</th>
+                <th className="px-4 py-3">Onboarding</th>
               </tr>
             </thead>
             <tbody>
@@ -195,6 +246,18 @@ export function MultiSiteListView() {
                     <td className="px-4 py-3">{site.lastSuccessfulPublication ?? "Never"}</td>
                     <td className="px-4 py-3">{site.lastConnectionTest ?? "Never"}</td>
                     <td className="px-4 py-3">{site.enabled ? "Yes" : "No"}</td>
+                    <td className="px-4 py-3">
+                      {isOnboardingResumable(site) ? (
+                        <Link
+                          className="text-red-400 hover:text-red-300"
+                          href={`/sites/${encodeURIComponent(site.siteId)}/onboarding?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`}
+                        >
+                          Resume Onboarding (Step {resolveOnboardingResumeStep(site)})
+                        </Link>
+                      ) : (
+                        <span className="text-zinc-400">Complete</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

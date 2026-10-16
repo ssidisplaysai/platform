@@ -34,7 +34,8 @@ describe("fresh site create mode", () => {
   });
 
   test("identity starts blank while organization and production environment may default", () => {
-    expect(source).toContain('input.initialSite?.organizationId ?? organizations[0]?.id ?? ""');
+    expect(source).toContain('useState(input.initialSite?.organizationId ?? "")');
+    expect(source).toContain("return payload.organizations[0]?.id ?? \"\";");
     expect(source).toContain('useState(input.initialSite?.siteName ?? "")');
     expect(source).toContain('useState(input.initialSite?.displayName ?? "")');
     expect(source).toContain('useState(input.initialSite?.domain ?? "")');
@@ -79,8 +80,9 @@ describe("fresh site create mode", () => {
   test("existing configuring shells resume through an explicit separate route", () => {
     expect(resumeRoute).toContain('mode="configure"');
     expect(resumeRoute).toContain("initialSite={site}");
-    expect(siteDetail).toContain("Continue Onboarding");
-    expect(siteDetail).toContain("/onboarding");
+    expect(siteDetail).toContain("resolveSiteWorkflowResume");
+    expect(siteDetail).toContain("workflow.primaryAction.href");
+    expect(source).toContain("resolveOnboardingResumeStep");
     expect(source).toContain("input.initialSite?.profiles.seoProfileReference");
     expect(source).toContain("input.initialSite?.integrations.workflowReference");
   });
