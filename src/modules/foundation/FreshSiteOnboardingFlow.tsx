@@ -204,6 +204,7 @@ export function FreshSiteOnboardingFlow(input: {
   const [autoPrepareEdits, setAutoPrepareEdits] = useState<Record<string, {
     profileName: string;
     description: string;
+    instructionBody: string;
     references: Record<string, string>;
   }>>({});
 
@@ -480,11 +481,17 @@ export function FreshSiteOnboardingFlow(input: {
   }
 
   function hydrateAutoPrepareEdits(preview: AutoPreparedProfilesPreview) {
-    const next: Record<string, { profileName: string; description: string; references: Record<string, string> }> = {};
+    const next: Record<string, {
+      profileName: string;
+      description: string;
+      instructionBody: string;
+      references: Record<string, string>;
+    }> = {};
     for (const proposal of preview.proposals) {
       next[proposal.profileType] = {
         profileName: proposal.profileName,
         description: proposal.description,
+        instructionBody: proposal.instructionBody,
         references: Object.entries(proposal.references).reduce<Record<string, string>>((accumulator, [key, value]) => {
           if (typeof value === "string") {
             accumulator[key] = value;
@@ -532,6 +539,7 @@ export function FreshSiteOnboardingFlow(input: {
             profileType: proposal.profileType,
             profileName: edit?.profileName ?? proposal.profileName,
             description: edit?.description ?? proposal.description,
+            instructionBody: edit?.instructionBody ?? proposal.instructionBody,
             references: edit?.references ?? {},
           };
         });
@@ -609,6 +617,11 @@ export function FreshSiteOnboardingFlow(input: {
 
   const identityReady = Boolean(siteName.trim() && displayName.trim() && organizationId && cleanDomain);
   const configurationComplete = Object.values(selectedProfiles).every(Boolean);
+  const autoPrepareBlocked = autoPreparePreview
+    ? autoPreparePreview.proposals.some((proposal) => (
+        proposal.mode === "proposed" && proposal.diagnostics.blockers.length > 0
+      ))
+    : false;
 
   return (
     <section id="fresh-site-onboarding" className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
@@ -719,10 +732,13 @@ export function FreshSiteOnboardingFlow(input: {
                         {proposal.mode === "proposed" ? (
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
                             <label className="text-xs text-zinc-300 sm:col-span-2">Profile Name
-                              <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
+                              <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
                             </label>
                             <label className="text-xs text-zinc-300 sm:col-span-2">Description
-                              <textarea rows={2} value={edit?.description ?? proposal.description} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: event.target.value, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                              <textarea rows={2} value={edit?.description ?? proposal.description} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: event.target.value, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                            </label>
+                            <label className="text-xs text-zinc-300 sm:col-span-2">Instruction Body (persisted to profile notes)
+                              <textarea rows={8} value={edit?.instructionBody ?? proposal.instructionBody} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: event.target.value, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
                             </label>
                             {fields.map((field) => (
                               <label key={field.key} className="text-xs text-zinc-300">
@@ -734,6 +750,7 @@ export function FreshSiteOnboardingFlow(input: {
                                     [proposal.profileType]: {
                                       profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
                                       description: current[proposal.profileType]?.description ?? proposal.description,
+                                      instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
                                       references: {
                                         ...(current[proposal.profileType]?.references ?? {}),
                                         [field.key]: event.target.value,
@@ -744,6 +761,22 @@ export function FreshSiteOnboardingFlow(input: {
                                 />
                               </label>
                             ))}
+                            {proposal.diagnostics.blockers.length > 0 ? (
+                              <div className="sm:col-span-2 border border-amber-700 bg-amber-950/30 p-2 text-xs text-amber-200">
+                                <p className="font-semibold">Blockers</p>
+                                <ul className="mt-1 list-disc pl-4">
+                                  {proposal.diagnostics.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                                </ul>
+                              </div>
+                            ) : null}
+                            {proposal.diagnostics.warnings.length > 0 ? (
+                              <div className="sm:col-span-2 border border-zinc-700 bg-zinc-900/70 p-2 text-xs text-zinc-300">
+                                <p className="font-semibold">Warnings</p>
+                                <ul className="mt-1 list-disc pl-4">
+                                  {proposal.diagnostics.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                                </ul>
+                              </div>
+                            ) : null}
                           </div>
                         ) : (
                           <p className="mt-2 text-xs text-zinc-400">{proposal.existingReason}</p>
@@ -752,8 +785,9 @@ export function FreshSiteOnboardingFlow(input: {
                     );
                   })}
                   <p className={`text-xs ${autoPreparePreview.workflow.configured ? "text-emerald-300" : "text-amber-300"}`}>{autoPreparePreview.workflow.reason}</p>
+                  {autoPrepareBlocked ? <p className="text-xs text-amber-200">Resolve proposal blockers before approval and apply.</p> : null}
                   <div className="flex justify-end">
-                    <button type="button" disabled={busy !== null} onClick={applyAutoPrepareProfiles} className="bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">{busy === "auto-prepare-apply" ? "Applying..." : "Approve & Apply Auto-Prepared Profiles"}</button>
+                    <button type="button" disabled={busy !== null || autoPrepareBlocked} onClick={applyAutoPrepareProfiles} className="bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">{busy === "auto-prepare-apply" ? "Applying..." : "Approve & Apply Auto-Prepared Profiles"}</button>
                   </div>
                 </div>
               ) : null}

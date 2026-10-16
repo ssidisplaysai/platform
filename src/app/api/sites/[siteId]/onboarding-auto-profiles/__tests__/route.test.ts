@@ -168,6 +168,12 @@ describe("onboarding auto profiles route", () => {
         action: "APPLY",
         confirm: previewPayload.confirmationRequired,
         fingerprint: previewPayload.preview.fingerprint,
+        overrides: [{
+          profileType: "brand",
+          references: {
+            logoReference: "logo-pageengines-approved-v1",
+          },
+        }],
       },
     }), { params: Promise.resolve({ siteId }) });
     expect(applyResponse.status).toBe(200);
@@ -201,6 +207,12 @@ describe("onboarding auto profiles route", () => {
         action: "APPLY",
         confirm: "APPROVE_AUTO_PREPARE_PROFILES",
         fingerprint: secondPayload.preview.fingerprint,
+        overrides: [{
+          profileType: "brand",
+          references: {
+            logoReference: "logo-pageengines-approved-v1",
+          },
+        }],
       },
     }), { params: Promise.resolve({ siteId }) });
     expect(secondApply.status).toBe(200);
@@ -208,6 +220,29 @@ describe("onboarding auto profiles route", () => {
     const updatedSite = getSiteById(siteId);
     expect(updatedSite?.profiles.brandProfileReference).toContain("profile-brand-pageengines-pageengines-brand-profile");
     expect(updatedSite?.integrations.workflowReference).toBeNull();
+  });
+
+  test("blocks apply when required logo authority is unresolved", async () => {
+    const previewResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: { action: "PREVIEW" },
+    }), { params: Promise.resolve({ siteId }) });
+    const previewPayload = await previewResponse.json() as {
+      preview: { fingerprint: string };
+      confirmationRequired: string;
+    };
+    const applyResponse = await POST(request({
+      cookie,
+      csrfToken,
+      body: {
+        action: "APPLY",
+        confirm: previewPayload.confirmationRequired,
+        fingerprint: previewPayload.preview.fingerprint,
+      },
+    }), { params: Promise.resolve({ siteId }) });
+    expect(applyResponse.status).toBe(422);
+    expect((await applyResponse.json()).error).toBe("AUTO_PREPARE_PROPOSAL_BLOCKED");
   });
 
   test("rejects cross-organization scope access", async () => {

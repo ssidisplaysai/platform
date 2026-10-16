@@ -42,7 +42,10 @@ Automatic execution requires the dedicated n8n endpoint `https://ssiai.app.n8n.c
 Fresh-site onboarding supports an owner-approved **Auto-Prepare Profiles** action for Brand, SEO, Prompt, and Image authority:
 
 - Preview is required before persistence.
-- The owner can review and edit proposed profile values, then explicitly approve apply.
+- The owner can review and edit proposed profile values, including inspectable instruction bodies that persist into profile notes.
+- Owner-supplied creative references are treated as inspiration by default and are **not** auto-promoted to `logoReference`.
+- Missing approved logo authority blocks apply until the owner provides an approved logo reference.
+- Proposal diagnostics explicitly flag blockers, warnings, unresolved symbolic references, and unverified provider declarations.
 - Records are scoped to the current organization and site; existing matching records are reused.
 - Workflow profile binding remains pending until an isolated verified workflow reference exists.
 - Manual advanced profile controls remain available.
