@@ -8,6 +8,7 @@ import {
   applyCreatedOnboardingProfile,
   filterReadyOnboardingProfiles,
 } from "./onboarding-profile-creation";
+import { operatorMutationHeaders } from "./operator-session-client";
 import { findFreshSiteCollision, type FreshSiteCollision } from "./fresh-site-create-mode";
 import { createSiteId, slugifySiteName } from "./site-identity";
 import type {
@@ -127,13 +128,18 @@ const PROFILE_FIELDS: Array<{
   { type: "brand", label: "Brand profile", field: "brandProfileReference" },
 ];
 
-function headers(organizationId: string, siteId?: string): Record<string, string> {
-  return {
+export function onboardingRequestHeaders(
+  organizationId: string,
+  siteId?: string,
+  mutation = false,
+): HeadersInit {
+  const baseHeaders: Record<string, string> = {
     "Content-Type": "application/json",
     "x-gcp-roles": "ops_manager",
     "x-gcp-organization-id": organizationId,
     ...(siteId ? { "x-gcp-site-id": siteId } : {}),
   };
+  return mutation ? operatorMutationHeaders(baseHeaders) : baseHeaders;
 }
 
 function normalizedDomain(value: string): string {
@@ -232,11 +238,11 @@ export function FreshSiteOnboardingFlow(input: {
       try {
         const [profileResponse, readinessResponse] = await Promise.all([
           fetch(`/api/profiles?organizationId=${encodeURIComponent(organizationId)}&enabled=true`, {
-            headers: headers(organizationId),
+            headers: onboardingRequestHeaders(organizationId),
             cache: "no-store",
           }),
           fetch("/api/profiles/readiness", {
-            headers: headers(organizationId),
+            headers: onboardingRequestHeaders(organizationId),
             cache: "no-store",
           }),
         ]);
@@ -285,7 +291,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const sitesPayload = await requestJson<{ sites: SiteConfiguration[] }>("/api/sites", {
         method: "GET",
-        headers: headers(organizationId),
+        headers: onboardingRequestHeaders(organizationId),
         cache: "no-store",
       });
       if (intent === "fresh") {
@@ -301,7 +307,7 @@ export function FreshSiteOnboardingFlow(input: {
       }
       const payload = await requestJson<{ result: PublicWordPressPreflightResult }>("/api/sites/onboarding-preflight", {
         method: "POST",
-        headers: headers(organizationId),
+        headers: onboardingRequestHeaders(organizationId, undefined, true),
         body: JSON.stringify({ domain, apiBaseUrl: advanced ? apiOverride : null, intent }),
       });
       setPreflight(payload.result);
@@ -352,7 +358,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<OnboardingCreateResponse>("/api/sites/onboarding-create", {
         method: "POST",
-        headers: headers(organizationId),
+        headers: onboardingRequestHeaders(organizationId, undefined, true),
         body: JSON.stringify(input),
       });
       setSite(payload.site);
@@ -381,7 +387,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<{ site: SiteConfiguration }>(`/api/sites/${encodeURIComponent(site.siteId)}`, {
         method: "PATCH",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
         body: JSON.stringify({ primaryAddress }),
       });
       setSite(payload.site);
@@ -400,7 +406,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       await requestJson<{ configured: boolean }>(`/api/sites/${encodeURIComponent(site.siteId)}/wordpress-credentials`, {
         method: "PUT",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
         body: JSON.stringify({ username, applicationPassword }),
       });
       setUsername("");
@@ -420,7 +426,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<{ site: SiteConfiguration; assessment: Assessment }>(`/api/sites/${encodeURIComponent(site.siteId)}/onboarding-assessment`, {
         method: "POST",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
       });
       setSite(payload.site);
       setAssessment(payload.assessment);
@@ -458,7 +464,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<{ site: SiteConfiguration }>(`/api/sites/${encodeURIComponent(site.siteId)}`, {
         method: "PATCH",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
         body: JSON.stringify({
           publicationPolicy,
           integrations: { ...site.integrations, workflowReference: selectedProfiles.workflowReference || null },
