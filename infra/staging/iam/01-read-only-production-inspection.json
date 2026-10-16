@@ -70,7 +70,10 @@
       "Action": [
         "iam:SimulatePrincipalPolicy"
       ],
-      "Resource": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole"
+      "Resource": [
+        "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role"
+      ]
     },
     {
       "Sid": "SimulateProposedPoliciesNoResourceSupport",

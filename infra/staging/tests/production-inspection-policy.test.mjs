@@ -268,6 +268,16 @@ test("IAM managed-policy inspection is limited to Genesis policy resources", () 
   ]);
 });
 
+test("principal policy simulation is limited to approved role ARNs", () => {
+  const simulatePrincipal = statements.find((statement) => statement.Sid === "SimulateOwnPermissions");
+  assert.ok(simulatePrincipal);
+  assert.deepEqual(simulatePrincipal.Action, ["iam:SimulatePrincipalPolicy"]);
+  assert.deepEqual(simulatePrincipal.Resource, [
+    "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+    "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+  ]);
+});
+
 test("administrator refresh mode changes only the existing inspection policy version", () => {
   const start = adminHelper.indexOf("refresh_production_inspection_policy() {");
   const end = adminHelper.indexOf("refresh_staging_data_policy() {");
