@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { AppRole } from "@/modules/foundation/types";
 import type { Company } from "@/types/models/Company";
 
@@ -51,6 +52,13 @@ export function canManageSettingsFromSessionStatus(payload: unknown): boolean {
   const roles = principal.roles.filter((role): role is AppRole => typeof role === "string" && isAppRole(role));
   if (roles.length === 0) return false;
   return hasPermission(resolvePermissions(roles), "settings:manage");
+}
+
+export function createOrganizationRequestHeaders(): HeadersInit {
+  return operatorMutationHeaders({
+    "content-type": "application/json",
+    "x-gcp-roles": "platform_admin",
+  });
 }
 
 export function OrganizationSettingsPanel(input: { canManageSettings: boolean }) {
@@ -115,10 +123,7 @@ export function OrganizationSettingsPanel(input: { canManageSettings: boolean })
     try {
       const response = await fetch("/api/organizations", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-gcp-roles": "platform_admin",
-        },
+        headers: createOrganizationRequestHeaders(),
         body: JSON.stringify({
           id: organizationId,
           name: organizationName,
