@@ -162,6 +162,10 @@ expected_resources = {
         "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
         "arn:aws:iam::452630323448:policy/GenesisRuntimeStack-*",
     ],
+    "iam:SimulatePrincipalPolicy": [
+        "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+    ],
 }
 expected_conditions = {
     "ecs:DescribeTasks": {
