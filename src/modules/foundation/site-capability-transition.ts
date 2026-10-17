@@ -1,5 +1,5 @@
 import type { SiteIntelligenceWorkspace, SiteOpportunity, SiteStrategyProposal } from "./site-intelligence";
-import { getCapabilityAuthorityAssurance } from "./site-intelligence";
+import { getCapabilityAuthorityAssurance, resolveAuthoritativeCapabilityState } from "./site-intelligence";
 import { classifyOpportunitySemantics } from "./opportunity-semantic-classifier";
 
 export type PostCapabilityNextStep = "REVIEW_UPDATED_STRATEGY" | "CONTINUE_TO_CREATIVE_DIRECTION" | "REVIEW_REMAINING_CAPABILITIES";
@@ -16,17 +16,18 @@ export type PostCapabilityTransition = {
 
 function latestAuthorityTime(opportunity: SiteOpportunity): number {
   const authority = opportunity.capabilityAuthorityRevisions?.at(-1);
-  return authority?.decision === opportunity.capabilityState && authority.decidedAt ? Date.parse(authority.decidedAt) || 0 : 0;
+  return authority?.decidedAt ? Date.parse(authority.decidedAt) || 0 : 0;
 }
 
 export function isCapabilityReviewComplete(opportunity: SiteOpportunity): boolean {
   const authority = opportunity.capabilityAuthorityRevisions?.at(-1);
-  if (!authority || authority.decision !== opportunity.capabilityState) return false;
-  if (opportunity.capabilityState === "VERIFIED" || opportunity.capabilityState === "QUALIFIED") {
+  const effectiveState = resolveAuthoritativeCapabilityState(opportunity);
+  if (!authority || authority.decision !== effectiveState) return false;
+  if (effectiveState === "VERIFIED" || effectiveState === "QUALIFIED") {
     return getCapabilityAuthorityAssurance(opportunity) !== "REVIEW_REQUIRED";
   }
-  if (opportunity.capabilityState === "FUTURE_CAPABILITY") return Boolean(authority.attestation.trim());
-  return opportunity.capabilityState === "REJECTED";
+  if (effectiveState === "FUTURE_CAPABILITY") return Boolean(authority.attestation.trim());
+  return effectiveState === "REJECTED";
 }
 
 export function selectDistinctCapabilityOpportunities(opportunities: readonly SiteOpportunity[]): SiteOpportunity[] {

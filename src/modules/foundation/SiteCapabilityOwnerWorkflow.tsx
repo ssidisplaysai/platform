@@ -8,7 +8,7 @@ import type {
   SiteIntelligenceWorkspace,
   SiteOpportunity,
 } from "./site-intelligence";
-import { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus } from "./site-intelligence";
+import { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus, resolveAuthoritativeCapabilityState } from "./site-intelligence";
 import {
   canonicalCapabilityState,
   CAPABILITY_RELEVANCE_TYPES,
@@ -48,9 +48,13 @@ function evidenceTypeLabel(option: CapabilityEvidenceOption): string {
 
 export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceRevision, opportunity, capabilityEvidenceOptions, publicBrandIdentity, busy, onAction }: Props) {
   const latestAuthority = opportunity.capabilityAuthorityRevisions?.at(-1);
+  const authoritativeState = useMemo(
+    () => resolveAuthoritativeCapabilityState(opportunity),
+    [opportunity],
+  );
   const capabilityChoiceFromOpportunity = useMemo(
-    () => ownerCapabilityChoice(opportunity.capabilityState),
-    [opportunity.capabilityState],
+    () => ownerCapabilityChoice(authoritativeState),
+    [authoritativeState],
   );
   const selectedEvidenceFromOpportunity = useMemo(
     () => [...opportunity.capabilityEvidenceIds],
@@ -64,8 +68,8 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
     })),
   }), [capabilityEvidenceOptions, latestAuthority?.attestation, latestAuthority?.decision, latestAuthority?.evidenceRelevance, opportunity.capabilityNotes, opportunity.capabilityState]);
   const ownerConfirmedFromOpportunity = useMemo(
-    () => Boolean(latestAuthority?.attestation.trim() && latestAuthority.decision === opportunity.capabilityState),
-    [latestAuthority?.attestation, latestAuthority?.decision, opportunity.capabilityState],
+    () => Boolean(latestAuthority?.attestation.trim() && latestAuthority.decision === authoritativeState),
+    [authoritativeState, latestAuthority?.attestation, latestAuthority?.decision],
   );
 
   const [capabilityChoice, setCapabilityChoice] = useState<OwnerCapabilityChoice | null>(capabilityChoiceFromOpportunity);
@@ -149,7 +153,7 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
       return;
     }
     const savedOpportunity = [...result.opportunities].reverse().find((candidate) => candidate.opportunityId === opportunity.opportunityId);
-    if (!savedOpportunity || savedOpportunity.capabilityState !== canonicalState) {
+    if (!savedOpportunity || resolveAuthoritativeCapabilityState(savedOpportunity) !== canonicalState) {
       setFeedback("Capability decision response was received, but the updated review state was not confirmed. Refresh and try again.");
       setSavingCapability(false);
       return;

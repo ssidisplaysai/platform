@@ -348,6 +348,10 @@ export function hasVerifiedCapability(opportunity: SiteOpportunity): boolean {
   return getCapabilityAuthorityStatus(opportunity) === "CURRENT";
 }
 
+export function resolveAuthoritativeCapabilityState(opportunity: SiteOpportunity): CapabilityEvidenceState {
+  return opportunity.capabilityAuthorityRevisions?.at(-1)?.decision ?? opportunity.capabilityState;
+}
+
 export function getCapabilityEvidencePolicy(opportunity: SiteOpportunity): CapabilityEvidencePolicy {
   const claim = [opportunity.name, opportunity.category, opportunity.problemUseCase, opportunity.rationale, opportunity.recommendation].join(" ");
   if (/\b(certif(?:ied|ication)|regulatory|compliance|compliant|licen[cs](?:e|ed|ing)|UL|NSF|GMP|ISO|formal standard|code[- ]compliant|listed)\b/i.test(claim)) {
@@ -379,9 +383,10 @@ function hasCapabilitySpecificEvidence(opportunity: SiteOpportunity, authority: 
 }
 
 export function getCapabilityAuthorityAssurance(opportunity: SiteOpportunity): CapabilityAuthorityAssurance {
-  if (opportunity.capabilityState !== "VERIFIED" && opportunity.capabilityState !== "QUALIFIED") return "NOT_CURRENT";
   const authority = opportunity.capabilityAuthorityRevisions?.at(-1);
-  if (!authority || authority.decision !== opportunity.capabilityState || !authority.attestation.trim()) return "REVIEW_REQUIRED";
+  const effectiveState = resolveAuthoritativeCapabilityState(opportunity);
+  if (effectiveState !== "VERIFIED" && effectiveState !== "QUALIFIED") return "NOT_CURRENT";
+  if (!authority || authority.decision !== effectiveState || !authority.attestation.trim()) return "REVIEW_REQUIRED";
   if (authority.decision === "QUALIFIED" && !authority.qualificationNotes?.trim()) return "REVIEW_REQUIRED";
   if (hasCapabilitySpecificEvidence(opportunity, authority)) return "EVIDENCE_VERIFIED";
   return getCapabilityEvidencePolicy(opportunity).requirement === "INDEPENDENT_EVIDENCE_REQUIRED" ? "PROOF_REQUIRED" : "OWNER_ATTESTED";

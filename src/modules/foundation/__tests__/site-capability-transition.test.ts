@@ -27,6 +27,20 @@ describe("post-capability transition", () => {
     expect(result).toMatchObject({ capabilityReviewsComplete: 1, capabilityReviewsRemaining: 1, nextStep: "REVIEW_REMAINING_CAPABILITIES" });
   });
 
+  test("latest authority decision remains authoritative when top-level capabilityState is stale", () => {
+    const persistedButStale = opportunity("O2", {
+      capabilityState: "OWNER_VALIDATION_REQUIRED",
+      capabilityAuthorityRevisions: [{
+        ...opportunity("O2").capabilityAuthorityRevisions![0],
+        decision: "VERIFIED",
+        attestation: "Owner confirms current capability.",
+        decidedAt: "2026-09-11T04:00:00.000Z",
+      }],
+    });
+    const result = resolvePostCapabilityTransition(workspace([opportunity("O1"), persistedButStale]));
+    expect(result).toMatchObject({ capabilityReviewsComplete: 2, capabilityReviewsRemaining: 0 });
+  });
+
   test("owner attestation without independent proof is tracked as review-complete but still strategy-relevant", () => {
     const protectedClaim = opportunity("O2", {
       name: "Nationwide service coverage",

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { getCapabilityAuthorityStatus, hasVerifiedCapability } from "./site-intelligence";
+import { getCapabilityAuthorityStatus, hasVerifiedCapability, resolveAuthoritativeCapabilityState } from "./site-intelligence";
 import type {
   CapabilityEvidenceRelevanceType,
   CapabilityEvidenceState,
@@ -235,7 +235,7 @@ function OpportunityBoard({ organizationId, siteId, workspace, capabilityEvidenc
                 return (
                   <button key={opportunity.opportunityId} type="button" onClick={() => setSelectedOpportunityId(opportunity.opportunityId)} className={`w-full border p-3 text-left ${selected ? "border-red-600 bg-red-950/20" : "border-zinc-800 bg-zinc-900/40"}`}>
                     <p className="text-sm font-semibold text-zinc-100">{opportunity.name}</p>
-                    <p className="mt-1 text-xs text-zinc-400">Market: {opportunity.ownerDecision} · Capability: {opportunity.capabilityState}</p>
+                    <p className="mt-1 text-xs text-zinc-400">Market: {opportunity.ownerDecision} · Capability: {resolveAuthoritativeCapabilityState(opportunity)}</p>
                     <p className={`mt-1 text-xs font-semibold ${completed ? "text-emerald-300" : "text-amber-300"}`}>{completed ? "Completed" : "Pending review"}</p>
                   </button>
                 );
