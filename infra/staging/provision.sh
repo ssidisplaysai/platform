@@ -54,6 +54,7 @@ VPC_ID="vpc-05035503df7e142d6"
 ECR_REPO="genesis-staging-runtime"
 LOG_GROUP="/genesis/staging/web"
 SECRET_NAME="genesis/staging/woocommerce-webhook-secret"
+SITE_INTELLIGENCE_SECRET_NAME="genesis/staging/site-intelligence-webhook-secret"
 WOOCOMMERCE_API_CONSUMER_KEY_SECRET_NAME="genesis/staging/woocommerce-api-consumer-key"
 WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME="genesis/staging/woocommerce-api-consumer-secret"
 EXEC_ROLE_NAME="genesis-staging-execution-role"
@@ -324,6 +325,10 @@ WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN="$(lookup_secret_arn_by_name "$WOOCOM
 if [ -z "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" ] || [ "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" = "None" ]; then
   log "secret $WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_NAME missing; create with Woo read-only consumer secret before deployment"
 fi
+SITE_INTELLIGENCE_SECRET_ARN="$(lookup_secret_arn_by_name "$SITE_INTELLIGENCE_SECRET_NAME")"
+if [ -z "$SITE_INTELLIGENCE_SECRET_ARN" ] || [ "$SITE_INTELLIGENCE_SECRET_ARN" = "None" ]; then
+  log "secret $SITE_INTELLIGENCE_SECRET_NAME missing; Site Intelligence provider secret read will not be granted"
+fi
 
 # ---- Staging task execution role (production roles are not modified) --------
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
@@ -352,7 +357,7 @@ else
   esac
 fi
 mutate aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" --arg consumerKey "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN" --arg consumerSecret "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" --arg extra "$COPIED_SECRET_ARNS" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:(([ $a, $consumerKey, $consumerSecret ] | map(select(length>0))) + ($extra | split("\n") | map(select(length>0))))}]}')"
+SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" --arg consumerKey "$WOOCOMMERCE_API_CONSUMER_KEY_SECRET_ARN" --arg consumerSecret "$WOOCOMMERCE_API_CONSUMER_SECRET_SECRET_ARN" --arg siteIntel "$SITE_INTELLIGENCE_SECRET_ARN" --arg extra "$COPIED_SECRET_ARNS" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:(([ $a, $consumerKey, $consumerSecret, $siteIntel ] | map(select(length>0))) + ($extra | split("\n") | map(select(length>0))))}]}')"
 mutate aws iam put-role-policy --role-name "$EXEC_ROLE_NAME" --policy-name staging-webhook-secret-read --policy-document "$SECRET_POLICY"
 
 # ---- EFS (staging-only persistence bridge) ----------------------------------
