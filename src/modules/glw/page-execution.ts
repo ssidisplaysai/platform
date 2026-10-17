@@ -213,6 +213,21 @@ export type GlwN8nDraftRequest = {
   };
   publishingSettings: { status: "draft"; wordCount: number };
   imageSettings: { generateFeaturedImage: boolean; style: string };
+  approvedInstructions?: {
+    source: {
+      organizationId: string;
+      siteId: string;
+      brandProfileId: string;
+      seoProfileId: string;
+      promptProfileId: string;
+      imageProfileId: string;
+    };
+    brand: readonly string[];
+    seo: readonly string[];
+    prompt: readonly string[];
+    image: readonly string[];
+    constraints: readonly string[];
+  };
   workflowContext: {
     workspaceId: string;
     hierarchyMode: "city_child_target";
