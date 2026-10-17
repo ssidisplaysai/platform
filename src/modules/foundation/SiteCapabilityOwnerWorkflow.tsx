@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   CapabilityEvidenceOption,
   CapabilityEvidenceRelevanceType,
@@ -8,16 +8,18 @@ import type {
   SiteIntelligenceWorkspace,
   SiteOpportunity,
 } from "./site-intelligence";
-import { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus } from "./site-intelligence";
+import { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus, resolveAuthoritativeCapabilityState } from "./site-intelligence";
 import {
   canonicalCapabilityState,
   CAPABILITY_RELEVANCE_TYPES,
+  describeCapabilitySaveReadiness,
   evidenceNeedsClarification,
   getOwnerCapabilityPreview,
   inferEvidenceRelevance,
   OWNER_CAPABILITY_CHOICES,
   OWNER_EVIDENCE_CHOICES,
   ownerCapabilityChoice,
+  validateCapabilitySaveResponse,
   type OwnerCapabilityChoice,
 } from "./site-capability-owner-ux";
 
@@ -47,29 +49,73 @@ function evidenceTypeLabel(option: CapabilityEvidenceOption): string {
 
 export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceRevision, opportunity, capabilityEvidenceOptions, publicBrandIdentity, busy, onAction }: Props) {
   const latestAuthority = opportunity.capabilityAuthorityRevisions?.at(-1);
-  const [capabilityChoice, setCapabilityChoice] = useState<OwnerCapabilityChoice | null>(() => ownerCapabilityChoice(opportunity.capabilityState));
-  const [selectedEvidence, setSelectedEvidence] = useState<string[]>(opportunity.capabilityEvidenceIds);
-  const [evidenceRelevance, setEvidenceRelevance] = useState<Record<string, CapabilityEvidenceRelevanceType>>(() => ({
+  const authoritativeState = useMemo(
+    () => resolveAuthoritativeCapabilityState(opportunity),
+    [opportunity],
+  );
+  const capabilityChoiceFromOpportunity = useMemo(
+    () => ownerCapabilityChoice(authoritativeState),
+    [authoritativeState],
+  );
+  const selectedEvidenceFromOpportunity = useMemo(
+    () => [...opportunity.capabilityEvidenceIds],
+    [opportunity.capabilityEvidenceIds],
+  );
+  const evidenceRelevanceFromOpportunity = useMemo(() => ({
     ...Object.fromEntries((latestAuthority?.evidenceRelevance ?? []).map((link) => [link.evidenceId, link.relevanceType])),
     ...Object.fromEntries(capabilityEvidenceOptions.map((option) => {
       const existing = latestAuthority?.evidenceRelevance.find((link) => link.evidenceId === option.referenceId)?.relevanceType;
       return [option.referenceId, existing ?? inferEvidenceRelevance(option)];
     })),
-  }));
-  const [ownerConfirmed, setOwnerConfirmed] = useState(() => Boolean(latestAuthority?.attestation.trim() && latestAuthority.decision === opportunity.capabilityState));
+  }), [capabilityEvidenceOptions, latestAuthority?.attestation, latestAuthority?.decision, latestAuthority?.evidenceRelevance, opportunity.capabilityNotes, opportunity.capabilityState]);
+  const ownerConfirmedFromOpportunity = useMemo(
+    () => Boolean(latestAuthority?.attestation.trim() && latestAuthority.decision === authoritativeState),
+    [authoritativeState, latestAuthority?.attestation, latestAuthority?.decision],
+  );
+
+  const [capabilityChoice, setCapabilityChoice] = useState<OwnerCapabilityChoice | null>(capabilityChoiceFromOpportunity);
+  const [selectedEvidence, setSelectedEvidence] = useState<string[]>(selectedEvidenceFromOpportunity);
+  const [evidenceRelevance, setEvidenceRelevance] = useState<Record<string, CapabilityEvidenceRelevanceType>>(evidenceRelevanceFromOpportunity);
+  const [ownerConfirmed, setOwnerConfirmed] = useState(ownerConfirmedFromOpportunity);
   const [limitations, setLimitations] = useState(opportunity.capabilityNotes ?? "");
   const [proofUrl, setProofUrl] = useState("");
   const [proofNotes, setProofNotes] = useState("");
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [proofUploading, setProofUploading] = useState(false);
+  const [savingCapability, setSavingCapability] = useState(false);
+  const [savingMarketDecision, setSavingMarketDecision] = useState<OpportunityDecision | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const canonicalState = capabilityChoice ? canonicalCapabilityState(capabilityChoice) : null;
   const currentDecision = canonicalState === "VERIFIED" || canonicalState === "QUALIFIED";
   const requiresConfirmation = currentDecision || canonicalState === "FUTURE_CAPABILITY";
   const status = getOwnerCapabilityPreview({ opportunity, choice: capabilityChoice, ownerConfirmed, selectedEvidence, evidenceRelevance, limitations });
+  const saveReadiness = describeCapabilitySaveReadiness({
+    choice: capabilityChoice,
+    ownerConfirmed,
+    limitations,
+    preview: status,
+    busy,
+    saving: savingCapability,
+  });
+
+  useEffect(() => {
+    setCapabilityChoice(capabilityChoiceFromOpportunity);
+    setSelectedEvidence(selectedEvidenceFromOpportunity);
+    setEvidenceRelevance(evidenceRelevanceFromOpportunity);
+    setOwnerConfirmed(ownerConfirmedFromOpportunity);
+    setLimitations(opportunity.capabilityNotes ?? "");
+  }, [
+    capabilityChoiceFromOpportunity,
+    evidenceRelevanceFromOpportunity,
+    opportunity.capabilityNotes,
+    opportunity.opportunityId,
+    ownerConfirmedFromOpportunity,
+    selectedEvidenceFromOpportunity,
+  ]);
 
   async function decideMarket(decision: OpportunityDecision) {
     setFeedback(null);
+    setSavingMarketDecision(decision);
     const result = await onAction({
       action: decision === "RESEARCH_MORE" ? "RESEARCH_MORE" : "DECIDE_OPPORTUNITY",
       opportunityId: opportunity.opportunityId,
@@ -77,18 +123,26 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
       reason: `Owner market decision: ${decision}.`,
     });
     setFeedback(result ? "Market decision saved." : "Market decision failed. Review the workspace error and try again.");
+    setSavingMarketDecision(null);
   }
 
   async function saveCapability() {
-    if (!canonicalState || !status.canSubmit) return;
+    if (!canonicalState || !saveReadiness.canSave) {
+      if (saveReadiness.blockedReasons.length > 0) setFeedback(saveReadiness.blockedReasons.join(" "));
+      return;
+    }
+    const targetOpportunityId = opportunity.opportunityId;
+    const targetOpportunityName = opportunity.name;
     const attestation = canonicalState === "FUTURE_CAPABILITY"
       ? `${publicBrandIdentity} does not currently have this capability and may develop it.`
       : currentDecision
-        ? `${publicBrandIdentity} currently provides ${opportunity.name}${canonicalState === "QUALIFIED" ? " subject to the recorded limitations" : ""}.`
+        ? `${publicBrandIdentity} currently provides ${targetOpportunityName}${canonicalState === "QUALIFIED" ? " subject to the recorded limitations" : ""}.`
         : "";
+    setSavingCapability(true);
+    setFeedback("Saving capability review…");
     const result = await onAction({
       action: "VALIDATE_CAPABILITY",
-      opportunityId: opportunity.opportunityId,
+      opportunityId: targetOpportunityId,
       state: canonicalState,
       evidenceIds: currentDecision ? selectedEvidence : [],
       evidenceRelevance: currentDecision ? selectedEvidence.map((evidenceId) => ({ evidenceId, relevanceType: evidenceRelevance[evidenceId] ?? "GENERAL_REFERENCE", ownerConfirmedRelevant: true })) : [],
@@ -96,7 +150,36 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
       notes: canonicalState === "QUALIFIED" ? limitations : canonicalState === "FUTURE_CAPABILITY" ? "Future capability; not authorized as a current claim." : canonicalState === "REJECTED" ? "Not offered as a current capability." : "",
       reason: `Owner capability decision: ${canonicalState}.`,
     });
-    setFeedback(result ? "Capability decision saved." : "Capability decision failed. Review the workspace error and try again.");
+    if (!result) {
+      setFeedback("Capability decision failed. Review the workspace error and try again.");
+      setSavingCapability(false);
+      return;
+    }
+    const validation = validateCapabilitySaveResponse({
+      workspace: result,
+      targetOpportunityId,
+      expectedState: canonicalState,
+    });
+    if (!validation.ok || !validation.savedOpportunity) {
+      setFeedback(validation.reason === "STATE_MISMATCH"
+        ? `Saved response for ${targetOpportunityId} did not confirm ${canonicalState}. Refresh and review this opportunity again.`
+        : `Capability decision response did not include ${targetOpportunityId}. Refresh and review this opportunity again.`);
+      setSavingCapability(false);
+      return;
+    }
+    const savedOpportunity = validation.savedOpportunity;
+    const savedStatus = getOwnerCapabilityPreview({
+      opportunity: savedOpportunity,
+      choice: ownerCapabilityChoice(resolveAuthoritativeCapabilityState(savedOpportunity)),
+      ownerConfirmed: Boolean(savedOpportunity.capabilityAuthorityRevisions?.at(-1)?.attestation.trim()),
+      selectedEvidence: savedOpportunity.capabilityEvidenceIds,
+      evidenceRelevance: Object.fromEntries((savedOpportunity.capabilityAuthorityRevisions?.at(-1)?.evidenceRelevance ?? []).map((link) => [link.evidenceId, link.relevanceType])),
+      limitations: savedOpportunity.capabilityNotes ?? "",
+    });
+    setFeedback(savedStatus.proofRequired && savedStatus.supportingProof === "Needed"
+      ? `Saved ${targetOpportunityId} (${targetOpportunityName}). Independent proof is still required before this review counts as complete.`
+      : `Saved ${targetOpportunityId} (${targetOpportunityName}).`);
+    setSavingCapability(false);
   }
 
   function normalizeCapabilityProofUrl(reference: string): string | null {
@@ -191,7 +274,7 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
   return (
     <article className="border-b border-zinc-800 p-5 last:border-0">
       <header className="flex flex-wrap justify-between gap-3">
-        <div><h3 className="font-semibold text-white">{opportunity.name}</h3><p className="mt-1 max-w-3xl text-sm text-zinc-400">{opportunity.rationale}</p></div>
+        <div><h3 className="font-semibold text-white">{opportunity.name}</h3><p className="mt-1 text-xs text-zinc-500">Opportunity ID: {opportunity.opportunityId}</p><p className="mt-1 max-w-3xl text-sm text-zinc-400">{opportunity.rationale}</p></div>
         <p className="text-xs text-zinc-500">Research confidence {opportunity.confidence}</p>
       </header>
 
@@ -201,7 +284,7 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
         <p className="text-xs font-semibold uppercase text-blue-300">Market</p>
         <h4 className="mt-1 font-semibold text-white">Should we pursue this?</h4>
         <p className="mt-1 text-xs text-zinc-400">This decides whether Genesis should include this market in strategy. It does not claim that we currently provide it.</p>
-        <div className="mt-3 flex flex-wrap gap-2">{MARKET_CHOICES.map(({ decision, label }) => <button key={decision} type="button" aria-pressed={opportunity.ownerDecision === decision} disabled={busy || opportunity.ownerDecision === decision} onClick={() => decideMarket(decision)} className="border border-blue-800 px-3 py-2 text-xs font-semibold text-blue-100 disabled:bg-blue-950 disabled:opacity-70">{label}</button>)}</div>
+        <div className="mt-3 flex flex-wrap gap-2">{MARKET_CHOICES.map(({ decision, label }) => <button key={decision} type="button" aria-pressed={opportunity.ownerDecision === decision} disabled={busy || savingMarketDecision !== null || opportunity.ownerDecision === decision} onClick={() => decideMarket(decision)} className="border border-blue-800 px-3 py-2 text-xs font-semibold text-blue-100 disabled:bg-blue-950 disabled:opacity-70">{savingMarketDecision === decision ? "Saving…" : label}</button>)}</div>
       </section>
 
       <section className="mt-4 border-l-4 border-emerald-600 bg-emerald-950/20 p-4">
@@ -241,7 +324,7 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
 
       {requiresConfirmation ? <label className="mt-4 flex gap-3 border border-zinc-800 p-4 text-sm text-zinc-200"><input type="checkbox" checked={ownerConfirmed} onChange={(event) => setOwnerConfirmed(event.target.checked)} /><span>{canonicalState === "FUTURE_CAPABILITY" ? `I confirm that ${publicBrandIdentity} does not currently have this capability.` : `I confirm that ${publicBrandIdentity} currently has this capability.`}<span className="mt-1 block text-xs text-zinc-500">Owner confirmation is recorded as owner authority. {status.proofRequired ? "This protected claim also requires independent proof." : "Independent proof may be added now or later."}</span></span></label> : null}
 
-      <div className="mt-4 grid gap-3 border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-[1fr_auto] sm:items-end"><div><p className="text-xs font-semibold uppercase text-zinc-500">Capability status</p><strong className={`mt-1 block ${status.label === "VERIFIED" || status.label === "OWNER CONFIRMED" || status.label === "QUALIFIED" ? "text-emerald-200" : status.label === "NOT A CURRENT CAPABILITY" ? "text-blue-200" : "text-amber-200"}`}>{status.label}</strong><dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-400"><div><dt>Owner authority</dt><dd>{status.ownerConfirmation === "Confirmed" ? "Confirmed" : "Not provided"}</dd></div><div><dt>Independent proof</dt><dd>{status.supportingProof === "Verified" ? "Verified" : status.supportingProof === "Needed" ? "Needed" : "Not provided"}</dd></div></dl>{getCapabilityAuthorityAssurance(opportunity) === "OWNER_ATTESTED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner attestation · Evidence status: Not independently verified</p> : getCapabilityAuthorityAssurance(opportunity) === "EVIDENCE_VERIFIED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner + evidence</p> : null}{opportunity.capabilityState === "QUALIFIED" && opportunity.capabilityNotes ? <p className="mt-2 text-xs text-zinc-300">Limitations: {opportunity.capabilityNotes}</p> : null}</div><button type="button" disabled={busy || !status.canSubmit} onClick={saveCapability} className="bg-emerald-700 px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">SAVE CAPABILITY REVIEW</button></div>
+      <div className="mt-4 grid gap-3 border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-[1fr_auto] sm:items-end"><div><p className="text-xs font-semibold uppercase text-zinc-500">Capability status</p><strong className={`mt-1 block ${status.label === "VERIFIED" || status.label === "OWNER CONFIRMED" || status.label === "QUALIFIED" ? "text-emerald-200" : status.label === "NOT A CURRENT CAPABILITY" ? "text-blue-200" : "text-amber-200"}`}>{status.label}</strong><dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-400"><div><dt>Owner authority</dt><dd>{status.ownerConfirmation === "Confirmed" ? "Confirmed" : "Not provided"}</dd></div><div><dt>Independent proof</dt><dd>{status.supportingProof === "Verified" ? "Verified" : status.supportingProof === "Needed" ? "Needed" : "Not provided"}</dd></div></dl>{getCapabilityAuthorityAssurance(opportunity) === "OWNER_ATTESTED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner attestation · Evidence status: Not independently verified</p> : getCapabilityAuthorityAssurance(opportunity) === "EVIDENCE_VERIFIED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner + evidence</p> : null}{opportunity.capabilityState === "QUALIFIED" && opportunity.capabilityNotes ? <p className="mt-2 text-xs text-zinc-300">Limitations: {opportunity.capabilityNotes}</p> : null}{saveReadiness.blockedReasons.length > 0 ? <p className="mt-2 text-xs text-amber-200">{saveReadiness.blockedReasons[0]}</p> : null}{saveReadiness.advisory ? <p className="mt-2 text-xs text-amber-200">{saveReadiness.advisory}</p> : null}</div><button type="button" disabled={!saveReadiness.canSave} onClick={saveCapability} className="bg-emerald-700 px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">{savingCapability ? "Saving capability review…" : "SAVE CAPABILITY REVIEW"}</button></div>
       {feedback ? <p role="status" className="mt-3 border border-zinc-700 bg-zinc-900 p-2 text-xs text-zinc-200">{feedback}</p> : null}
     </article>
   );

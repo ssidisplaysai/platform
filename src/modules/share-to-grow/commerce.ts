@@ -1,7 +1,12 @@
 import { money, type Money } from "./money";
 
 export interface CommerceCostInput {
-  readonly kind: "cogs" | "inbound_freight_duty" | "fulfillment_packaging" | "payment_processing";
+  readonly kind:
+    | "cogs"
+    | "inbound_freight_duty"
+    | "outbound_shipping_label"
+    | "fulfillment_packaging"
+    | "payment_processing";
   readonly amountMinor: bigint;
 }
 
@@ -10,6 +15,7 @@ export interface CommerceOrderLineInput {
   readonly productId: string;
   readonly quantity: number;
   readonly grossMerchandiseMinor: bigint;
+  readonly customerShippingRevenueMinor?: bigint;
   readonly discountMinor: bigint;
   readonly refundMinor: bigint;
   readonly costs: readonly CommerceCostInput[];
@@ -35,6 +41,7 @@ export interface NormalizedCommerceLine {
   readonly currency: string;
   readonly convertedAt: string;
   readonly grossMerchandise: Money;
+  readonly customerShippingRevenue: Money;
   readonly discount: Money;
   readonly refund: Money;
   readonly costs: Readonly<Record<CommerceCostInput["kind"], Money>>;
@@ -44,6 +51,7 @@ export interface NormalizedCommerceLine {
 const COST_KINDS: readonly CommerceCostInput["kind"][] = [
   "cogs",
   "inbound_freight_duty",
+  "outbound_shipping_label",
   "fulfillment_packaging",
   "payment_processing",
 ];
@@ -72,6 +80,7 @@ export function normalizeCommerceOrder(input: CommerceOrderInput): readonly Norm
     if (!Number.isInteger(line.quantity) || line.quantity < 1) throw new Error("INVALID_LINE_QUANTITY");
 
     requireNonNegative(line.grossMerchandiseMinor, "grossMerchandise");
+    requireNonNegative(line.customerShippingRevenueMinor ?? 0n, "customerShippingRevenue");
     requireNonNegative(line.discountMinor, "discount");
     requireNonNegative(line.refundMinor, "refund");
 
@@ -87,7 +96,7 @@ export function normalizeCommerceOrder(input: CommerceOrderInput): readonly Norm
       line.discountMinor +
       line.refundMinor +
       COST_KINDS.reduce((sum, kind) => sum + (totals.get(kind) ?? BigInt(0)), BigInt(0));
-    const dmpMinor = line.grossMerchandiseMinor - deductions;
+    const dmpMinor = line.grossMerchandiseMinor + (line.customerShippingRevenueMinor ?? 0n) - deductions;
     if (dmpMinor < BigInt(0)) {
       throw new Error("NEGATIVE_DISTRIBUTABLE_MERCHANDISE_PROFIT");
     }
@@ -103,6 +112,7 @@ export function normalizeCommerceOrder(input: CommerceOrderInput): readonly Norm
       currency: input.currency,
       convertedAt: input.convertedAt,
       grossMerchandise: money(line.grossMerchandiseMinor, input.currency),
+      customerShippingRevenue: money(line.customerShippingRevenueMinor ?? 0n, input.currency),
       discount: money(line.discountMinor, input.currency),
       refund: money(line.refundMinor, input.currency),
       costs: Object.freeze(

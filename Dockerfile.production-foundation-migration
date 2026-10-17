@@ -1,0 +1,18 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /workspace
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund
+
+COPY scripts/postgres-connection.mjs ./scripts/postgres-connection.mjs
+COPY scripts/migrate-foundation-state-production.mjs ./scripts/migrate-foundation-state-production.mjs
+COPY migrations/20261009000000_foundation_state.js ./migrations/20261009000000_foundation_state.js
+COPY migrations/20261010204600_add_foundation_state_constraints.js ./migrations/20261010204600_add_foundation_state_constraints.js
+COPY infra/staging/certificates/aws-rds-global-bundle.pem ./certs/aws-rds-global-bundle.pem
+
+RUN echo "fe45bbebf92ad3e27a583bbb2ddd1553c521ed4d49af5514dc0a40372ea5395c  /workspace/certs/aws-rds-global-bundle.pem" | sha256sum -c -
+
+USER node
+ENTRYPOINT ["node", "scripts/migrate-foundation-state-production.mjs"]

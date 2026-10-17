@@ -4,11 +4,13 @@ import { normalizeCommerceOrder } from "../commerce";
 import { allocateCommerceLine, type ProcessedCommerceLine } from "../allocation-pipeline";
 import { AppendOnlyLedger } from "../ledger";
 import { createPendingEntitlement, type PayoutEntitlement } from "../payout";
-import { persistProcessedCommerceLine } from "../durable-processing";
+import { persistProcessedCommerceLines } from "../durable-processing";
 import {
   acceptWooCommerceWebhook,
   type WooCommerceWebhookEnvelope,
 } from "./woocommerce-events";
+import type { WooCommerceOrderEligibility } from "./woocommerce-eligibility";
+import { recordSourceEventReceipt } from "../share-to-grow-repository";
 import {
   genesisAttributionFromWooMeta,
   normalizeWooCommerceOrder,
@@ -29,17 +31,39 @@ export interface WooCommerceOrderProcessingInput {
   readonly ledger: AppendOnlyLedger;
 }
 
+export type WooCommerceOrderEconomicDisposition = "processed" | "replay" | "ignored_ineligible";
+
 export interface WooCommerceOrderProcessingResult {
   readonly replay: boolean;
-  readonly attribution: AttributionDecision;
+  readonly economicDisposition: WooCommerceOrderEconomicDisposition;
+  readonly reason?: string;
+  readonly attribution?: AttributionDecision;
   readonly processedLines: readonly ProcessedCommerceLine[];
   readonly pendingEntitlements: readonly PayoutEntitlement[];
 }
 
-export function processWooCommerceOrder(
+export async function ignoreIneligibleWooCommerceOrder(input: {
+  readonly webhook: WooCommerceWebhookEnvelope;
+  readonly webhookSecret: string;
+  readonly eligibility: WooCommerceOrderEligibility;
+}): Promise<WooCommerceOrderProcessingResult> {
+  const verified = await acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
+  if (!verified.replay) {
+    await recordSourceEventReceipt(verified.receipt, verified.persistenceRevision);
+  }
+  return Object.freeze({
+    replay: verified.replay,
+    economicDisposition: "ignored_ineligible" as const,
+    reason: input.eligibility.reason,
+    processedLines: Object.freeze([]),
+    pendingEntitlements: Object.freeze([]),
+  });
+}
+
+export async function processWooCommerceOrder(
   input: WooCommerceOrderProcessingInput,
-): WooCommerceOrderProcessingResult {
-  const verified = acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
+): Promise<WooCommerceOrderProcessingResult> {
+  const verified = await acceptWooCommerceWebhook(input.webhook, input.webhookSecret);
 
   if (input.order.organizationId !== STONER_GYM_REFERENCE.organizationId) {
     throw new Error("STONER_GYM_ORGANIZATION_MISMATCH");
@@ -68,6 +92,7 @@ export function processWooCommerceOrder(
   if (verified.replay) {
     return Object.freeze({
       replay: true,
+      economicDisposition: "replay" as const,
       attribution,
       processedLines: Object.freeze([]),
       pendingEntitlements: Object.freeze([]),
@@ -88,28 +113,39 @@ export function processWooCommerceOrder(
     }),
   );
 
-  const pendingEntitlements = processedLines.flatMap((processed) => {
+  let anyNewLine = false;
+  const entitlementsByLine = processedLines.map((processed) => {
     const entitlements = processed.ledgerEntries.map((entry) =>
       createPendingEntitlement({
         ledgerEntry: entry,
         policy: STONER_GYM_REFERENCE.payoutPolicy,
       }),
     );
-    persistProcessedCommerceLine({
-      sourceEventId: input.webhook.sourceEventId,
-      organizationId: input.order.organizationId,
-      processedAt: input.order.convertedAt,
-      processedLine: processed,
-      attribution,
-      entitlements,
-    });
     return entitlements;
   });
+  const pendingEntitlements = entitlementsByLine.flat();
+  const committed = await persistProcessedCommerceLines({
+    sourceEventId: input.webhook.sourceEventId,
+    saleMerchandiseMinor: lines.map((line) =>
+      (line.grossMerchandise.minor - line.discount.minor).toString(),
+    ),
+    ruleSnapshots: lines.map((line) => ruleResolver.resolve({ line, attribution })),
+    organizationId: input.order.organizationId,
+    processedAt: input.order.convertedAt,
+    processedLines,
+    attribution,
+    entitlements: pendingEntitlements,
+    sourceEventReceipt: verified.receipt,
+    expectedRevision: verified.persistenceRevision,
+  });
+  anyNewLine = !committed.replay;
 
   return Object.freeze({
     replay: false,
+    // A later delivery for an already-processed canonical line creates no new economics.
+    economicDisposition: anyNewLine ? ("processed" as const) : ("replay" as const),
     attribution,
-    processedLines: Object.freeze(processedLines),
-    pendingEntitlements: Object.freeze(pendingEntitlements),
+    processedLines: Object.freeze(anyNewLine ? processedLines : []),
+    pendingEntitlements: Object.freeze(anyNewLine ? pendingEntitlements : []),
   });
 }

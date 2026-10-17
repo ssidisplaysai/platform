@@ -15,12 +15,17 @@ export async function GET(request: NextRequest) {
   }
 
   const scope = resolveRequestScope(request);
-  if (!hasOrganizationScope(scope)) {
+  const isPlatformAdmin = auth.roles.includes("platform_admin");
+
+  if (!hasOrganizationScope(scope) && !isPlatformAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const explicitOrganizationFilter = request.nextUrl.searchParams.get("organizationId")?.trim() ?? "";
+  const organizationFilter = scope.organizationId ?? (isPlatformAdmin && explicitOrganizationFilter ? explicitOrganizationFilter : null);
+
   const scopedSites = listSites().filter((site) => {
-    if (site.organizationId !== scope.organizationId) {
+    if (organizationFilter && site.organizationId !== organizationFilter) {
       return false;
     }
 

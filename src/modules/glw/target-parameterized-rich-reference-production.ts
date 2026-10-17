@@ -15,6 +15,7 @@ import { evaluateCampaignProductMediaReadiness, resolveCampaignPresentationHero,
 import { getGlwReferenceStateSelection } from "./reference-state-selection-repository";
 import { resolveGlwReferenceGenerationAuthority } from "./reference-generation-authority";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "./page-execution";
 import { adaptProductForGeneration, adaptSiteForGeneration, buildLocalGlwGenerationPreview, getGlwState } from "./page-generation";
 import { listProductMediaAuthority } from "./product-media-authority";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability, type GlwTargetPreflightResult } from "./target-preflight";
@@ -174,7 +175,7 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
   if (!preview.request) throw new Error(`RICH_REFERENCE_GENERATION_INPUT_INVALID:${preview.validation.issues.map((issue) => issue.field).join(",")}`);
 
   const reader = input.wordpressReadAuthority ?? await wordpressAuthority(site.siteId);
-  const jobs = await glwPageExecutionRepository.list();
+  const jobs = filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list());
   const targetPreflight: GlwTargetPreflightResult = await readGlwTargetPreflight({ request: preview.request, wordpressReadAuthority: reader, localExecutions: jobs });
   const mutation = resolveGlwTargetMutationAvailability(targetPreflight, preview.request.pageType);
   if (!targetPreflight.canonicalParentId || (!mutation.createAvailable && !mutation.updateAvailable)) throw new Error("RICH_REFERENCE_DRAFT_TARGET_UNAVAILABLE");

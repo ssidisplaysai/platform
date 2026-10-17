@@ -25,7 +25,7 @@ describe("site intelligence UI contract", () => {
   });
 
   test("workspace exposes intelligence, strategy, creative and approval controls", () => {
-    for (const text of ["Opportunity Board", "APPROVE INTELLIGENCE", "Site Strategy", "Creative Inputs", "Creative Direction", "Product authority boundary"]) expect(workspace).toContain(text);
+    for (const text of ["Research Summary", "Opportunity Board", "APPROVE INTELLIGENCE", "Site Strategy", "Creative Inputs", "Creative Direction", "Product authority boundary"]) expect(workspace).toContain(text);
     for (const decision of ["RESEARCH_MORE", "HOLD", "REJECTED", "APPROVED", "VERIFIED", "QUALIFIED", "FUTURE_CAPABILITY"]) expect(workspace).toContain(decision);
   });
 
@@ -50,7 +50,20 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain('type="checkbox"');
     expect(ownerWorkflow).toContain("OWNER_EVIDENCE_CHOICES");
     expect(ownerWorkflow).toContain("CAPABILITY_RELEVANCE_TYPES");
+    expect(ownerWorkflow).toContain("describeCapabilitySaveReadiness");
+    expect(ownerWorkflow).toContain("Saving capability review…");
+    expect(ownerWorkflow).toContain("Independent proof is still required before this review counts as complete.");
+    expect(ownerWorkflow).toContain("Saved ${targetOpportunityId} (${targetOpportunityName}).");
+    expect(ownerWorkflow).toContain("validateCapabilitySaveResponse");
     expect(ownerWorkflow.indexOf("OWNER_EVIDENCE_CHOICES")).toBeLessThan(ownerWorkflow.indexOf("Advanced evidence details"));
+  });
+
+  test("opportunity review is compact with selectable details and advanced diagnostics behind collapsibles", () => {
+    for (const text of ["Review next pending", "Return to summary", "Select one opportunity to review in detail.", "Pending review", "Completed"]) expect(workspace).toContain(text);
+    expect(workspace).toContain("selectedOpportunityId");
+    expect(workspace).toContain("Research execution diagnostics");
+    expect(workspace).toContain("Evidence & Provenance Journal");
+    expect(workspace).toContain("<details>");
   });
 
   test("owner confirmation is dynamic and legacy authority remains review-required", () => {
@@ -67,6 +80,7 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain("Owner authority");
     expect(ownerWorkflow).toContain("Independent proof");
     expect(ownerWorkflow).toContain("latestAuthority?.attestation.trim()");
+    expect(ownerWorkflow).toContain("Opportunity ID:");
   });
 
   test("post-capability review always exposes the canonical next step", () => {
@@ -134,6 +148,8 @@ describe("site intelligence UI contract", () => {
   test("workspace exposes real multiple-file upload with conservative classification", () => {
     expect(library).toContain('type="file"'); expect(library).toContain("multiple"); expect(library).toContain("UPLOAD {files.length");
     expect(library).toContain('useState<SiteAssetClassification>("OWNER_SUPPLIED_REFERENCE")');
+    expect(library).toContain("siteIntelligenceRequestHeaders");
+    expect(library).toContain("jsonContentType: false");
     expect(library).toContain("Uploaded Assets"); expect(library).toContain("not publishable");
   });
 
@@ -143,6 +159,7 @@ describe("site intelligence UI contract", () => {
     expect(workspace).toContain("SiteIntelligenceReferenceLibrary");
     expect(library).toContain('action: "ADD_URL_REFERENCE"');
     expect(library).toContain('action: "UPDATE_CREATIVE_INPUT"');
+    expect(workspace).toContain("mutation: true");
     expect(library).toContain('setReference("")');
     expect(library).toContain('setNotes("")');
   });

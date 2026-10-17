@@ -30,6 +30,21 @@ import {
   buildLocalGlwGenerationPreview,
   createDefaultGlwGenerationInput,
 } from "../page-generation";
+import type { IntegrationProfileConfiguration, ProductConfiguration, SiteConfiguration } from "@/modules/foundation/types";
+
+jest.mock("@/modules/foundation/site-repository", () => ({
+  getSiteById: jest.fn(),
+}));
+jest.mock("@/modules/foundation/product-repository", () => ({
+  getProductById: jest.fn(),
+}));
+jest.mock("@/modules/foundation/integration-profile-repository", () => ({
+  getIntegrationProfileById: jest.fn(),
+}));
+
+import { getSiteById } from "@/modules/foundation/site-repository";
+import { getProductById } from "@/modules/foundation/product-repository";
+import { getIntegrationProfileById } from "@/modules/foundation/integration-profile-repository";
 
 const site = adaptSiteForGeneration(FOUNDATION_SITE_FIXTURES[0]);
 const product = adaptProductForGeneration(FOUNDATION_PRODUCTS[0], site.siteId);
@@ -68,6 +83,126 @@ function environment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     GLW_N8N_MCP_URL: "https://n8n.example.test/mcp-server/http",
     GLW_N8N_MCP_TOKEN: "mcp-secret-token",
     ...overrides,
+  };
+}
+
+function pageenginesAuthorityEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return environment({
+    GENESIS_PAGEENGINES_WORDPRESS_HOST: "staging.pageengines.com",
+    ...overrides,
+  });
+}
+
+const mockedGetSiteById = getSiteById as jest.MockedFunction<typeof getSiteById>;
+const mockedGetProductById = getProductById as jest.MockedFunction<typeof getProductById>;
+const mockedGetIntegrationProfileById = getIntegrationProfileById as jest.MockedFunction<typeof getIntegrationProfileById>;
+
+function pageenginesSiteRecord(): SiteConfiguration {
+  return {
+    ...FOUNDATION_SITE_FIXTURES[0],
+    siteId: "site-pageengines-staging",
+    organizationId: "pageengines",
+    siteName: "PageEngines Staging",
+    displayName: "PageEngines Staging",
+    slug: "pageengines",
+    domain: "staging.pageengines.com",
+    canonicalUrl: "https://staging.pageengines.com",
+    integrations: {
+      wordpressApiBaseUrl: "https://staging.pageengines.com/wp-json/wp/v2",
+      wordpressCredentialReference: "credref-wp-pageengines-staging",
+      workflowReference: "profile-workflow-pageengines-staging",
+    },
+    profiles: {
+      ...FOUNDATION_SITE_FIXTURES[0].profiles,
+      brandProfileReference: "profile-brand-pageengines-homepage",
+      seoProfileReference: "profile-seo-pageengines-homepage",
+      promptProfileReference: "profile-prompt-pageengines-homepage",
+      imageProfileReference: "profile-image-pageengines-homepage",
+    },
+  };
+}
+
+function pageenginesProduct(): ProductConfiguration {
+  return {
+    ...FOUNDATION_PRODUCTS[0],
+    productId: "prod-pageengines-homepage-service",
+    organizationId: "pageengines",
+    productName: "PageEngines Homepage Service",
+    displayName: "PageEngines Homepage Service",
+    slug: "pageengines-homepage-service",
+    sku: "PE-HOMEPAGE-001",
+    primarySiteId: "site-pageengines-staging",
+    assignedSiteIds: ["site-pageengines-staging"],
+  };
+}
+
+function pageenginesWorkflowProfile(): IntegrationProfileConfiguration {
+  return {
+    profileId: "profile-workflow-pageengines-staging",
+    profileType: "workflow",
+    organizationId: "pageengines",
+    profileName: "PageEngines Staging Workflow",
+    description: "Scoped workflow profile for PageEngines staging.",
+    status: "active",
+    enabled: true,
+    version: "1.0.0",
+    assignedSiteIds: ["site-pageengines-staging"],
+    defaultForOrganization: false,
+    references: {
+      credentialReference: "credref-wp-pageengines-staging",
+      workflowReference: "PwkflowPageEng001",
+      promptReference: null,
+      providerReference: "provider-n8n",
+      brandReference: null,
+      workflowProfileReference: null,
+      wordpressProfileReference: null,
+      promptProfileReference: null,
+      imageProfileReference: null,
+      seoProfileReference: null,
+      analyticsProfileReference: null,
+      titleStrategyReference: null,
+      metaStrategyReference: null,
+      schemaReference: null,
+      openGraphReference: null,
+      slugStrategyReference: null,
+      canonicalPolicyReference: null,
+      logoReference: null,
+      colorPaletteReference: null,
+      typographyReference: null,
+      voiceReference: null,
+      defaultCtaReference: null,
+      assetReference: null,
+      baseUrlReference: null,
+      authorReference: null,
+      categoryReference: null,
+      postStatusReference: null,
+      featuredImagePolicyReference: null,
+      imageInsertionPolicyReference: null,
+      yoastPolicyReference: null,
+      inputContractReference: null,
+      outputContractReference: null,
+      retryPolicyReference: null,
+      executionTimeoutReference: null,
+      environmentReference: null,
+    },
+    createdAt: "2026-10-15T00:00:00.000Z",
+    updatedAt: "2026-10-15T00:00:00.000Z",
+    notes: null,
+  };
+}
+
+function pageenginesInstructionProfile(profileType: "brand" | "seo" | "prompt" | "image"): IntegrationProfileConfiguration {
+  return {
+    ...pageenginesWorkflowProfile(),
+    profileId: `profile-${profileType}-pageengines-homepage`,
+    profileType,
+    profileName: `PageEngines ${profileType} Profile`,
+    references: {
+      ...pageenginesWorkflowProfile().references,
+      workflowReference: null,
+      credentialReference: null,
+    },
+    notes: `${profileType} instruction line one\n${profileType} instruction line two`,
   };
 }
 
@@ -115,7 +250,60 @@ function successfulExecution(executionId = "123") {
   };
 }
 
+function pageenginesDraftRequest(): GlwN8nDraftRequest {
+  const additionalInstructions = "PAGEENGINES_HOMEPAGE_CONTRACT_V1; distinctive hero section; platform positioning; responsive mobile and desktop layout; clear CTAs; no fabricated results.";
+  return {
+    ...mappedRequest,
+    operation: "CREATE_GENERAL",
+    wordpressObjectId: null,
+    workspaceId: "pageengines",
+    workspace_id: "pageengines",
+    site: {
+      ...mappedRequest.site,
+      id: "site-pageengines-staging",
+      name: "PageEngines Staging",
+      domain: "staging.pageengines.com",
+      canonicalUrl: "https://staging.pageengines.com",
+      wordpressApiBaseUrl: "https://staging.pageengines.com/wp-json/wp/v2",
+    },
+    page: {
+      ...mappedRequest.page,
+      pageType: "general_service",
+      page_type: "general_service",
+      productId: "prod-pageengines-homepage-service",
+      product: "PageEngines Homepage Service",
+      productTopic: "PageEngines Homepage Service",
+      product_topic: "PageEngines Homepage Service",
+      state: "",
+      city: "",
+      citySlug: "",
+      city_slug: "",
+      additionalInstructions,
+      additional_instructions: additionalInstructions,
+      status: "draft",
+    },
+    workflowContext: {
+      ...mappedRequest.workflowContext,
+      workspaceId: "pageengines",
+      additionalInstructions,
+    },
+  };
+}
+
 describe("GLW n8n MCP recovery adapter", () => {
+  beforeEach(() => {
+    mockedGetSiteById.mockReturnValue(pageenginesSiteRecord());
+    mockedGetProductById.mockReturnValue(pageenginesProduct());
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") return pageenginesWorkflowProfile();
+      if (profileId === "profile-brand-pageengines-homepage") return pageenginesInstructionProfile("brand");
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
+    });
+  });
+
   test("accepts the existing complete GLW draft envelope unchanged", () => {
     expect(validateGlwN8nMcpDraftRequest(mappedRequest)).toBe(mappedRequest);
   });
@@ -173,6 +361,7 @@ describe("GLW n8n MCP recovery adapter", () => {
       configured: true,
       urlConfigured: true,
       tokenConfigured: true,
+      nonMutatingTestMode: false,
       transport: "N8N_MCP",
       workflowId: "9WTjTDXX0QNgF6Mw",
       engineWorkflowId: "bIDXxyWnY22G8zJC",
@@ -279,6 +468,138 @@ describe("GLW n8n MCP recovery adapter", () => {
     expect(Object.keys(callTool.mock.calls[0][1])).toEqual(["workflowId", "executionMode", "triggerNodeName", "inputs"]);
   });
 
+  test("rejects PageEngines dispatch when workflow identity is missing", async () => {
+    const callTool = jest.fn();
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") {
+        return {
+          ...pageenginesWorkflowProfile(),
+          references: {
+            ...pageenginesWorkflowProfile().references,
+            workflowReference: null,
+          },
+        };
+      }
+      if (profileId === "profile-brand-pageengines-homepage") return pageenginesInstructionProfile("brand");
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment(),
+      callTool,
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).rejects.toThrow(
+      "workflow profile workflow reference",
+    );
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
+  test("rejects PageEngines dispatch when workflow points to legacy LEDW recovery flow", async () => {
+    const callTool = jest.fn();
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") {
+        return {
+          ...pageenginesWorkflowProfile(),
+          references: {
+            ...pageenginesWorkflowProfile().references,
+            workflowReference: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+          },
+        };
+      }
+      if (profileId === "profile-brand-pageengines-homepage") return pageenginesInstructionProfile("brand");
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment(),
+      callTool,
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).rejects.toThrow(
+      "LED Warehouse workflow binding",
+    );
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
+  test("uses isolated PageEngines workflow identity when scoped dispatch authority matches", async () => {
+    const callTool = jest.fn().mockResolvedValue({
+      structuredContent: { status: "started", executionId: "123" },
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment(),
+      callTool,
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).resolves.toMatchObject({
+      kind: "accepted",
+      executionId: "123",
+      status: "accepted",
+    });
+    expect(callTool).toHaveBeenCalledWith(
+      "execute_workflow",
+      expect.objectContaining({ workflowId: "PwkflowPageEng001" }),
+    );
+    const payload = callTool.mock.calls[0][1]?.inputs?.webhookData?.body as GlwN8nDraftRequest;
+    expect(payload.approvedInstructions).toMatchObject({
+      source: {
+        organizationId: "pageengines",
+        siteId: "site-pageengines-staging",
+      },
+    });
+    expect(payload.approvedInstructions?.brand.length).toBeGreaterThan(0);
+    expect(payload.approvedInstructions?.constraints).toEqual(expect.arrayContaining([
+      "Draft-only output. Never publish.",
+      "Preserve approved PageEngines premium dark navy and electric cyan visual direction.",
+      "Build meaningful content coverage around products/services, customer intent, and valid service geography; avoid thin, duplicate, and doorway-style pages.",
+    ]));
+    expect(JSON.stringify(payload.approvedInstructions)).not.toContain("credref-wp-pageengines-staging");
+  });
+
+  test("merges tagged constraint lines from approved profile notes into dispatch context", async () => {
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") return pageenginesWorkflowProfile();
+      if (profileId === "profile-brand-pageengines-homepage") return {
+        ...pageenginesInstructionProfile("brand"),
+        notes: `${pageenginesInstructionProfile("brand").notes}\nconstraint: Keep approved logo identity unchanged.`,
+      };
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
+    });
+    const callTool = jest.fn().mockResolvedValue({
+      structuredContent: { status: "started", executionId: "456" },
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment(),
+      callTool,
+    });
+    await dispatcher.dispatch(pageenginesDraftRequest());
+    const payload = callTool.mock.calls[0][1]?.inputs?.webhookData?.body as GlwN8nDraftRequest;
+    expect(payload.approvedInstructions?.constraints).toContain(
+      "Keep approved logo identity unchanged.",
+    );
+  });
+
+  test("fails closed in strict mode when approved instruction profiles are missing", async () => {
+    mockedGetSiteById.mockReturnValue({
+      ...pageenginesSiteRecord(),
+      profiles: {
+        ...pageenginesSiteRecord().profiles,
+        promptProfileReference: null,
+      },
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment({ GENESIS_V2_N8N_REQUIRE_APPROVED_INSTRUCTIONS: "true" }),
+      callTool: jest.fn(),
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).rejects.toThrow(
+      "approved instructions require brand/seo/prompt/image profile bindings",
+    );
+  });
+
   test("live schema fixture rejects a missing webhook trigger name", () => {
     expect(validateLiveExecuteArguments({
       workflowId: "9WTjTDXX0QNgF6Mw",
@@ -336,6 +657,19 @@ describe("GLW n8n MCP recovery adapter", () => {
       executionId: "123",
       status: "accepted",
     });
+  });
+
+  test("non-mutating test mode returns a synthetic execution without calling MCP tools", async () => {
+    const callTool = jest.fn();
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: environment({ GLW_N8N_NON_MUTATING_TEST: "true" }),
+      callTool,
+    });
+    const response = await dispatcher.dispatch(mappedRequest);
+    expect(response.kind).toBe("accepted");
+    expect(response.status).toBe("accepted");
+    expect(response.executionId).toMatch(/^9\d+$/);
+    expect(callTool).not.toHaveBeenCalled();
   });
 
   test.each([

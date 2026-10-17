@@ -47,8 +47,10 @@ import {
 } from "@/modules/glw/n8n-mcp-adapter";
 import {
   createGlwDraftExecutionService,
+  filterOutSyntheticCallbackSeeds,
   GlwDraftOnlyExecutionError,
   isGlwExecutionQuarantined,
+  isGlwSyntheticCallbackSeed,
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -74,6 +76,7 @@ import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-c
 import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-title-suppression";
 import { renderOutdoorSphereRichWordPress } from "@/modules/glw/outdoor-sphere-rich-wordpress-render";
 import { resolveOutdoorSphereGovernedCtaUrl } from "@/modules/glw/outdoor-sphere-governed-cta-url";
+import { assertPageenginesMutationAuthorityBinding } from "@/modules/glw/pageengines-dispatch-authority";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -428,7 +431,7 @@ async function finalizeContentReadyExecution(input: {
     products: listProducts(),
   });
   const keywordOwners: ProjectorEnclosureKeywordOwner[] = input.request.projectorEnclosureSeoAuthority
-    ? (await glwPageExecutionRepository.list())
+    ? filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list())
         .filter((record) => record.siteId === input.request.siteId && record.wordpressUrl && record.focusKeyphrase)
         .map((record) => {
           const authorityEvidence = record.qaChecks?.seoAuthority;
@@ -1369,6 +1372,16 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
 }
 
 async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  try {
+    assertPageenginesMutationAuthorityBinding({ request, siteRecord });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "PageEngines authority binding is required before generation.",
+      code: "PAGEENGINES_AUTHORITY_BINDING_REQUIRED",
+      status: 409,
+    } as const;
+  }
+
   const apiBaseUrl = siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
   const credentialReference = siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
   const credential = resolveWordPressCredentialReference(credentialReference);
@@ -1402,7 +1415,7 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
   const targetPreflight = await readGlwTargetPreflight({
     request,
     wordpressReadAuthority,
-    localExecutions: await glwPageExecutionRepository.list(),
+    localExecutions: filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list()),
   });
 
   const mutationAvailability = resolveGlwTargetMutationAvailability(
@@ -1501,6 +1514,15 @@ function quarantineErrorResponse(): NextResponse {
   }, { status: 409 });
 }
 
+function syntheticJobMutationBlockedResponse(): NextResponse {
+  return NextResponse.json({
+    error: "Synthetic callback test jobs are excluded from normal generation and publication mutations.",
+    code: "SYNTHETIC_TEST_JOB_EXCLUDED",
+    generationJobCreated: false,
+    publicationPerformed: false,
+  }, { status: 409 });
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -1547,10 +1569,12 @@ export async function POST(request: NextRequest) {
 
     const duplicateJob = await glwPageExecutionRepository.getById(jobId);
     if (!duplicateJob) return NextResponse.json({ error: "Duplicate GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(duplicateJob)) return syntheticJobMutationBlockedResponse();
     if (duplicateJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const canonicalJob = await glwPageExecutionRepository.getById(supersededByJobId);
     if (!canonicalJob) return NextResponse.json({ error: "Superseding GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(canonicalJob)) return syntheticJobMutationBlockedResponse();
     if (canonicalJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     if (!matchesExactContinuationTarget({ job: duplicateJob, request: preview.request })) {
@@ -1660,6 +1684,7 @@ export async function POST(request: NextRequest) {
         const recoveryJobId = body.jobId?.trim() ?? "";
         const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
         if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
+        if (isGlwSyntheticCallbackSeed(recoveryJob)) return syntheticJobMutationBlockedResponse();
         const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
         if (action === "recover_failed_dispatch") {
           validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
@@ -1689,6 +1714,7 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId?.trim() ?? "";
     if (!jobId) return NextResponse.json({ error: "Exact failed job is required for recovery." }, { status: 400 });
     const currentJob = await glwPageExecutionRepository.getById(jobId);
+    if (currentJob && isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (currentJob && isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
     }
@@ -1700,6 +1726,7 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId?.trim() ?? "";
     const currentJob = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
     if (!currentJob) return NextResponse.json({ error: "Exact recovered job is required for finalization." }, { status: 400 });
+    if (isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
     }
@@ -1723,6 +1750,7 @@ export async function POST(request: NextRequest) {
 
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
@@ -1875,6 +1903,7 @@ export async function POST(request: NextRequest) {
 
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
@@ -1963,6 +1992,9 @@ export async function GET(request: NextRequest) {
 
   const currentJob = await glwPageExecutionRepository.getById(jobId);
   if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+  if (isGlwSyntheticCallbackSeed(currentJob)) {
+    return NextResponse.json({ error: "Synthetic callback test jobs are excluded from this endpoint." }, { status: 404 });
+  }
   if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (isGlwExecutionQuarantined(currentJob)) {
     return NextResponse.json({ job: currentJob, quarantineActive: true, mutationPerformed: false });

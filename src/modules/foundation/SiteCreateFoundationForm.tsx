@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CompanyRepository } from "@/core/repositories/CompanyRepository";
 import { validateNewSiteInput } from "./site-validation";
+import type { Company } from "@/types/models/Company";
 import type { SiteConfiguration,
   NewSiteInput, SiteEnvironment } from "./types";
 
@@ -45,18 +45,9 @@ const SITE_ONBOARDING_PRESETS: Record<string, SiteOnboardingPreset> = {
 function getOnboardingPreset(
   organizationId: string,
 ): SiteOnboardingPreset | null {
-  const organization = CompanyRepository.getAll().find(
-    (candidate) => candidate.id === organizationId,
-  );
-
-  if (!organization) {
-    return null;
-  }
-
-  if (organization.name === "Screen Solutions International") {
+  if (organizationId === "ssi") {
     return SITE_ONBOARDING_PRESETS["screen-solutions-international"];
   }
-
   return SITE_ONBOARDING_PRESETS[organizationId] ?? null;
 }
 
@@ -99,8 +90,7 @@ function applyOnboardingPreset(
     },
   };
 }
-function createInitialFormState(): NewSiteInput {
-  const organizationId = CompanyRepository.getAll()[0]?.id ?? "";
+function createInitialFormState(organizationId: string): NewSiteInput {
 
   const baseState: NewSiteInput = {
     organizationId,
@@ -159,9 +149,9 @@ function slugify(value: string): string {
 
 export function SiteCreateFoundationForm() {
   const router = useRouter();
-  const organizations = CompanyRepository.getAll();
+  const [organizations, setOrganizations] = useState<Company[]>([]);
 
-  const [form, setForm] = useState<NewSiteInput>(() => createInitialFormState());
+  const [form, setForm] = useState<NewSiteInput>(() => createInitialFormState(""));
   const [submitting, setSubmitting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [createdSite, setCreatedSite] = useState<CreatedSite | null>(null);
@@ -184,6 +174,41 @@ export function SiteCreateFoundationForm() {
   const [wizardStep, setWizardStep] = useState(1);
   const [siteSaving, setSiteSaving] = useState(false);
   const [siteSaveMessage, setSiteSaveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOrganizations() {
+      const response = await fetch("/api/organizations?status=active", {
+        method: "GET",
+        headers: {
+          "x-gcp-roles": "ops_manager",
+        },
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as { organizations?: Company[]; error?: string };
+      if (!response.ok || !Array.isArray(payload.organizations)) {
+        throw new Error(payload.error ?? `Unable to load organizations (${response.status}).`);
+      }
+      if (cancelled) {
+        return;
+      }
+      setOrganizations(payload.organizations);
+      const fallbackOrganizationId = payload.organizations[0]?.id ?? "";
+      setForm((current) => {
+        const organizationId = current.organizationId || fallbackOrganizationId;
+        return applyOnboardingPreset({
+          ...current,
+          organizationId,
+        }, organizationId);
+      });
+    }
+    loadOrganizations().catch((caught) => {
+      setMessage(caught instanceof Error ? caught.message : "Unable to load organizations.");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const validation = useMemo(() => validateNewSiteInput(form), [form]);
   function updatePrimaryAddress(

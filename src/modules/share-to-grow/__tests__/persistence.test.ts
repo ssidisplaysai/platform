@@ -19,10 +19,10 @@ import {
 describe("Share-to-Grow durable repository", () => {
   let persistenceRoot: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     persistenceRoot = mkdtempSync(join(tmpdir(), "share-to-grow-"));
     process.env.GCP_FOUNDATION_PERSISTENCE_DIR = persistenceRoot;
-    resetShareToGrowRepositoryForTests();
+    await resetShareToGrowRepositoryForTests();
   });
 
   afterEach(() => {
@@ -30,8 +30,8 @@ describe("Share-to-Grow durable repository", () => {
     rmSync(persistenceRoot, { recursive: true, force: true });
   });
 
-  test("persists collaboration participant and canonical Partner reference", () => {
-    registerCollaborationParticipant({
+  test("persists collaboration participant and canonical Partner reference", async () => {
+    await registerCollaborationParticipant({
       participantId: "participant-daniel",
       organizationId: "stoner",
       collaborationId: "stoner-gym",
@@ -41,14 +41,15 @@ describe("Share-to-Grow durable repository", () => {
       createdAt: "2026-10-05T00:00:00Z",
     });
 
-    reloadShareToGrowRepositoryFromPersistence();
+    await reloadShareToGrowRepositoryFromPersistence();
 
-    expect(listCollaborationParticipants()).toHaveLength(1);
-    expect(listCollaborationParticipants()[0].canonicalPartnerId).toBe("partner-daniel");
+    const participants = await listCollaborationParticipants();
+    expect(participants).toHaveLength(1);
+    expect(participants[0].canonicalPartnerId).toBe("partner-daniel");
   });
 
-  test("references existing canonical PartnerQRCode instead of duplicating QR entity", () => {
-    registerTrackingIdentityReference({
+  test("references existing canonical PartnerQRCode instead of duplicating QR entity", async () => {
+    await registerTrackingIdentityReference({
       trackingIdentityId: "tracking-daniel",
       organizationId: "stoner",
       canonicalPartnerId: "partner-daniel",
@@ -58,12 +59,12 @@ describe("Share-to-Grow durable repository", () => {
       createdAt: "2026-10-05T00:00:00Z",
     });
 
-    reloadShareToGrowRepositoryFromPersistence();
+    await reloadShareToGrowRepositoryFromPersistence();
 
-    expect(listTrackingIdentityReferences()[0].canonicalPartnerQrId).toBe("qr-daniel");
+    expect((await listTrackingIdentityReferences())[0].canonicalPartnerQrId).toBe("qr-daniel");
   });
 
-  test("economic rule versions remain durable and immutable by identity", () => {
+  test("economic rule versions remain durable and immutable by identity", async () => {
     const rule: EconomicRuleVersion = Object.freeze({
       id: "rule-version-direct-v1",
       ruleId: "direct",
@@ -76,15 +77,16 @@ describe("Share-to-Grow durable repository", () => {
       ]),
     });
 
-    registerEconomicRuleVersion(rule);
-    reloadShareToGrowRepositoryFromPersistence();
+    await registerEconomicRuleVersion(rule);
+    await reloadShareToGrowRepositoryFromPersistence();
 
-    expect(listEconomicRuleVersions()).toHaveLength(1);
-    expect(listEconomicRuleVersions()[0].version).toBe(1);
+    const rules = await listEconomicRuleVersions();
+    expect(rules).toHaveLength(1);
+    expect(rules[0].version).toBe(1);
   });
 
-  test("persists bigint money as exact decimal minor-unit text", () => {
-    postPersistedLedgerEntry({
+  test("persists bigint money as exact decimal minor-unit text", async () => {
+    await postPersistedLedgerEntry({
       id: "entry-1",
       idempotencyKey: "order-1:line-1:daniel:v1",
       beneficiaryId: "daniel",
@@ -94,12 +96,12 @@ describe("Share-to-Grow durable repository", () => {
       postedAt: "2026-10-05T00:00:00Z",
     });
 
-    reloadShareToGrowRepositoryFromPersistence();
+    await reloadShareToGrowRepositoryFromPersistence();
 
-    expect(listPersistedLedgerEntries()[0].amountMinor).toBe("900719925474099300");
+    expect((await listPersistedLedgerEntries())[0].amountMinor).toBe("900719925474099300");
   });
 
-  test("replayed idempotency key does not create duplicate ledger effect", () => {
+  test("replayed idempotency key does not create duplicate ledger effect", async () => {
     const entry = {
       id: "entry-1",
       idempotencyKey: "order-1:line-1:stoner:v1",
@@ -108,14 +110,14 @@ describe("Share-to-Grow durable repository", () => {
       amount: money(1850),
       postedAt: "2026-10-05T00:00:00Z",
     };
-    postPersistedLedgerEntry(entry);
-    postPersistedLedgerEntry({ ...entry, id: "entry-replay" });
+    await postPersistedLedgerEntry(entry);
+    await postPersistedLedgerEntry({ ...entry, id: "entry-replay" });
 
-    expect(listPersistedLedgerEntries()).toHaveLength(1);
+    expect(await listPersistedLedgerEntries()).toHaveLength(1);
   });
 
-  test("blocks compensated creator beneath another creator", () => {
-    registerCollaborationParticipant({
+  test("blocks compensated creator beneath another creator", async () => {
+    await registerCollaborationParticipant({
       participantId: "creator-a",
       organizationId: "stoner",
       collaborationId: "stoner-gym",
@@ -126,8 +128,7 @@ describe("Share-to-Grow durable repository", () => {
       createdAt: "2026-10-05T00:00:00Z",
     });
 
-    expect(() =>
-      registerCollaborationParticipant({
+    await expect(registerCollaborationParticipant({
         participantId: "creator-b",
         organizationId: "stoner",
         collaborationId: "stoner-gym",
@@ -136,7 +137,6 @@ describe("Share-to-Grow durable repository", () => {
         sponsorPartnerId: "partner-creator-a",
         status: "active",
         createdAt: "2026-10-05T00:00:00Z",
-      }),
-    ).toThrow("CREATOR_DOWNLINE_DEPTH_EXCEEDED");
+      })).rejects.toThrow("CREATOR_DOWNLINE_DEPTH_EXCEEDED");
   });
 });

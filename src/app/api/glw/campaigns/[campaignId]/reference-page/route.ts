@@ -28,6 +28,7 @@ import { reconcileReferenceTargetExecutionProjection } from "@/modules/glw/refer
 import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "@/modules/glw/page-execution";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
 import { listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID, type ProductMediaReadiness } from "@/modules/glw/product-media-authority";
 import {
@@ -262,7 +263,7 @@ export async function GET(request: NextRequest, context: Context) {
     target.citySlug ?? "",
   );
 
-  const records = await glwPageExecutionRepository.list();
+  const records = filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list());
   const candidates = records.filter(
     (record) =>
       executionMatchesReference({

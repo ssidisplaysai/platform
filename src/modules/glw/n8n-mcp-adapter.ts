@@ -11,6 +11,8 @@ import {
 import { GLW_N8N_WORKFLOW_ID } from "./n8n-draft-adapter";
 import { validateGlwN8nMcpDraftRequest } from "./n8n-mcp-recovery-contract";
 import { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
+import { isGlwN8nNonMutatingTestMode } from "./n8n-reconnect";
+import { resolveApprovedInstructionsForDispatch, resolveWorkflowIdForDispatch } from "./pageengines-dispatch-authority";
 
 export const GLW_N8N_MCP_TRANSPORT = "N8N_MCP" as const;
 export { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
@@ -68,10 +70,12 @@ function readConfiguration(environment: NodeJS.ProcessEnv = process.env): McpCon
 export function getGlwN8nMcpConfigurationStatus(environment: NodeJS.ProcessEnv = process.env) {
   const urlConfigured = Boolean(environment.GLW_N8N_MCP_URL?.trim());
   const tokenConfigured = Boolean(environment.GLW_N8N_MCP_TOKEN?.trim());
+  const nonMutatingTestMode = isGlwN8nNonMutatingTestMode(environment);
   return {
-    configured: urlConfigured && tokenConfigured,
+    configured: nonMutatingTestMode || (urlConfigured && tokenConfigured),
     urlConfigured,
     tokenConfigured,
+    nonMutatingTestMode,
     transport: GLW_N8N_MCP_TRANSPORT,
     workflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
     engineWorkflowId: GLW_N8N_MCP_ENGINE_WORKFLOW_ID,
@@ -237,18 +241,40 @@ export function createGlwN8nMcpDispatcher(input?: {
   callTool?: McpToolCaller;
 }): GlwN8nDraftDispatcher {
   const environment = input?.environment ?? process.env;
+  const nonMutatingTestMode = isGlwN8nNonMutatingTestMode(environment);
   const callTool = createToolCaller(environment, input?.callTool);
   return {
     async dispatch(request) {
       const validatedRequest = validateGlwN8nMcpDraftRequest(request);
+      if (nonMutatingTestMode) {
+        return {
+          kind: "accepted",
+          executionId: `9${Date.now()}`,
+          status: "accepted",
+        };
+      }
+      const workflowId = resolveWorkflowIdForDispatch({
+        request: validatedRequest,
+        environment,
+        fallbackWorkflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+      });
+      const approvedInstructions = resolveApprovedInstructionsForDispatch({
+        request: validatedRequest,
+        environment,
+        fallbackWorkflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+      });
+      const dispatchBody = validateGlwN8nMcpDraftRequest({
+        ...validatedRequest,
+        approvedInstructions,
+      });
       const result = await callTool("execute_workflow", {
-        workflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+        workflowId,
         executionMode: "production",
         triggerNodeName: "GLW MCP Recovery Webhook",
         inputs: {
           webhookData: {
             method: "POST",
-            body: validatedRequest,
+            body: dispatchBody,
           },
         },
       });

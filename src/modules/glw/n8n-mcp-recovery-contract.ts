@@ -15,6 +15,17 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+const MAX_APPROVED_INSTRUCTIONS_BYTES = 48_000;
+
+function readInstructionGroup(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const normalized = value
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  return Array.from(new Set(normalized));
+}
+
 export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftRequest {
   const request = asRecord(value);
   const page = asRecord(request.page);
@@ -28,6 +39,7 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   const localizationContract = asRecord(claimContract.localizationPolicy);
   const referenceAuthority = asRecord(workflowContext.referenceGenerationAuthority);
   const authorityBinding = asRecord(workflowContext.referenceAuthorityBinding);
+  const approvedInstructions = asRecord(request.approvedInstructions);
   const productAuthority = asRecord(referenceAuthority.productAuthority);
   const additionalInstructions = typeof workflowContext.additionalInstructions === "string"
     ? workflowContext.additionalInstructions
@@ -49,6 +61,35 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
     page.publishing_mode,
     page.status,
   ].filter((entry) => entry !== undefined && entry !== null && entry !== "");
+  const incomingSiteId = typeof site.id === "string" ? site.id.trim() : "";
+
+  if (approvedInstructions && Object.keys(approvedInstructions).length > 0) {
+    const source = asRecord(approvedInstructions.source);
+    const sourceOrg = typeof source.organizationId === "string" ? source.organizationId.trim() : "";
+    const sourceSite = typeof source.siteId === "string" ? source.siteId.trim() : "";
+    const sourceBrand = typeof source.brandProfileId === "string" ? source.brandProfileId.trim() : "";
+    const sourceSeo = typeof source.seoProfileId === "string" ? source.seoProfileId.trim() : "";
+    const sourcePrompt = typeof source.promptProfileId === "string" ? source.promptProfileId.trim() : "";
+    const sourceImage = typeof source.imageProfileId === "string" ? source.imageProfileId.trim() : "";
+    const brand = readInstructionGroup(approvedInstructions.brand);
+    const seo = readInstructionGroup(approvedInstructions.seo);
+    const prompt = readInstructionGroup(approvedInstructions.prompt);
+    const image = readInstructionGroup(approvedInstructions.image);
+    const constraints = readInstructionGroup(approvedInstructions.constraints);
+    if (!sourceOrg || !sourceSite || !sourceBrand || !sourceSeo || !sourcePrompt || !sourceImage) {
+      throw new Error("GLW MCP approved instructions source is incomplete.");
+    }
+    if (sourceOrg !== request.workspaceId || sourceSite !== incomingSiteId) {
+      throw new Error("GLW MCP approved instructions source scope mismatch.");
+    }
+    if (!brand.length || !seo.length || !prompt.length || !image.length || !constraints.length) {
+      throw new Error("GLW MCP approved instructions groups must be complete.");
+    }
+    const sizeBytes = Buffer.byteLength(JSON.stringify(approvedInstructions), "utf8");
+    if (sizeBytes > MAX_APPROVED_INSTRUCTIONS_BYTES) {
+      throw new Error("GLW MCP approved instructions payload exceeds limit.");
+    }
+  }
 
   if (request.type !== "page_generation") throw new Error("GLW MCP request type must be page_generation.");
   if (!jobId) throw new Error("GLW MCP request requires a jobId.");
@@ -69,8 +110,6 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   if (publicationAliases.some((entry) => String(entry).trim().toLowerCase() !== "draft")) {
     throw new Error("GLW MCP request contains a conflicting publication alias.");
   }
-
-  const incomingSiteId = typeof site.id === "string" ? site.id.trim() : "";
 
   if (!incomingSiteId) {
     throw new Error("GLW MCP request requires a canonical Genesis site ID.");

@@ -53,6 +53,36 @@ describe("Share-to-Grow commerce normalization", () => {
     expect(line.distributableMerchandiseProfit.minor).toBe(BigInt(3250));
   });
 
+  test("includes customer-paid shipping revenue and outbound-label cost distinctly", () => {
+    const [line] = normalizeCommerceOrder({
+      channel: "stonerusa",
+      externalOrderId: "ship-1",
+      organizationId: "stoner",
+      currency: "USD",
+      convertedAt: "2026-10-05T12:00:00Z",
+      lines: [{
+        externalLineId: "L1",
+        productId: "tee",
+        quantity: 1,
+        grossMerchandiseMinor: 6000n,
+        customerShippingRevenueMinor: 900n,
+        discountMinor: 0n,
+        refundMinor: 0n,
+        costs: [
+          { kind: "cogs", amountMinor: 1800n },
+          { kind: "inbound_freight_duty", amountMinor: 100n },
+          { kind: "outbound_shipping_label", amountMinor: 700n },
+          { kind: "fulfillment_packaging", amountMinor: 200n },
+          { kind: "payment_processing", amountMinor: 200n },
+        ],
+      }],
+    });
+
+    expect(line.customerShippingRevenue.minor).toBe(900n);
+    expect(line.costs.outbound_shipping_label.minor).toBe(700n);
+    expect(line.distributableMerchandiseProfit.minor).toBe(3900n);
+  });
+
   test("keeps line items separate for different product economics", () => {
     const lines = normalizeCommerceOrder({
       channel: "stonerusa",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CompanyRepository } from "@/core/repositories/CompanyRepository";
 import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { getOrganizationById } from "@/modules/foundation/organization-repository";
 import { recordSiteActivity } from "@/modules/foundation/site-audit";
 import { createSite, listSites } from "@/modules/foundation/site-repository";
 import { createSiteId } from "@/modules/foundation/site-identity";
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   if (body.organizationId !== scope.organizationId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (CompanyRepository.getById(body.organizationId)?.status !== "active") {
+  if (getOrganizationById(body.organizationId)?.status !== "active") {
     return NextResponse.json({ error: "Organization is not active." }, { status: 422 });
   }
 

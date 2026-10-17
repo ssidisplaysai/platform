@@ -1,5 +1,9 @@
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
-import { recordSourceEventReceipt } from "../share-to-grow-repository";
+import type { SourceEventReceiptRecord } from "../persistence-types";
+import {
+  loadShareToGrowRepositorySnapshot,
+  type ShareToGrowRepositorySnapshot,
+} from "../share-to-grow-repository";
 
 export type WooCommerceEventType =
   | "order.created"
@@ -21,6 +25,9 @@ export interface VerifiedWooCommerceEvent {
   readonly payloadHash: string;
   readonly receivedAt: string;
   readonly replay: boolean;
+  readonly persistenceRevision: number;
+  readonly receipt: SourceEventReceiptRecord;
+  readonly repositorySnapshot: ShareToGrowRepositorySnapshot;
 }
 
 export function verifyWooCommerceWebhookSignature(input: {
@@ -37,10 +44,10 @@ export function verifyWooCommerceWebhookSignature(input: {
   return supplied.length === calculated.length && timingSafeEqual(supplied, calculated);
 }
 
-export function acceptWooCommerceWebhook(
+export async function acceptWooCommerceWebhook(
   envelope: WooCommerceWebhookEnvelope,
   secret: string,
-): VerifiedWooCommerceEvent {
+): Promise<VerifiedWooCommerceEvent> {
   if (!verifyWooCommerceWebhookSignature({
     rawBody: envelope.rawBody,
     signature: envelope.signature,
@@ -53,19 +60,33 @@ export function acceptWooCommerceWebhook(
   }
 
   const payloadHash = createHash("sha256").update(envelope.rawBody, "utf8").digest("hex");
-  const recorded = recordSourceEventReceipt({
+  const receipt: SourceEventReceiptRecord = {
     sourceEventId: envelope.sourceEventId,
     source: "woocommerce",
     eventType: envelope.eventType,
     payloadHash,
     receivedAt: envelope.receivedAt,
-  });
+  };
+  const snapshot = await loadShareToGrowRepositorySnapshot();
+  const existing = snapshot.state.sourceEventReceipts.find(
+    (candidate) => candidate.sourceEventId === envelope.sourceEventId,
+  );
+  if (existing && (
+    existing.source !== receipt.source
+    || existing.eventType !== receipt.eventType
+    || existing.payloadHash !== receipt.payloadHash
+  )) {
+    throw new Error("SOURCE_EVENT_ID_COLLISION");
+  }
 
   return Object.freeze({
     sourceEventId: envelope.sourceEventId,
     eventType: envelope.eventType,
     payloadHash,
     receivedAt: envelope.receivedAt,
-    replay: recorded.replay,
+    replay: existing !== undefined,
+    persistenceRevision: snapshot.revision,
+    receipt: existing ?? receipt,
+    repositorySnapshot: snapshot,
   });
 }

@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CompanyRepository } from "@/core/repositories/CompanyRepository";
+import type { Company } from "@/types/models/Company";
 import { OnboardingProfileCreator } from "./OnboardingProfileCreator";
 import {
   applyCreatedOnboardingProfile,
   filterReadyOnboardingProfiles,
+  ONBOARDING_PROFILE_REFERENCE_FIELDS,
 } from "./onboarding-profile-creation";
+import { operatorMutationHeaders } from "./operator-session-client";
+import { resolveOnboardingResumeStep } from "./site-onboarding-resume";
 import { findFreshSiteCollision, type FreshSiteCollision } from "./fresh-site-create-mode";
 import { createSiteId, slugifySiteName } from "./site-identity";
 import type {
@@ -20,6 +23,7 @@ import type {
   SitePublicationPolicy,
   SiteReadinessResult,
 } from "./types";
+import type { AutoPreparedProfilesPreview } from "./onboarding-auto-profile-preparation";
 import type {
   FreshSiteCompletionState,
   FreshSiteInventory,
@@ -56,6 +60,28 @@ type ExistingAuthorityProfileSnapshot = {
   profiles?: Partial<SiteConfiguration["profiles"]> | null;
   integrations?: Partial<SiteConfiguration["integrations"]> | null;
 };
+
+type AutoPrepareResponse = {
+  preview?: AutoPreparedProfilesPreview;
+  confirmationRequired?: string;
+  selectedProfiles?: SelectedOnboardingProfiles;
+  workflowPending?: boolean;
+  site?: SiteConfiguration;
+};
+
+type OrganizationsResponse = {
+  organizations: Company[];
+};
+
+const BRAND_LOGO_BLOCKER = "Approved logo authority is required before brand profile can be operationally ready.";
+
+function resolveLogoAssetIdFromReference(reference: string | null | undefined): string | null {
+  if (!reference || !reference.startsWith("site-intelligence-asset:")) {
+    return null;
+  }
+  const assetId = reference.slice("site-intelligence-asset:".length).trim();
+  return assetId.length > 0 ? assetId : null;
+}
 
 function isSelectableProfileReference(
   profiles: IntegrationProfileConfiguration[],
@@ -104,6 +130,20 @@ export function hydrateExistingAuthorityProfileSelection(
   return next;
 }
 
+function isApprovedLogoSelectionResolved(input: {
+  selectedLogoAssetId: string | null | undefined;
+  logoApprovalConfirmed: boolean;
+  eligibleLogoAssetIds: Set<string>;
+  fallbackLogoReference: string | null | undefined;
+}): boolean {
+  const selectedLogoAssetId = input.selectedLogoAssetId?.trim() ?? "";
+  if (selectedLogoAssetId.length > 0 && input.logoApprovalConfirmed) {
+    return input.eligibleLogoAssetIds.has(selectedLogoAssetId);
+  }
+  const fallbackLogoAssetId = resolveLogoAssetIdFromReference(input.fallbackLogoReference);
+  return Boolean(fallbackLogoAssetId && input.eligibleLogoAssetIds.has(fallbackLogoAssetId));
+}
+
 const STEPS: Array<[Step, string]> = [
   [1, "Site Details"],
   [2, "Location"],
@@ -123,13 +163,18 @@ const PROFILE_FIELDS: Array<{
   { type: "brand", label: "Brand profile", field: "brandProfileReference" },
 ];
 
-function headers(organizationId: string, siteId?: string): Record<string, string> {
-  return {
+export function onboardingRequestHeaders(
+  organizationId: string,
+  siteId?: string,
+  mutation = false,
+): HeadersInit {
+  const baseHeaders: Record<string, string> = {
     "Content-Type": "application/json",
     "x-gcp-roles": "ops_manager",
     "x-gcp-organization-id": organizationId,
     ...(siteId ? { "x-gcp-site-id": siteId } : {}),
   };
+  return mutation ? operatorMutationHeaders(baseHeaders) : baseHeaders;
 }
 
 function normalizedDomain(value: string): string {
@@ -141,10 +186,11 @@ export function FreshSiteOnboardingFlow(input: {
   mode?: "create" | "configure";
 } = {}) {
   const configureMode = input.mode === "configure" && Boolean(input.initialSite);
-  const organizations = CompanyRepository.getActive();
-  const [step, setStep] = useState<Step>(configureMode ? 4 : 1);
+  const resumeStep = input.initialSite ? resolveOnboardingResumeStep(input.initialSite) : 1;
+  const [organizations, setOrganizations] = useState<Company[]>([]);
+  const [step, setStep] = useState<Step>(configureMode ? resumeStep : 1);
   const [intent, setIntent] = useState<"fresh" | "existing">("fresh");
-  const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? organizations[0]?.id ?? "");
+  const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? "");
   const [siteName, setSiteName] = useState(input.initialSite?.siteName ?? "");
   const [displayName, setDisplayName] = useState(input.initialSite?.displayName ?? "");
   const [domain, setDomain] = useState(input.initialSite?.domain ?? "");
@@ -177,6 +223,16 @@ export function FreshSiteOnboardingFlow(input: {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [collision, setCollision] = useState<FreshSiteCollision | null>(null);
+  const [autoPreparePreview, setAutoPreparePreview] = useState<AutoPreparedProfilesPreview | null>(null);
+  const [autoPrepareConfirmation, setAutoPrepareConfirmation] = useState("");
+  const [autoPrepareEdits, setAutoPrepareEdits] = useState<Record<string, {
+    profileName: string;
+    description: string;
+    instructionBody: string;
+    selectedLogoAssetId: string;
+    logoApprovalConfirmed: boolean;
+    references: Record<string, string>;
+  }>>({});
 
   const slug = useMemo(() => slugifySiteName(siteName), [siteName]);
   const prospectiveSiteId = organizationId && slug ? createSiteId(organizationId, slug) : "Generated after site name";
@@ -186,16 +242,53 @@ export function FreshSiteOnboardingFlow(input: {
 
   useEffect(() => {
     let cancelled = false;
+    async function loadOrganizations() {
+      try {
+        const response = await fetch("/api/organizations?status=active", {
+          method: "GET",
+          headers: {
+            "x-gcp-roles": "ops_manager",
+          },
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as OrganizationsResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? `Failed to load organizations (${response.status}).`);
+        }
+        if (cancelled) {
+          return;
+        }
+        setOrganizations(payload.organizations);
+        setOrganizationId((current) => {
+          if (current && payload.organizations.some((organization) => organization.id === current)) {
+            return current;
+          }
+          return payload.organizations[0]?.id ?? "";
+        });
+      } catch (caught) {
+        if (!cancelled) {
+          setError(caught instanceof Error ? caught.message : "Unable to load organizations.");
+        }
+      }
+    }
+    loadOrganizations();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     async function loadProfiles() {
       if (!organizationId) return;
       try {
         const [profileResponse, readinessResponse] = await Promise.all([
           fetch(`/api/profiles?organizationId=${encodeURIComponent(organizationId)}&enabled=true`, {
-            headers: headers(organizationId),
+            headers: onboardingRequestHeaders(organizationId),
             cache: "no-store",
           }),
           fetch("/api/profiles/readiness", {
-            headers: headers(organizationId),
+            headers: onboardingRequestHeaders(organizationId),
             cache: "no-store",
           }),
         ]);
@@ -225,6 +318,9 @@ export function FreshSiteOnboardingFlow(input: {
     setAssessment(null);
     setCollision(null);
     setStep(1);
+    setAutoPreparePreview(null);
+    setAutoPrepareEdits({});
+    setAutoPrepareConfirmation("");
   }
 
   async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
@@ -244,7 +340,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const sitesPayload = await requestJson<{ sites: SiteConfiguration[] }>("/api/sites", {
         method: "GET",
-        headers: headers(organizationId),
+        headers: onboardingRequestHeaders(organizationId),
         cache: "no-store",
       });
       if (intent === "fresh") {
@@ -260,7 +356,7 @@ export function FreshSiteOnboardingFlow(input: {
       }
       const payload = await requestJson<{ result: PublicWordPressPreflightResult }>("/api/sites/onboarding-preflight", {
         method: "POST",
-        headers: headers(organizationId),
+        headers: onboardingRequestHeaders(organizationId, undefined, true),
         body: JSON.stringify({ domain, apiBaseUrl: advanced ? apiOverride : null, intent }),
       });
       setPreflight(payload.result);
@@ -311,7 +407,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<OnboardingCreateResponse>("/api/sites/onboarding-create", {
         method: "POST",
-        headers: headers(organizationId),
+        headers: onboardingRequestHeaders(organizationId, undefined, true),
         body: JSON.stringify(input),
       });
       setSite(payload.site);
@@ -340,7 +436,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<{ site: SiteConfiguration }>(`/api/sites/${encodeURIComponent(site.siteId)}`, {
         method: "PATCH",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
         body: JSON.stringify({ primaryAddress }),
       });
       setSite(payload.site);
@@ -359,7 +455,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       await requestJson<{ configured: boolean }>(`/api/sites/${encodeURIComponent(site.siteId)}/wordpress-credentials`, {
         method: "PUT",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
         body: JSON.stringify({ username, applicationPassword }),
       });
       setUsername("");
@@ -379,7 +475,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<{ site: SiteConfiguration; assessment: Assessment }>(`/api/sites/${encodeURIComponent(site.siteId)}/onboarding-assessment`, {
         method: "POST",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
       });
       setSite(payload.site);
       setAssessment(payload.assessment);
@@ -410,6 +506,135 @@ export function FreshSiteOnboardingFlow(input: {
     setSelectedProfiles(result.selection);
   }
 
+  function hydrateAutoPrepareEdits(preview: AutoPreparedProfilesPreview) {
+    const next: Record<string, {
+      profileName: string;
+      description: string;
+      instructionBody: string;
+      selectedLogoAssetId: string;
+      logoApprovalConfirmed: boolean;
+      references: Record<string, string>;
+    }> = {};
+    for (const proposal of preview.proposals) {
+      const selectedLogoAssetId = proposal.profileType === "brand"
+        && typeof proposal.references.logoReference === "string"
+        && proposal.references.logoReference.startsWith("site-intelligence-asset:")
+        ? proposal.references.logoReference.slice("site-intelligence-asset:".length)
+        : "";
+      const prior = autoPrepareEdits[proposal.profileType];
+      const eligibleLogoAssetIds = new Set(preview.eligibleLogoAssets.map((asset) => asset.assetId));
+      const retainedLogoAssetId = proposal.profileType === "brand"
+        && prior?.selectedLogoAssetId
+        && eligibleLogoAssetIds.has(prior.selectedLogoAssetId)
+        ? prior.selectedLogoAssetId
+        : selectedLogoAssetId;
+      next[proposal.profileType] = {
+        profileName: prior?.profileName ?? proposal.profileName,
+        description: prior?.description ?? proposal.description,
+        instructionBody: prior?.instructionBody ?? proposal.instructionBody,
+        selectedLogoAssetId: retainedLogoAssetId,
+        logoApprovalConfirmed: proposal.profileType === "brand"
+          && Boolean(prior?.logoApprovalConfirmed)
+          && retainedLogoAssetId.length > 0,
+        references: Object.entries(proposal.references).reduce<Record<string, string>>((accumulator, [key, value]) => {
+          if (typeof value === "string") {
+            accumulator[key] = value;
+          }
+          return accumulator;
+        }, {}),
+      };
+      if (proposal.profileType === "brand" && retainedLogoAssetId.length > 0) {
+        next[proposal.profileType].references.logoReference = `site-intelligence-asset:${retainedLogoAssetId}`;
+      }
+    }
+    setAutoPrepareEdits(next);
+  }
+
+  async function previewAutoPrepareProfiles() {
+    if (!site) return;
+    setBusy("auto-prepare-preview");
+    setError(null);
+    try {
+      const payload = await requestJson<AutoPrepareResponse>(`/api/sites/${encodeURIComponent(site.siteId)}/onboarding-auto-profiles`, {
+        method: "POST",
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
+        body: JSON.stringify({ action: "PREVIEW" }),
+      });
+      if (!payload.preview) {
+        throw new Error("Auto-prepare preview was not returned.");
+      }
+      setAutoPreparePreview(payload.preview);
+      setAutoPrepareConfirmation(payload.confirmationRequired ?? "");
+      hydrateAutoPrepareEdits(payload.preview);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Auto-prepare preview failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function applyAutoPrepareProfiles() {
+    if (!site || !autoPreparePreview || !autoPrepareConfirmation) return;
+    setBusy("auto-prepare-apply");
+    setError(null);
+    try {
+      const overrides = autoPreparePreview.proposals
+        .filter((proposal) => proposal.mode === "proposed")
+        .map((proposal) => {
+          const edit = autoPrepareEdits[proposal.profileType];
+          return {
+            profileType: proposal.profileType,
+            profileName: edit?.profileName ?? proposal.profileName,
+            description: edit?.description ?? proposal.description,
+            instructionBody: edit?.instructionBody ?? proposal.instructionBody,
+            selectedLogoAssetId: edit?.selectedLogoAssetId ?? "",
+            logoApprovalConfirmed: Boolean(edit?.logoApprovalConfirmed),
+            references: edit?.references ?? {},
+          };
+        });
+      const payload = await requestJson<AutoPrepareResponse>(`/api/sites/${encodeURIComponent(site.siteId)}/onboarding-auto-profiles`, {
+        method: "POST",
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
+        body: JSON.stringify({
+          action: "APPLY",
+          confirm: autoPrepareConfirmation,
+          fingerprint: autoPreparePreview.fingerprint,
+          overrides,
+        }),
+      });
+      if (!payload.selectedProfiles) {
+        throw new Error("Auto-prepared profile bindings were not returned.");
+      }
+      if (payload.site) {
+        setSite(payload.site);
+      }
+      setSelectedProfiles(payload.selectedProfiles);
+      const [profileResponse, readinessResponse] = await Promise.all([
+        fetch(`/api/profiles?organizationId=${encodeURIComponent(organizationId)}&enabled=true`, {
+          headers: onboardingRequestHeaders(organizationId),
+          cache: "no-store",
+        }),
+        fetch("/api/profiles/readiness", {
+          headers: onboardingRequestHeaders(organizationId),
+          cache: "no-store",
+        }),
+      ]);
+      const profilePayload = (await profileResponse.json()) as { profiles?: IntegrationProfileConfiguration[] };
+      const readinessPayload = (await readinessResponse.json()) as { readiness?: Array<{ profileId: string; ready: boolean }> };
+      if (profileResponse.ok && readinessResponse.ok) {
+        setProfiles(filterReadyOnboardingProfiles({
+          organizationId,
+          profiles: profilePayload.profiles ?? [],
+          readiness: readinessPayload.readiness ?? [],
+        }));
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Auto-prepare apply failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveConfiguration() {
     if (!site) return;
     setBusy("configuration");
@@ -417,7 +642,7 @@ export function FreshSiteOnboardingFlow(input: {
     try {
       const payload = await requestJson<{ site: SiteConfiguration }>(`/api/sites/${encodeURIComponent(site.siteId)}`, {
         method: "PATCH",
-        headers: headers(organizationId, site.siteId),
+        headers: onboardingRequestHeaders(organizationId, site.siteId, true),
         body: JSON.stringify({
           publicationPolicy,
           integrations: { ...site.integrations, workflowReference: selectedProfiles.workflowReference || null },
@@ -441,6 +666,37 @@ export function FreshSiteOnboardingFlow(input: {
 
   const identityReady = Boolean(siteName.trim() && displayName.trim() && organizationId && cleanDomain);
   const configurationComplete = Object.values(selectedProfiles).every(Boolean);
+  const eligibleLogoAssetIds = useMemo(() => (
+    new Set(autoPreparePreview?.eligibleLogoAssets.map((asset) => asset.assetId) ?? [])
+  ), [autoPreparePreview]);
+  function effectiveProposalBlockers(profileType: string): string[] {
+    if (!autoPreparePreview) {
+      return [];
+    }
+    const proposal = autoPreparePreview.proposals.find((candidate) => candidate.profileType === profileType);
+    if (!proposal || proposal.mode !== "proposed") {
+      return proposal?.diagnostics.blockers ?? [];
+    }
+    if (proposal.profileType !== "brand") {
+      return proposal.diagnostics.blockers;
+    }
+    const edit = autoPrepareEdits[proposal.profileType];
+    const hasApprovedLogo = isApprovedLogoSelectionResolved({
+      selectedLogoAssetId: edit?.selectedLogoAssetId,
+      logoApprovalConfirmed: Boolean(edit?.logoApprovalConfirmed),
+      eligibleLogoAssetIds,
+      fallbackLogoReference: edit?.references?.logoReference ?? proposal.references.logoReference ?? null,
+    });
+    return hasApprovedLogo
+      ? proposal.diagnostics.blockers.filter((blocker) => blocker !== BRAND_LOGO_BLOCKER)
+      : proposal.diagnostics.blockers;
+  }
+  const autoPrepareBlocked = autoPreparePreview
+    ? autoPreparePreview.proposals.some((proposal) => (
+        proposal.mode === "proposed"
+        && effectiveProposalBlockers(proposal.profileType).length > 0
+      ))
+    : false;
 
   return (
     <section id="fresh-site-onboarding" className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
@@ -477,7 +733,7 @@ export function FreshSiteOnboardingFlow(input: {
               {intent === "existing" ? <p className="mt-3 border-l-2 border-emerald-500 pl-3 text-sm text-emerald-200">Genesis will bind an existing site authority when domain identity already exists; otherwise it creates a safe draft-only Genesis context without mutating WordPress.</p> : null}
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-zinc-300">Organization<select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white">{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>
+              <label className="text-sm text-zinc-300">Organization<select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white" disabled={organizations.length === 0}>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>
               <label className="text-sm text-zinc-300">Environment<select value={environment} onChange={(event) => { setEnvironment(event.target.value as SiteEnvironment); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white"><option value="production">Production</option><option value="staging">Staging</option><option value="development">Development</option></select></label>
               <label className="text-sm text-zinc-300">Site Name<input required value={siteName} onChange={(event) => { setSiteName(event.target.value); resetEvidence(); }} placeholder="Example Fresh Site" className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white outline-none focus:border-red-500" /></label>
               <label className="text-sm text-zinc-300">Display Name<input required value={displayName} onChange={(event) => { setDisplayName(event.target.value); resetEvidence(); }} placeholder="Example Fresh Site" className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white outline-none focus:border-red-500" /></label>
@@ -528,6 +784,163 @@ export function FreshSiteOnboardingFlow(input: {
         {step === 4 && site ? (
           <div className="space-y-6">
             <div><h3 className="text-lg font-semibold text-white">Configure Genesis authority</h3><p className="mt-1 text-sm text-zinc-400">Select only active profiles registered for {organizationId}. No settings are copied from another site automatically.</p></div>
+            <section className="border border-zinc-800 bg-zinc-900/60 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Auto-Prepare Profiles (Owner Approved)</h4>
+                  <p className="mt-1 text-xs text-zinc-400">Preview reusable Brand, SEO, Prompt, and Image profile proposals from current site identity and approved references before persisting anything. Workflow remains pending until an isolated workflow reference is verified.</p>
+                </div>
+                <button type="button" onClick={previewAutoPrepareProfiles} disabled={busy !== null} className="border border-zinc-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{busy === "auto-prepare-preview" ? "Preparing..." : "Preview Auto-Prepare"}</button>
+              </div>
+              {autoPreparePreview ? (
+                <div className="mt-4 space-y-3">
+                  {autoPreparePreview.proposals.map((proposal) => {
+                    const fields = ONBOARDING_PROFILE_REFERENCE_FIELDS[proposal.profileType];
+                    const edit = autoPrepareEdits[proposal.profileType];
+                    return (
+                      <article key={proposal.profileType} className="border border-zinc-700 bg-zinc-950/70 p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-300">{proposal.profileType}</p>
+                          <span className={`text-xs ${proposal.mode === "existing" ? "text-emerald-300" : "text-amber-300"}`}>{proposal.mode === "existing" ? "Reuse existing" : "Create on approval"}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-zinc-500 break-all">{proposal.profileId}</p>
+                        {proposal.mode === "proposed" ? (
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {(() => {
+                              const blockers = effectiveProposalBlockers(proposal.profileType);
+                              return blockers.length > 0 ? (
+                                <div className="sm:col-span-2 border border-amber-700 bg-amber-950/30 p-2 text-xs text-amber-200">
+                                  <p className="font-semibold">Blockers</p>
+                                  <ul className="mt-1 list-disc pl-4">
+                                    {blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                                  </ul>
+                                </div>
+                              ) : null;
+                            })()}
+                            <label className="text-xs text-zinc-300 sm:col-span-2">Profile Name
+                              <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
+                            </label>
+                            <label className="text-xs text-zinc-300 sm:col-span-2">Description
+                              <textarea rows={2} value={edit?.description ?? proposal.description} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: event.target.value, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                            </label>
+                            <label className="text-xs text-zinc-300 sm:col-span-2">Instruction Body (persisted to profile notes)
+                              <textarea rows={8} value={edit?.instructionBody ?? proposal.instructionBody} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: current[proposal.profileType]?.profileName ?? proposal.profileName, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: event.target.value, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 w-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-white" />
+                            </label>
+                            {fields.map((field) => (
+                              <label key={field.key} className="text-xs text-zinc-300">
+                                {field.label}
+                                {proposal.profileType === "brand" && field.key === "logoReference" ? (
+                                  <div className="mt-2 space-y-2">
+                                    <select
+                                      value={edit?.selectedLogoAssetId ?? ""}
+                                      onChange={(event) => setAutoPrepareEdits((current) => {
+                                        const selectedLogoAssetId = event.target.value;
+                                        const selectedReference = selectedLogoAssetId
+                                          ? `site-intelligence-asset:${selectedLogoAssetId}`
+                                          : "";
+                                        return {
+                                          ...current,
+                                          [proposal.profileType]: {
+                                            profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
+                                            description: current[proposal.profileType]?.description ?? proposal.description,
+                                            instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
+                                            selectedLogoAssetId,
+                                            logoApprovalConfirmed: false,
+                                            references: {
+                                              ...(current[proposal.profileType]?.references ?? {}),
+                                              logoReference: selectedReference,
+                                            },
+                                          },
+                                        };
+                                      })}
+                                      className="h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white"
+                                    >
+                                      <option value="">Select Approved Logo</option>
+                                      {autoPreparePreview.eligibleLogoAssets.map((asset) => (
+                                        <option key={asset.assetId} value={asset.assetId}>{asset.fileName}</option>
+                                      ))}
+                                    </select>
+                                    {edit?.selectedLogoAssetId ? (
+                                      <label className="flex items-center gap-2 text-xs text-zinc-300">
+                                        <input
+                                          type="checkbox"
+                                          checked={Boolean(edit?.logoApprovalConfirmed)}
+                                          onChange={(event) => setAutoPrepareEdits((current) => ({
+                                            ...current,
+                                            [proposal.profileType]: {
+                                              profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
+                                              description: current[proposal.profileType]?.description ?? proposal.description,
+                                              instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
+                                              selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "",
+                                              logoApprovalConfirmed: event.target.checked,
+                                              references: current[proposal.profileType]?.references ?? {},
+                                            },
+                                          }))}
+                                        />
+                                        I approve this selected asset for official brand-logo use.
+                                      </label>
+                                    ) : null}
+                                    <div className="max-h-56 space-y-2 overflow-auto border border-zinc-800 bg-zinc-900/50 p-2">
+                                      {autoPreparePreview.eligibleLogoAssets.length === 0 ? (
+                                        <p className="text-xs text-zinc-500">No eligible image assets found for logo selection yet.</p>
+                                      ) : (
+                                        autoPreparePreview.eligibleLogoAssets.map((asset) => (
+                                          <div key={asset.assetId} className={`flex items-center gap-2 border p-2 ${edit?.selectedLogoAssetId === asset.assetId ? "border-emerald-600 bg-emerald-900/20" : "border-zinc-800"}`}>
+                                            <img src={asset.assetUrl} alt={asset.fileName} className="h-10 w-10 rounded border border-zinc-700 object-cover bg-zinc-950" />
+                                            <div className="min-w-0 text-[11px] text-zinc-300">
+                                              <p className="truncate font-semibold text-zinc-200">{asset.fileName}</p>
+                                              <p className="truncate">{asset.classification} · {asset.sentiment}</p>
+                                              {asset.notes ? <p className="truncate text-zinc-400">{asset.notes}</p> : null}
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                <input
+                                  value={edit?.references?.[field.key] ?? ""}
+                                  onChange={(event) => setAutoPrepareEdits((current) => ({
+                                    ...current,
+                                    [proposal.profileType]: {
+                                      profileName: current[proposal.profileType]?.profileName ?? proposal.profileName,
+                                      description: current[proposal.profileType]?.description ?? proposal.description,
+                                      instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody,
+                                      selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "",
+                                      logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false,
+                                      references: {
+                                        ...(current[proposal.profileType]?.references ?? {}),
+                                        [field.key]: event.target.value,
+                                      },
+                                    },
+                                  }))}
+                                  className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white"
+                                />
+                              </label>
+                            ))}
+                            {proposal.diagnostics.warnings.length > 0 ? (
+                              <div className="sm:col-span-2 border border-zinc-700 bg-zinc-900/70 p-2 text-xs text-zinc-300">
+                                <p className="font-semibold">Warnings</p>
+                                <ul className="mt-1 list-disc pl-4">
+                                  {proposal.diagnostics.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                                </ul>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-xs text-zinc-400">{proposal.existingReason}</p>
+                        )}
+                      </article>
+                    );
+                  })}
+                  <p className={`text-xs ${autoPreparePreview.workflow.configured ? "text-emerald-300" : "text-amber-300"}`}>{autoPreparePreview.workflow.reason}</p>
+                  {autoPrepareBlocked ? <p className="text-xs text-amber-200">Resolve proposal blockers before approval and apply.</p> : null}
+                  <div className="flex justify-end">
+                    <button type="button" disabled={busy !== null || autoPrepareBlocked} onClick={applyAutoPrepareProfiles} className="bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">{busy === "auto-prepare-apply" ? "Applying..." : "Approve & Apply Auto-Prepared Profiles"}</button>
+                  </div>
+                </div>
+              ) : null}
+            </section>
             <div className="grid gap-4 md:grid-cols-2">
               {PROFILE_FIELDS.map((item) => {
                 const available = profilesOfType(item.type);

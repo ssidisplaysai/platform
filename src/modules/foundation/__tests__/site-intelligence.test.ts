@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { SiteIntelligenceEvidence, SiteOpportunity } from "../site-intelligence";
-import { canUseOpportunityAsAuthority, downstreamGenerationAllowed, isPublishableSiteAsset } from "../site-intelligence";
+import { canUseOpportunityAsAuthority, downstreamGenerationAllowed, getCapabilityAuthorityAssurance, isPublishableSiteAsset, resolveAuthoritativeCapabilityState } from "../site-intelligence";
 
 const scope = { organizationId: "rj-metal", siteId: "site-rj-metal-commercial-stainless-counters", actor: "owner", reason: "Owner review." };
 
@@ -45,6 +45,27 @@ describe("site intelligence authority", () => {
     expect(workspace.evidence[0]).toEqual(evidence());
     expect(workspace.opportunities[0].capabilityState).toBe("OWNER_VALIDATION_REQUIRED");
     expect(canUseOpportunityAsAuthority(workspace.opportunities[0])).toBe(false);
+  });
+
+  test("latest capability authority revision is treated as authoritative when legacy state drifts", () => {
+    const stale = opportunity();
+    stale.capabilityState = "OWNER_VALIDATION_REQUIRED";
+    stale.capabilityAuthorityRevisions = [{
+      organizationId: scope.organizationId,
+      siteId: scope.siteId,
+      opportunityId: stale.opportunityId,
+      decision: "VERIFIED",
+      evidenceIds: [],
+      evidenceRelevance: [],
+      attestation: "Owner confirms current capability.",
+      authorityBasis: "OWNER_ATTESTATION",
+      qualificationNotes: null,
+      decidedBy: "owner",
+      decidedAt: "2026-09-10T00:02:00.000Z",
+      revision: 1,
+    }];
+    expect(resolveAuthoritativeCapabilityState(stale)).toBe("VERIFIED");
+    expect(getCapabilityAuthorityAssurance(stale)).toBe("OWNER_ATTESTED");
   });
 
   test("owner decisions and capability validation are explicit", async () => {
