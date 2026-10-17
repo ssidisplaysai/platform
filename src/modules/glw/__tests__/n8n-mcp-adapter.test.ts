@@ -549,7 +549,38 @@ describe("GLW n8n MCP recovery adapter", () => {
       },
     });
     expect(payload.approvedInstructions?.brand.length).toBeGreaterThan(0);
+    expect(payload.approvedInstructions?.constraints).toEqual(expect.arrayContaining([
+      "Draft-only output. Never publish.",
+      "Preserve approved PageEngines premium dark navy and electric cyan visual direction.",
+      "Build meaningful content coverage around products/services, customer intent, and valid service geography; avoid thin, duplicate, and doorway-style pages.",
+    ]));
     expect(JSON.stringify(payload.approvedInstructions)).not.toContain("credref-wp-pageengines-staging");
+  });
+
+  test("merges tagged constraint lines from approved profile notes into dispatch context", async () => {
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") return pageenginesWorkflowProfile();
+      if (profileId === "profile-brand-pageengines-homepage") return {
+        ...pageenginesInstructionProfile("brand"),
+        notes: `${pageenginesInstructionProfile("brand").notes}\nconstraint: Keep approved logo identity unchanged.`,
+      };
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
+    });
+    const callTool = jest.fn().mockResolvedValue({
+      structuredContent: { status: "started", executionId: "456" },
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment(),
+      callTool,
+    });
+    await dispatcher.dispatch(pageenginesDraftRequest());
+    const payload = callTool.mock.calls[0][1]?.inputs?.webhookData?.body as GlwN8nDraftRequest;
+    expect(payload.approvedInstructions?.constraints).toContain(
+      "Keep approved logo identity unchanged.",
+    );
   });
 
   test("fails closed in strict mode when approved instruction profiles are missing", async () => {

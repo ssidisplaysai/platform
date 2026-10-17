@@ -14,6 +14,17 @@ const PAGEENGINES_HOMEPAGE_CONTRACT_MARKERS = [
   "clear ctas",
   "no fabricated results",
 ] as const;
+const PAGEENGINES_APPROVED_LOGO_ASSET_REFERENCE = "site-asset-3fbe5976a9db5963be60dcb4f4337b1ffcbeb295019a720ae4b82faec6c8a672";
+const PAGEENGINES_BASE_CONSTRAINTS = [
+  "Draft-only output. Never publish.",
+  "Approved PageEngines profiles only; reject cross-organization content.",
+  "Preserve approved PageEngines premium dark navy and electric cyan visual direction.",
+  `Use approved site-bound logo asset reference ${PAGEENGINES_APPROVED_LOGO_ASSET_REFERENCE}.`,
+  "Do not fabricate performance claims, testimonials, customer logos, or unsupported market statistics.",
+  "Maintain provenance distinction: Copilot concept reference, owner-approved design reference, Genesis-native output, WordPress draft, and publication are separate states.",
+  "Build meaningful content coverage around products/services, customer intent, and valid service geography; avoid thin, duplicate, and doorway-style pages.",
+  "Only create service/location combinations where legitimate customer intent and differentiated useful content exist.",
+] as const;
 const MAX_APPROVED_INSTRUCTIONS_BYTES = 48_000;
 
 type PageenginesAuthorityBinding = {
@@ -38,6 +49,14 @@ function toInstructionLines(value: string | null | undefined): string[] {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
   return Array.from(new Set(lines));
+}
+
+function extractConstraintLines(value: string | null | undefined): string[] {
+  const lines = toInstructionLines(value);
+  return lines
+    .filter((line) => /^constraint\s*:/iu.test(line))
+    .map((line) => line.replace(/^constraint\s*:/iu, "").trim())
+    .filter((line) => line.length > 0);
 }
 
 function approvedInstructionsRequired(environment: NodeJS.ProcessEnv): boolean {
@@ -327,10 +346,14 @@ export function resolveApprovedInstructionsForDispatch(input: {
     seo: toInstructionLines(profileRecords.seo.notes),
     prompt: toInstructionLines(profileRecords.prompt.notes),
     image: toInstructionLines(profileRecords.image.notes),
-    constraints: [
-      "Draft-only output. Never publish.",
-      "Approved PageEngines profiles only; reject cross-organization content.",
-    ],
+    constraints: Array.from(new Set([
+      ...PAGEENGINES_BASE_CONSTRAINTS,
+      ...extractConstraintLines(site.notes),
+      ...extractConstraintLines(profileRecords.brand.notes),
+      ...extractConstraintLines(profileRecords.seo.notes),
+      ...extractConstraintLines(profileRecords.prompt.notes),
+      ...extractConstraintLines(profileRecords.image.notes),
+    ])),
   };
   if (!approvedInstructions.brand.length
     || !approvedInstructions.seo.length
