@@ -12,7 +12,7 @@ import { GLW_N8N_WORKFLOW_ID } from "./n8n-draft-adapter";
 import { validateGlwN8nMcpDraftRequest } from "./n8n-mcp-recovery-contract";
 import { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
 import { isGlwN8nNonMutatingTestMode } from "./n8n-reconnect";
-import { resolveWorkflowIdForDispatch } from "./pageengines-dispatch-authority";
+import { resolveApprovedInstructionsForDispatch, resolveWorkflowIdForDispatch } from "./pageengines-dispatch-authority";
 
 export const GLW_N8N_MCP_TRANSPORT = "N8N_MCP" as const;
 export { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
@@ -258,6 +258,15 @@ export function createGlwN8nMcpDispatcher(input?: {
         environment,
         fallbackWorkflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
       });
+      const approvedInstructions = resolveApprovedInstructionsForDispatch({
+        request: validatedRequest,
+        environment,
+        fallbackWorkflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+      });
+      const dispatchBody = validateGlwN8nMcpDraftRequest({
+        ...validatedRequest,
+        approvedInstructions,
+      });
       const result = await callTool("execute_workflow", {
         workflowId,
         executionMode: "production",
@@ -265,7 +274,7 @@ export function createGlwN8nMcpDispatcher(input?: {
         inputs: {
           webhookData: {
             method: "POST",
-            body: validatedRequest,
+            body: dispatchBody,
           },
         },
       });

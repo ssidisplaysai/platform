@@ -112,6 +112,13 @@ function pageenginesSiteRecord(): SiteConfiguration {
       wordpressCredentialReference: "credref-wp-pageengines-staging",
       workflowReference: "profile-workflow-pageengines-staging",
     },
+    profiles: {
+      ...FOUNDATION_SITE_FIXTURES[0].profiles,
+      brandProfileReference: "profile-brand-pageengines-homepage",
+      seoProfileReference: "profile-seo-pageengines-homepage",
+      promptProfileReference: "profile-prompt-pageengines-homepage",
+      imageProfileReference: "profile-image-pageengines-homepage",
+    },
   };
 }
 
@@ -181,6 +188,21 @@ function pageenginesWorkflowProfile(): IntegrationProfileConfiguration {
     createdAt: "2026-10-15T00:00:00.000Z",
     updatedAt: "2026-10-15T00:00:00.000Z",
     notes: null,
+  };
+}
+
+function pageenginesInstructionProfile(profileType: "brand" | "seo" | "prompt" | "image"): IntegrationProfileConfiguration {
+  return {
+    ...pageenginesWorkflowProfile(),
+    profileId: `profile-${profileType}-pageengines-homepage`,
+    profileType,
+    profileName: `PageEngines ${profileType} Profile`,
+    references: {
+      ...pageenginesWorkflowProfile().references,
+      workflowReference: null,
+      credentialReference: null,
+    },
+    notes: `${profileType} instruction line one\n${profileType} instruction line two`,
   };
 }
 
@@ -272,7 +294,14 @@ describe("GLW n8n MCP recovery adapter", () => {
   beforeEach(() => {
     mockedGetSiteById.mockReturnValue(pageenginesSiteRecord());
     mockedGetProductById.mockReturnValue(pageenginesProduct());
-    mockedGetIntegrationProfileById.mockReturnValue(pageenginesWorkflowProfile());
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") return pageenginesWorkflowProfile();
+      if (profileId === "profile-brand-pageengines-homepage") return pageenginesInstructionProfile("brand");
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
+    });
   });
 
   test("accepts the existing complete GLW draft envelope unchanged", () => {
@@ -441,12 +470,21 @@ describe("GLW n8n MCP recovery adapter", () => {
 
   test("rejects PageEngines dispatch when workflow identity is missing", async () => {
     const callTool = jest.fn();
-    mockedGetIntegrationProfileById.mockReturnValue({
-      ...pageenginesWorkflowProfile(),
-      references: {
-        ...pageenginesWorkflowProfile().references,
-        workflowReference: null,
-      },
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") {
+        return {
+          ...pageenginesWorkflowProfile(),
+          references: {
+            ...pageenginesWorkflowProfile().references,
+            workflowReference: null,
+          },
+        };
+      }
+      if (profileId === "profile-brand-pageengines-homepage") return pageenginesInstructionProfile("brand");
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
     });
     const dispatcher = createGlwN8nMcpDispatcher({
       environment: pageenginesAuthorityEnvironment(),
@@ -460,12 +498,21 @@ describe("GLW n8n MCP recovery adapter", () => {
 
   test("rejects PageEngines dispatch when workflow points to legacy LEDW recovery flow", async () => {
     const callTool = jest.fn();
-    mockedGetIntegrationProfileById.mockReturnValue({
-      ...pageenginesWorkflowProfile(),
-      references: {
-        ...pageenginesWorkflowProfile().references,
-        workflowReference: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
-      },
+    mockedGetIntegrationProfileById.mockImplementation((profileId: string) => {
+      if (profileId === "profile-workflow-pageengines-staging") {
+        return {
+          ...pageenginesWorkflowProfile(),
+          references: {
+            ...pageenginesWorkflowProfile().references,
+            workflowReference: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+          },
+        };
+      }
+      if (profileId === "profile-brand-pageengines-homepage") return pageenginesInstructionProfile("brand");
+      if (profileId === "profile-seo-pageengines-homepage") return pageenginesInstructionProfile("seo");
+      if (profileId === "profile-prompt-pageengines-homepage") return pageenginesInstructionProfile("prompt");
+      if (profileId === "profile-image-pageengines-homepage") return pageenginesInstructionProfile("image");
+      return null;
     });
     const dispatcher = createGlwN8nMcpDispatcher({
       environment: pageenginesAuthorityEnvironment(),
@@ -493,6 +540,32 @@ describe("GLW n8n MCP recovery adapter", () => {
     expect(callTool).toHaveBeenCalledWith(
       "execute_workflow",
       expect.objectContaining({ workflowId: "PwkflowPageEng001" }),
+    );
+    const payload = callTool.mock.calls[0][1]?.inputs?.webhookData?.body as GlwN8nDraftRequest;
+    expect(payload.approvedInstructions).toMatchObject({
+      source: {
+        organizationId: "pageengines",
+        siteId: "site-pageengines-staging",
+      },
+    });
+    expect(payload.approvedInstructions?.brand.length).toBeGreaterThan(0);
+    expect(JSON.stringify(payload.approvedInstructions)).not.toContain("credref-wp-pageengines-staging");
+  });
+
+  test("fails closed in strict mode when approved instruction profiles are missing", async () => {
+    mockedGetSiteById.mockReturnValue({
+      ...pageenginesSiteRecord(),
+      profiles: {
+        ...pageenginesSiteRecord().profiles,
+        promptProfileReference: null,
+      },
+    });
+    const dispatcher = createGlwN8nMcpDispatcher({
+      environment: pageenginesAuthorityEnvironment({ GENESIS_V2_N8N_REQUIRE_APPROVED_INSTRUCTIONS: "true" }),
+      callTool: jest.fn(),
+    });
+    await expect(dispatcher.dispatch(pageenginesDraftRequest())).rejects.toThrow(
+      "approved instructions require brand/seo/prompt/image profile bindings",
     );
   });
 

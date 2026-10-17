@@ -14,6 +14,7 @@ const PAGEENGINES_HOMEPAGE_CONTRACT_MARKERS = [
   "clear ctas",
   "no fabricated results",
 ] as const;
+const MAX_APPROVED_INSTRUCTIONS_BYTES = 48_000;
 
 type PageenginesAuthorityBinding = {
   organizationId: string;
@@ -28,6 +29,20 @@ type PageenginesAuthorityBinding = {
 function nonEmpty(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function toInstructionLines(value: string | null | undefined): string[] {
+  if (!value) return [];
+  const lines = value
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  return Array.from(new Set(lines));
+}
+
+function approvedInstructionsRequired(environment: NodeJS.ProcessEnv): boolean {
+  const flag = nonEmpty(environment.GENESIS_V2_N8N_REQUIRE_APPROVED_INSTRUCTIONS)?.toLowerCase();
+  return flag === "1" || flag === "true" || flag === "yes";
 }
 
 function normalizeHost(value: string | null | undefined): string | null {
@@ -232,6 +247,102 @@ export function resolveWorkflowIdForDispatch(input: {
   });
 
   return binding.workflowId;
+}
+
+export function resolveApprovedInstructionsForDispatch(input: {
+  request: GlwN8nDraftRequest;
+  environment?: NodeJS.ProcessEnv;
+  fallbackWorkflowId: string;
+}): GlwN8nDraftRequest["approvedInstructions"] | undefined {
+  const environment = input.environment ?? process.env;
+  const configuredHost = expectedWordPressHost(environment);
+  const isPageenginesCandidate = siteLooksLikePageengines({
+    workspaceId: input.request.workspaceId,
+    siteId: input.request.site.id,
+    siteDomain: input.request.site.domain,
+    siteCanonicalUrl: input.request.site.canonicalUrl,
+    siteWordPressApiBaseUrl: input.request.site.wordpressApiBaseUrl,
+    expectedWordPressHost: configuredHost,
+  });
+  if (!isPageenginesCandidate) return undefined;
+
+  const binding = resolvePageenginesBindingFromFoundation({
+    organizationId: input.request.workspaceId,
+    siteId: input.request.site.id,
+    productId: input.request.page.productId,
+    fallbackWorkflowId: input.fallbackWorkflowId,
+    environment,
+  });
+  assertDispatchConstraints({ request: input.request, binding });
+
+  const site = getSiteById(binding.siteId);
+  if (!site) throw new Error("PageEngines authority rejected missing site foundation record.");
+  const strictMode = approvedInstructionsRequired(environment);
+  const brandProfileId = nonEmpty(site.profiles.brandProfileReference);
+  const seoProfileId = nonEmpty(site.profiles.seoProfileReference);
+  const promptProfileId = nonEmpty(site.profiles.promptProfileReference);
+  const imageProfileId = nonEmpty(site.profiles.imageProfileReference);
+  if (!brandProfileId || !seoProfileId || !promptProfileId || !imageProfileId) {
+    if (strictMode) {
+      throw new Error("PageEngines approved instructions require brand/seo/prompt/image profile bindings.");
+    }
+    return undefined;
+  }
+
+  const profileRecords = {
+    brand: getIntegrationProfileById(brandProfileId),
+    seo: getIntegrationProfileById(seoProfileId),
+    prompt: getIntegrationProfileById(promptProfileId),
+    image: getIntegrationProfileById(imageProfileId),
+  } as const;
+  if (!profileRecords.brand || !profileRecords.seo || !profileRecords.prompt || !profileRecords.image) {
+    if (strictMode) throw new Error("PageEngines approved instruction profiles are missing.");
+    return undefined;
+  }
+
+  const requestSiteId = input.request.site.id;
+  const expectedOrgId = input.request.workspaceId;
+  const validateProfile = (name: keyof typeof profileRecords, expectedType: "brand" | "seo" | "prompt" | "image") => {
+    const profile = profileRecords[name]!;
+    if (profile.organizationId !== expectedOrgId) throw new Error(`PageEngines ${name} profile organization mismatch.`);
+    if (profile.profileType !== expectedType) throw new Error(`PageEngines ${name} profile type mismatch.`);
+    if (profile.status !== "active" || !profile.enabled) throw new Error(`PageEngines ${name} profile is not ready.`);
+    if (!profile.assignedSiteIds.includes(requestSiteId)) throw new Error(`PageEngines ${name} profile site assignment mismatch.`);
+  };
+  validateProfile("brand", "brand");
+  validateProfile("seo", "seo");
+  validateProfile("prompt", "prompt");
+  validateProfile("image", "image");
+
+  const approvedInstructions: GlwN8nDraftRequest["approvedInstructions"] = {
+    source: {
+      organizationId: expectedOrgId,
+      siteId: requestSiteId,
+      brandProfileId,
+      seoProfileId,
+      promptProfileId,
+      imageProfileId,
+    },
+    brand: toInstructionLines(profileRecords.brand.notes),
+    seo: toInstructionLines(profileRecords.seo.notes),
+    prompt: toInstructionLines(profileRecords.prompt.notes),
+    image: toInstructionLines(profileRecords.image.notes),
+    constraints: [
+      "Draft-only output. Never publish.",
+      "Approved PageEngines profiles only; reject cross-organization content.",
+    ],
+  };
+  if (!approvedInstructions.brand.length
+    || !approvedInstructions.seo.length
+    || !approvedInstructions.prompt.length
+    || !approvedInstructions.image.length) {
+    throw new Error("PageEngines approved instructions must include all profile instruction groups.");
+  }
+  const sizeBytes = Buffer.byteLength(JSON.stringify(approvedInstructions), "utf8");
+  if (sizeBytes > MAX_APPROVED_INSTRUCTIONS_BYTES) {
+    throw new Error("PageEngines approved instructions payload exceeds limit.");
+  }
+  return approvedInstructions;
 }
 
 function assertMutationConstraints(input: {
