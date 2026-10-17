@@ -13,6 +13,9 @@ export type SiteStrategySynthesisContext = {
 };
 
 type StrategyDraft = Omit<SiteStrategyProposal, "revision" | "status" | "createdBy" | "createdAt" | "decidedBy" | "decidedAt">;
+type SiteStrategySynthesisOptions = {
+  revisionInstructions?: string;
+};
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
@@ -29,10 +32,34 @@ function profileGuidance(profile: IntegrationProfileConfiguration): string[] {
   return unique([profile.profileName, profile.description ?? "", profile.notes ?? "", ...Object.entries(profile.references).flatMap(([key, value]) => value ? [`${key}: ${value}`] : [])]);
 }
 
-export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspace, context: SiteStrategySynthesisContext): StrategyDraft {
+function applyOwnerRevisionInstructions(draft: StrategyDraft, revisionInstructions: string): StrategyDraft {
+  if (!revisionInstructions) return draft;
+  const normalized = revisionInstructions.toLowerCase();
+  const emphasizesSearchGrowth = /(seo|search|content|visibility|index|organic|website)/i.test(normalized);
+  const strategicCta = emphasizesSearchGrowth ? "Request SEO Growth Plan" : "Request Strategic Plan";
+  return {
+    ...draft,
+    positioning: `Owner revision focus: ${revisionInstructions} ${draft.positioning}`,
+    valueProposition: `Owner requested strategy updates: ${revisionInstructions} ${draft.valueProposition}`,
+    informationArchitecture: emphasizesSearchGrowth ? unique([...draft.informationArchitecture, "SEO Services", "Content Strategy"]) : draft.informationArchitecture,
+    proposedSitemap: emphasizesSearchGrowth ? unique([...draft.proposedSitemap, "/seo-services", "/content-strategy"]) : draft.proposedSitemap,
+    homepageGoals: unique([...draft.homepageGoals, `Address owner revision focus: ${revisionInstructions}`]),
+    conversionPaths: unique([...draft.conversionPaths, "Owner-priority strategy page to request-a-quote flow"]),
+    ctaHierarchy: unique([strategicCta, ...draft.ctaHierarchy]),
+    trustProofRequirements: emphasizesSearchGrowth ? unique([...draft.trustProofRequirements, "Search visibility reporting examples"]) : draft.trustProofRequirements,
+    reason: `${draft.reason} Revision instructions applied: ${revisionInstructions}.`,
+    synthesisContext: {
+      ...draft.synthesisContext,
+      revisionInstructions,
+    },
+  };
+}
+
+export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspace, context: SiteStrategySynthesisContext, options: SiteStrategySynthesisOptions = {}): StrategyDraft {
   if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
   const approved = workspace.opportunities.filter((opportunity) => opportunity.ownerDecision === "APPROVED");
   if (!approved.length) throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
+  const revisionInstructions = options.revisionInstructions?.trim() ?? "";
   const presentAuthority = approved.filter(hasVerifiedCapability);
   const unverified = approved.filter((opportunity) => !hasVerifiedCapability(opportunity) && opportunity.capabilityState !== "FUTURE_CAPABILITY" && opportunity.capabilityState !== "REJECTED");
   const future = approved.filter((opportunity) => opportunity.capabilityState === "FUTURE_CAPABILITY");
@@ -61,7 +88,7 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
     const value = { HIGH: 3, MODERATE: 2, LOW: 1, UNKNOWN: 0 };
     return value[right.commercialValue] - value[left.commercialValue] || right.confidence - left.confidence;
   }).map((opportunity) => opportunity.name);
-  return {
+  const draft: StrategyDraft = {
     positioning: `${brandName} is a commercial project resource for ${audience.toLowerCase()} planning complex projects across ${marketFocus.toLowerCase()}${approvedCapabilitySummary}.`,
     primaryAudience: audience,
     secondaryAudiences: buyers.slice(1),
@@ -96,6 +123,8 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
       targetExpansionGeographies: expansionGeographies,
       researchedDemandGeographies: researchedGeographies,
       locationSeoOpportunities,
+      revisionInstructions: revisionInstructions || undefined,
     },
   };
+  return applyOwnerRevisionInstructions(draft, revisionInstructions);
 }

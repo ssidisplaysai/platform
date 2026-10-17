@@ -172,6 +172,7 @@ export type SiteStrategyProposal = {
     targetExpansionGeographies?: string[];
     researchedDemandGeographies?: string[];
     locationSeoOpportunities?: string[];
+    revisionInstructions?: string;
   };
 };
 

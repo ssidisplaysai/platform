@@ -171,8 +171,14 @@ describe("site intelligence API boundary", () => {
 
     const reopenedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "REOPEN_STRATEGY", expectedRevision: approvedCreativeBody.workspace.revision, actor: "site-owner", reason: "Owner reopened for updated review." }), context);
     const reopenedBody = await reopenedStrategy.json();
-    const revisedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "GENERATE_REVISED_STRATEGY", expectedRevision: reopenedBody.workspace.revision, actor: "site-owner", revisionInstructions: "Update market positioning for revised priorities." }), context);
+    const revisionInstructions = "Reposition this strategy toward website and search growth services.";
+    const revisedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "GENERATE_REVISED_STRATEGY", expectedRevision: reopenedBody.workspace.revision, actor: "site-owner", revisionInstructions }), context);
     const revisedBody = await revisedStrategy.json();
+    expect(revisedBody.workspace.strategyRevisions.at(-1)).toMatchObject({
+      positioning: expect.stringContaining(`Owner revision focus: ${revisionInstructions}`),
+      ctaHierarchy: expect.arrayContaining(["Request SEO Growth Plan"]),
+      synthesisContext: expect.objectContaining({ revisionInstructions }),
+    });
     const reapprovedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "DECIDE_STRATEGY", expectedRevision: revisedBody.workspace.revision, decision: "APPROVED", actor: "site-owner" }), context);
     const reapprovedBody = await reapprovedStrategy.json();
     const latestStrategyRevision = reapprovedBody.workspace.strategyRevisions.at(-1)?.revision;

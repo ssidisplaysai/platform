@@ -140,6 +140,18 @@ describe("site strategy synthesizer", () => {
     expect(text).toMatch(/\bfabricat(?:e|ion|ed|ing)?\b/i);
   });
 
+  test("revision instructions materially change structured strategy fields", async () => {
+    const { synthesizeInitialSiteStrategy } = await import("../site-strategy-synthesizer");
+    const instructions = "Reposition around website and search growth services for multi-location operators.";
+    const proposal = synthesizeInitialSiteStrategy(workspace(false), context, { revisionInstructions: instructions });
+    expect(proposal.positioning).toContain(`Owner revision focus: ${instructions}`);
+    expect(proposal.valueProposition).toContain(`Owner requested strategy updates: ${instructions}`);
+    expect(proposal.ctaHierarchy[0]).toBe("Request SEO Growth Plan");
+    expect(proposal.informationArchitecture).toEqual(expect.arrayContaining(["SEO Services", "Content Strategy"]));
+    expect(proposal.proposedSitemap).toEqual(expect.arrayContaining(["/seo-services", "/content-strategy"]));
+    expect(proposal.synthesisContext?.revisionInstructions).toBe(instructions);
+  });
+
   test("contains no ProjectorEnclosure or RJ-specific branching", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/site-strategy-synthesizer.ts"), "utf8").toLowerCase();
     expect(source).not.toContain("site-ssi-projectorenclosure");
