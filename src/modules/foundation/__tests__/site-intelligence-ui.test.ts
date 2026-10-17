@@ -25,7 +25,7 @@ describe("site intelligence UI contract", () => {
   });
 
   test("workspace exposes intelligence, strategy, creative and approval controls", () => {
-    for (const text of ["Opportunity Board", "APPROVE INTELLIGENCE", "Site Strategy", "Creative Inputs", "Creative Direction", "Product authority boundary"]) expect(workspace).toContain(text);
+    for (const text of ["Research Summary", "Opportunity Board", "APPROVE INTELLIGENCE", "Site Strategy", "Creative Inputs", "Creative Direction", "Product authority boundary"]) expect(workspace).toContain(text);
     for (const decision of ["RESEARCH_MORE", "HOLD", "REJECTED", "APPROVED", "VERIFIED", "QUALIFIED", "FUTURE_CAPABILITY"]) expect(workspace).toContain(decision);
   });
 
@@ -50,7 +50,18 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain('type="checkbox"');
     expect(ownerWorkflow).toContain("OWNER_EVIDENCE_CHOICES");
     expect(ownerWorkflow).toContain("CAPABILITY_RELEVANCE_TYPES");
+    expect(ownerWorkflow).toContain("describeCapabilitySaveReadiness");
+    expect(ownerWorkflow).toContain("Saving capability review…");
+    expect(ownerWorkflow).toContain("Capability review saved. Independent proof is still required");
     expect(ownerWorkflow.indexOf("OWNER_EVIDENCE_CHOICES")).toBeLessThan(ownerWorkflow.indexOf("Advanced evidence details"));
+  });
+
+  test("opportunity review is compact with selectable details and advanced diagnostics behind collapsibles", () => {
+    for (const text of ["Review next pending", "Return to summary", "Select one opportunity to review in detail.", "Pending review", "Completed"]) expect(workspace).toContain(text);
+    expect(workspace).toContain("selectedOpportunityId");
+    expect(workspace).toContain("Research execution diagnostics");
+    expect(workspace).toContain("Evidence & Provenance Journal");
+    expect(workspace).toContain("<details>");
   });
 
   test("owner confirmation is dynamic and legacy authority remains review-required", () => {

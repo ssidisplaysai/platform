@@ -27,6 +27,24 @@ describe("post-capability transition", () => {
     expect(result).toMatchObject({ capabilityReviewsComplete: 1, capabilityReviewsRemaining: 1, nextStep: "REVIEW_REMAINING_CAPABILITIES" });
   });
 
+  test("owner attestation without independent proof is tracked as review-complete but still strategy-relevant", () => {
+    const protectedClaim = opportunity("O2", {
+      name: "Nationwide service coverage",
+      rationale: "Nationwide service coverage claim",
+      capabilityState: "VERIFIED",
+      capabilityEvidenceIds: [],
+      capabilityAuthorityRevisions: [{
+        ...opportunity("O2").capabilityAuthorityRevisions![0],
+        decision: "VERIFIED",
+        evidenceIds: [],
+        evidenceRelevance: [],
+        authorityBasis: "OWNER_ATTESTATION",
+      }],
+    });
+    const result = resolvePostCapabilityTransition(workspace([opportunity("O1"), protectedClaim]));
+    expect(result).toMatchObject({ capabilityReviewsComplete: 2, capabilityReviewsRemaining: 0, nextStep: "REVIEW_UPDATED_STRATEGY" });
+  });
+
   test("material authority change after strategy creation requires updated strategy", () => {
     const result = resolvePostCapabilityTransition(workspace([opportunity("O1"), opportunity("O2", { capabilityState: "REJECTED", capabilityAuthorityRevisions: [{ ...opportunity("O2").capabilityAuthorityRevisions![0], decision: "REJECTED", attestation: "", authorityBasis: undefined }] })]));
     expect(result).toMatchObject({ strategyPredatesFinalCapabilitySnapshot: true, materialStrategyImpactDetected: true, nextStep: "REVIEW_UPDATED_STRATEGY" });

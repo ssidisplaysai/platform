@@ -41,6 +41,12 @@ describe("site intelligence bounded research executor", () => {
     expect(result.evidence).toEqual([]); expect(result.opportunities).toEqual([]);
   });
 
+  test("provider HTTP 500 is persisted as a recoverable provider failure", async () => {
+    const workspace = await started(); const executor = await import("../site-intelligence-research-executor");
+    const result = await executor.executeSiteIntelligenceResearch({ authority, provider: { providerId: "test", async execute() { throw new Error("SITE_INTELLIGENCE_PROVIDER_HTTP_500"); } }, actor: "owner", expectedRevision: workspace.revision, maxAttempts: 1 });
+    expect(result.researchExecutions[0]).toMatchObject({ state: "RECOVERABLE", attemptCount: 1, errorCode: "PROVIDER_FAILED", errorMessage: "SITE_INTELLIGENCE_PROVIDER_HTTP_500" });
+  });
+
   test("resumes the same recoverable initial execution and retains cumulative attempts", async () => {
     const workspace = await started(); const executor = await import("../site-intelligence-research-executor"); let calls = 0;
     const provider: SiteResearchProvider = { providerId: "test", async execute({ executionId }) { calls += 1; if (calls === 1) throw new Error("transient"); return output(executionId); } };

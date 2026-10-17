@@ -3,6 +3,7 @@ import {
   CAPABILITY_RELEVANCE_TYPES,
   canonicalCapabilityState,
   evidenceNeedsClarification,
+  describeCapabilitySaveReadiness,
   getOwnerCapabilityPreview,
   hasSpecificCapabilityProof,
   inferEvidenceRelevance,
@@ -64,6 +65,51 @@ describe("owner capability UX mapping", () => {
     const pending = { opportunity: opportunity(), choice: "CURRENT" as const, selectedEvidence: [], evidenceRelevance: {}, limitations: "" };
     expect(getOwnerCapabilityPreview({ ...pending, ownerConfirmed: false })).toMatchObject({ label: "REVIEW REQUIRED", ownerConfirmation: "Needed", supportingProof: "Not added", canSubmit: false });
     expect(getOwnerCapabilityPreview({ ...pending, ownerConfirmed: true })).toMatchObject({ label: "OWNER CONFIRMED", ownerConfirmation: "Confirmed", supportingProof: "Not added", canSubmit: true });
+  });
+
+  test("save readiness explains missing attestation and qualified limitations", () => {
+    const preview = getOwnerCapabilityPreview({
+      opportunity: opportunity(),
+      choice: "LIMITED",
+      ownerConfirmed: false,
+      selectedEvidence: [],
+      evidenceRelevance: {},
+      limitations: "",
+    });
+    const readiness = describeCapabilitySaveReadiness({
+      choice: "LIMITED",
+      ownerConfirmed: false,
+      limitations: "",
+      preview,
+      busy: false,
+      saving: false,
+    });
+    expect(readiness.canSave).toBe(false);
+    expect(readiness.blockedReasons).toEqual(expect.arrayContaining([
+      "Confirm owner capability attestation before saving.",
+      "Enter the capability limitations before saving a qualified capability.",
+    ]));
+  });
+
+  test("save readiness warns when protected proof is still required", () => {
+    const preview = getOwnerCapabilityPreview({
+      opportunity: opportunity("Nationwide service coverage"),
+      choice: "CURRENT",
+      ownerConfirmed: true,
+      selectedEvidence: [],
+      evidenceRelevance: {},
+      limitations: "",
+    });
+    const readiness = describeCapabilitySaveReadiness({
+      choice: "CURRENT",
+      ownerConfirmed: true,
+      limitations: "",
+      preview,
+      busy: false,
+      saving: false,
+    });
+    expect(readiness.canSave).toBe(true);
+    expect(readiness.advisory).toMatch(/Independent proof is still required/);
   });
 
   test("protected certification preview requires policy-matched proof after confirmation", () => {

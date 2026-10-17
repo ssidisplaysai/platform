@@ -95,6 +95,12 @@ export type OwnerCapabilityPreview = {
   proofReason: string | null;
 };
 
+export type CapabilitySaveReadiness = {
+  canSave: boolean;
+  blockedReasons: string[];
+  advisory: string | null;
+};
+
 export function getOwnerCapabilityPreview(input: {
   opportunity: SiteOpportunity;
   choice: OwnerCapabilityChoice | null;
@@ -143,5 +149,41 @@ export function getOwnerCapabilityPreview(input: {
     canSubmit,
     proofRequired,
     proofReason: proofRequired ? policy.reason : null,
+  };
+}
+
+export function describeCapabilitySaveReadiness(input: {
+  choice: OwnerCapabilityChoice | null;
+  ownerConfirmed: boolean;
+  limitations: string;
+  preview: OwnerCapabilityPreview;
+  busy: boolean;
+  saving: boolean;
+}): CapabilitySaveReadiness {
+  const blockedReasons: string[] = [];
+  if (input.saving) blockedReasons.push("Saving is already in progress for this capability review.");
+  if (input.busy) blockedReasons.push("Wait for the current workspace request to finish.");
+  if (!input.choice) blockedReasons.push("Choose how this opportunity maps to your current capability.");
+  if (input.choice) {
+    const state = canonicalCapabilityState(input.choice);
+    const confirmationRequired = state === "VERIFIED" || state === "QUALIFIED" || state === "FUTURE_CAPABILITY";
+    if (confirmationRequired && !input.ownerConfirmed) {
+      blockedReasons.push(state === "FUTURE_CAPABILITY"
+        ? "Confirm that this is not a current capability."
+        : "Confirm owner capability attestation before saving.");
+    }
+    if (state === "QUALIFIED" && !input.limitations.trim()) {
+      blockedReasons.push("Enter the capability limitations before saving a qualified capability.");
+    }
+  }
+
+  const advisory = input.preview.proofRequired && input.preview.supportingProof === "Needed"
+    ? "Independent proof is still required for this protected claim. Saving owner attestation alone will not complete this review."
+    : null;
+
+  return {
+    canSave: input.preview.canSubmit && blockedReasons.length === 0,
+    blockedReasons,
+    advisory,
   };
 }
