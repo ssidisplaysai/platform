@@ -19,6 +19,7 @@ import {
   OWNER_CAPABILITY_CHOICES,
   OWNER_EVIDENCE_CHOICES,
   ownerCapabilityChoice,
+  validateCapabilitySaveResponse,
   type OwnerCapabilityChoice,
 } from "./site-capability-owner-ux";
 
@@ -130,16 +131,18 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
       if (saveReadiness.blockedReasons.length > 0) setFeedback(saveReadiness.blockedReasons.join(" "));
       return;
     }
+    const targetOpportunityId = opportunity.opportunityId;
+    const targetOpportunityName = opportunity.name;
     const attestation = canonicalState === "FUTURE_CAPABILITY"
       ? `${publicBrandIdentity} does not currently have this capability and may develop it.`
       : currentDecision
-        ? `${publicBrandIdentity} currently provides ${opportunity.name}${canonicalState === "QUALIFIED" ? " subject to the recorded limitations" : ""}.`
+        ? `${publicBrandIdentity} currently provides ${targetOpportunityName}${canonicalState === "QUALIFIED" ? " subject to the recorded limitations" : ""}.`
         : "";
     setSavingCapability(true);
     setFeedback("Saving capability review…");
     const result = await onAction({
       action: "VALIDATE_CAPABILITY",
-      opportunityId: opportunity.opportunityId,
+      opportunityId: targetOpportunityId,
       state: canonicalState,
       evidenceIds: currentDecision ? selectedEvidence : [],
       evidenceRelevance: currentDecision ? selectedEvidence.map((evidenceId) => ({ evidenceId, relevanceType: evidenceRelevance[evidenceId] ?? "GENERAL_REFERENCE", ownerConfirmedRelevant: true })) : [],
@@ -152,23 +155,30 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
       setSavingCapability(false);
       return;
     }
-    const savedOpportunity = [...result.opportunities].reverse().find((candidate) => candidate.opportunityId === opportunity.opportunityId);
-    if (!savedOpportunity || resolveAuthoritativeCapabilityState(savedOpportunity) !== canonicalState) {
-      setFeedback("Capability decision response was received, but the updated review state was not confirmed. Refresh and try again.");
+    const validation = validateCapabilitySaveResponse({
+      workspace: result,
+      targetOpportunityId,
+      expectedState: canonicalState,
+    });
+    if (!validation.ok || !validation.savedOpportunity) {
+      setFeedback(validation.reason === "STATE_MISMATCH"
+        ? `Saved response for ${targetOpportunityId} did not confirm ${canonicalState}. Refresh and review this opportunity again.`
+        : `Capability decision response did not include ${targetOpportunityId}. Refresh and review this opportunity again.`);
       setSavingCapability(false);
       return;
     }
+    const savedOpportunity = validation.savedOpportunity;
     const savedStatus = getOwnerCapabilityPreview({
       opportunity: savedOpportunity,
-      choice: ownerCapabilityChoice(savedOpportunity.capabilityState),
+      choice: ownerCapabilityChoice(resolveAuthoritativeCapabilityState(savedOpportunity)),
       ownerConfirmed: Boolean(savedOpportunity.capabilityAuthorityRevisions?.at(-1)?.attestation.trim()),
       selectedEvidence: savedOpportunity.capabilityEvidenceIds,
       evidenceRelevance: Object.fromEntries((savedOpportunity.capabilityAuthorityRevisions?.at(-1)?.evidenceRelevance ?? []).map((link) => [link.evidenceId, link.relevanceType])),
       limitations: savedOpportunity.capabilityNotes ?? "",
     });
     setFeedback(savedStatus.proofRequired && savedStatus.supportingProof === "Needed"
-      ? "Capability review saved. Independent proof is still required before this review counts as complete."
-      : "Capability decision saved.");
+      ? `Saved ${targetOpportunityId} (${targetOpportunityName}). Independent proof is still required before this review counts as complete.`
+      : `Saved ${targetOpportunityId} (${targetOpportunityName}).`);
     setSavingCapability(false);
   }
 
@@ -264,7 +274,7 @@ export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceR
   return (
     <article className="border-b border-zinc-800 p-5 last:border-0">
       <header className="flex flex-wrap justify-between gap-3">
-        <div><h3 className="font-semibold text-white">{opportunity.name}</h3><p className="mt-1 max-w-3xl text-sm text-zinc-400">{opportunity.rationale}</p></div>
+        <div><h3 className="font-semibold text-white">{opportunity.name}</h3><p className="mt-1 text-xs text-zinc-500">Opportunity ID: {opportunity.opportunityId}</p><p className="mt-1 max-w-3xl text-sm text-zinc-400">{opportunity.rationale}</p></div>
         <p className="text-xs text-zinc-500">Research confidence {opportunity.confidence}</p>
       </header>
 

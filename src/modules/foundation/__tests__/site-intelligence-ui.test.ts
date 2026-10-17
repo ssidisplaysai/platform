@@ -52,7 +52,9 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain("CAPABILITY_RELEVANCE_TYPES");
     expect(ownerWorkflow).toContain("describeCapabilitySaveReadiness");
     expect(ownerWorkflow).toContain("Saving capability review…");
-    expect(ownerWorkflow).toContain("Capability review saved. Independent proof is still required");
+    expect(ownerWorkflow).toContain("Independent proof is still required before this review counts as complete.");
+    expect(ownerWorkflow).toContain("Saved ${targetOpportunityId} (${targetOpportunityName}).");
+    expect(ownerWorkflow).toContain("validateCapabilitySaveResponse");
     expect(ownerWorkflow.indexOf("OWNER_EVIDENCE_CHOICES")).toBeLessThan(ownerWorkflow.indexOf("Advanced evidence details"));
   });
 
@@ -78,6 +80,7 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain("Owner authority");
     expect(ownerWorkflow).toContain("Independent proof");
     expect(ownerWorkflow).toContain("latestAuthority?.attestation.trim()");
+    expect(ownerWorkflow).toContain("Opportunity ID:");
   });
 
   test("post-capability review always exposes the canonical next step", () => {

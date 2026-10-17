@@ -2,9 +2,10 @@ import type {
   CapabilityEvidenceOption,
   CapabilityEvidenceRelevanceType,
   CapabilityEvidenceState,
+  SiteIntelligenceWorkspace,
   SiteOpportunity,
 } from "./site-intelligence";
-import { getCapabilityAuthorityAssurance, getCapabilityEvidencePolicy, isEvidenceSufficientForCapabilityPolicy } from "./site-intelligence";
+import { getCapabilityAuthorityAssurance, getCapabilityEvidencePolicy, isEvidenceSufficientForCapabilityPolicy, resolveAuthoritativeCapabilityState } from "./site-intelligence";
 
 export type OwnerCapabilityChoice = "CURRENT" | "LIMITED" | "FUTURE" | "NO";
 
@@ -100,6 +101,29 @@ export type CapabilitySaveReadiness = {
   blockedReasons: string[];
   advisory: string | null;
 };
+
+export type CapabilitySaveResponseValidation = {
+  ok: boolean;
+  savedOpportunity: SiteOpportunity | null;
+  reason: "OPPORTUNITY_NOT_FOUND" | "STATE_MISMATCH" | null;
+};
+
+export function validateCapabilitySaveResponse(input: {
+  workspace: SiteIntelligenceWorkspace;
+  targetOpportunityId: string;
+  expectedState: CapabilityEvidenceState;
+}): CapabilitySaveResponseValidation {
+  const savedOpportunity = [...input.workspace.opportunities]
+    .reverse()
+    .find((candidate) => candidate.opportunityId === input.targetOpportunityId) ?? null;
+  if (!savedOpportunity) {
+    return { ok: false, savedOpportunity: null, reason: "OPPORTUNITY_NOT_FOUND" };
+  }
+  if (resolveAuthoritativeCapabilityState(savedOpportunity) !== input.expectedState) {
+    return { ok: false, savedOpportunity, reason: "STATE_MISMATCH" };
+  }
+  return { ok: true, savedOpportunity, reason: null };
+}
 
 export function getOwnerCapabilityPreview(input: {
   opportunity: SiteOpportunity;

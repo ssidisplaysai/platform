@@ -1,4 +1,4 @@
-import { getCapabilityEvidencePolicy, type CapabilityEvidenceOption, type SiteOpportunity } from "../site-intelligence";
+import { getCapabilityEvidencePolicy, type CapabilityEvidenceOption, type SiteIntelligenceWorkspace, type SiteOpportunity } from "../site-intelligence";
 import {
   CAPABILITY_RELEVANCE_TYPES,
   canonicalCapabilityState,
@@ -10,6 +10,7 @@ import {
   OWNER_CAPABILITY_CHOICES,
   OWNER_EVIDENCE_CHOICES,
   ownerCapabilityChoice,
+  validateCapabilitySaveResponse,
 } from "../site-capability-owner-ux";
 
 function opportunity(name = "Commercial worktables and prep tables"): SiteOpportunity {
@@ -25,6 +26,31 @@ function evidence(label: string, notes: string | null = null): CapabilityEvidenc
     provenance: "OWNER_UPLOAD: owner-file",
     classification: "OWNER_SUPPLIED_REFERENCE",
     createdAt: "2026-09-11T00:00:00.000Z",
+  };
+}
+
+function workspace(opportunities: SiteOpportunity[]): SiteIntelligenceWorkspace {
+  return {
+    workspaceId: "workspace-1",
+    organizationId: "org",
+    siteId: "site",
+    internalOrganizationIdentity: "org",
+    publicBrandIdentity: "Brand",
+    revision: 1,
+    intelligenceState: "INTELLIGENCE_READY_FOR_REVIEW",
+    strategyState: "STRATEGY_NOT_STARTED",
+    creativeState: "CREATIVE_INPUTS_COLLECTING",
+    providerReference: null,
+    researchStartedAt: null,
+    researchExecutions: [],
+    evidence: [],
+    opportunities,
+    strategyRevisions: [],
+    creativeInputs: [],
+    creativeRevisions: [],
+    audit: [],
+    createdAt: "2026-09-11T00:00:00.000Z",
+    updatedAt: "2026-09-11T00:00:00.000Z",
   };
 }
 
@@ -110,6 +136,75 @@ describe("owner capability UX mapping", () => {
     });
     expect(readiness.canSave).toBe(true);
     expect(readiness.advisory).toMatch(/Independent proof is still required/);
+  });
+
+  test("save-response validation targets the displayed opportunity ID", () => {
+    const current = opportunity("Fast indexing and content freshness notifications");
+    current.opportunityId = "O6";
+    current.capabilityState = "FUTURE_CAPABILITY";
+    current.capabilityAuthorityRevisions = [{
+      organizationId: "org",
+      siteId: "site",
+      opportunityId: "O6",
+      decision: "FUTURE_CAPABILITY",
+      evidenceIds: [],
+      evidenceRelevance: [],
+      attestation: "Owner confirms this is not current capability.",
+      qualificationNotes: null,
+      decidedBy: "owner",
+      decidedAt: "2026-09-11T00:00:00.000Z",
+      revision: 1,
+    }];
+    const staleOther = opportunity("SaaS comparison-page engine");
+    staleOther.opportunityId = "O1";
+    staleOther.capabilityState = "FUTURE_CAPABILITY";
+    staleOther.capabilityAuthorityRevisions = [{
+      ...current.capabilityAuthorityRevisions[0],
+      opportunityId: "O1",
+      decision: "FUTURE_CAPABILITY",
+    }];
+
+    const ok = validateCapabilitySaveResponse({
+      workspace: workspace([staleOther, current]),
+      targetOpportunityId: "O6",
+      expectedState: "FUTURE_CAPABILITY",
+    });
+    expect(ok).toMatchObject({ ok: true, reason: null });
+    expect(ok.savedOpportunity?.opportunityId).toBe("O6");
+  });
+
+  test("save-response validation rejects wrong opportunity and accepts authoritative revision state", () => {
+    const o5 = opportunity("Technical SEO audit and remediation workflow");
+    o5.opportunityId = "O5";
+    o5.capabilityState = "OWNER_VALIDATION_REQUIRED";
+    o5.capabilityAuthorityRevisions = [{
+      organizationId: "org",
+      siteId: "site",
+      opportunityId: "O5",
+      decision: "VERIFIED",
+      evidenceIds: [],
+      evidenceRelevance: [],
+      attestation: "Owner confirms current capability.",
+      authorityBasis: "OWNER_ATTESTATION",
+      qualificationNotes: null,
+      decidedBy: "owner",
+      decidedAt: "2026-09-11T00:00:00.000Z",
+      revision: 1,
+    }];
+
+    const missing = validateCapabilitySaveResponse({
+      workspace: workspace([o5]),
+      targetOpportunityId: "O6",
+      expectedState: "FUTURE_CAPABILITY",
+    });
+    expect(missing).toMatchObject({ ok: false, reason: "OPPORTUNITY_NOT_FOUND" });
+
+    const authoritative = validateCapabilitySaveResponse({
+      workspace: workspace([o5]),
+      targetOpportunityId: "O5",
+      expectedState: "VERIFIED",
+    });
+    expect(authoritative).toMatchObject({ ok: true, reason: null });
   });
 
   test("protected certification preview requires policy-matched proof after confirmation", () => {
