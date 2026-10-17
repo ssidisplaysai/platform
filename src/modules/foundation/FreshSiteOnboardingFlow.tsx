@@ -73,6 +73,16 @@ type OrganizationsResponse = {
   organizations: Company[];
 };
 
+const BRAND_LOGO_BLOCKER = "Approved logo authority is required before brand profile can be operationally ready.";
+
+function resolveLogoAssetIdFromReference(reference: string | null | undefined): string | null {
+  if (!reference || !reference.startsWith("site-intelligence-asset:")) {
+    return null;
+  }
+  const assetId = reference.slice("site-intelligence-asset:".length).trim();
+  return assetId.length > 0 ? assetId : null;
+}
+
 function isSelectableProfileReference(
   profiles: IntegrationProfileConfiguration[],
   type: IntegrationProfileType,
@@ -118,6 +128,20 @@ export function hydrateExistingAuthorityProfileSelection(
   }
 
   return next;
+}
+
+function isApprovedLogoSelectionResolved(input: {
+  selectedLogoAssetId: string | null | undefined;
+  logoApprovalConfirmed: boolean;
+  eligibleLogoAssetIds: Set<string>;
+  fallbackLogoReference: string | null | undefined;
+}): boolean {
+  const selectedLogoAssetId = input.selectedLogoAssetId?.trim() ?? "";
+  if (selectedLogoAssetId.length > 0 && input.logoApprovalConfirmed) {
+    return input.eligibleLogoAssetIds.has(selectedLogoAssetId);
+  }
+  const fallbackLogoAssetId = resolveLogoAssetIdFromReference(input.fallbackLogoReference);
+  return Boolean(fallbackLogoAssetId && input.eligibleLogoAssetIds.has(fallbackLogoAssetId));
 }
 
 const STEPS: Array<[Step, string]> = [
@@ -497,12 +521,21 @@ export function FreshSiteOnboardingFlow(input: {
         && proposal.references.logoReference.startsWith("site-intelligence-asset:")
         ? proposal.references.logoReference.slice("site-intelligence-asset:".length)
         : "";
+      const prior = autoPrepareEdits[proposal.profileType];
+      const eligibleLogoAssetIds = new Set(preview.eligibleLogoAssets.map((asset) => asset.assetId));
+      const retainedLogoAssetId = proposal.profileType === "brand"
+        && prior?.selectedLogoAssetId
+        && eligibleLogoAssetIds.has(prior.selectedLogoAssetId)
+        ? prior.selectedLogoAssetId
+        : selectedLogoAssetId;
       next[proposal.profileType] = {
-        profileName: proposal.profileName,
-        description: proposal.description,
-        instructionBody: proposal.instructionBody,
-        selectedLogoAssetId,
-        logoApprovalConfirmed: false,
+        profileName: prior?.profileName ?? proposal.profileName,
+        description: prior?.description ?? proposal.description,
+        instructionBody: prior?.instructionBody ?? proposal.instructionBody,
+        selectedLogoAssetId: retainedLogoAssetId,
+        logoApprovalConfirmed: proposal.profileType === "brand"
+          && Boolean(prior?.logoApprovalConfirmed)
+          && retainedLogoAssetId.length > 0,
         references: Object.entries(proposal.references).reduce<Record<string, string>>((accumulator, [key, value]) => {
           if (typeof value === "string") {
             accumulator[key] = value;
@@ -510,6 +543,9 @@ export function FreshSiteOnboardingFlow(input: {
           return accumulator;
         }, {}),
       };
+      if (proposal.profileType === "brand" && retainedLogoAssetId.length > 0) {
+        next[proposal.profileType].references.logoReference = `site-intelligence-asset:${retainedLogoAssetId}`;
+      }
     }
     setAutoPrepareEdits(next);
   }
@@ -630,9 +666,35 @@ export function FreshSiteOnboardingFlow(input: {
 
   const identityReady = Boolean(siteName.trim() && displayName.trim() && organizationId && cleanDomain);
   const configurationComplete = Object.values(selectedProfiles).every(Boolean);
+  const eligibleLogoAssetIds = useMemo(() => (
+    new Set(autoPreparePreview?.eligibleLogoAssets.map((asset) => asset.assetId) ?? [])
+  ), [autoPreparePreview]);
+  function effectiveProposalBlockers(profileType: string): string[] {
+    if (!autoPreparePreview) {
+      return [];
+    }
+    const proposal = autoPreparePreview.proposals.find((candidate) => candidate.profileType === profileType);
+    if (!proposal || proposal.mode !== "proposed") {
+      return proposal?.diagnostics.blockers ?? [];
+    }
+    if (proposal.profileType !== "brand") {
+      return proposal.diagnostics.blockers;
+    }
+    const edit = autoPrepareEdits[proposal.profileType];
+    const hasApprovedLogo = isApprovedLogoSelectionResolved({
+      selectedLogoAssetId: edit?.selectedLogoAssetId,
+      logoApprovalConfirmed: Boolean(edit?.logoApprovalConfirmed),
+      eligibleLogoAssetIds,
+      fallbackLogoReference: edit?.references?.logoReference ?? proposal.references.logoReference ?? null,
+    });
+    return hasApprovedLogo
+      ? proposal.diagnostics.blockers.filter((blocker) => blocker !== BRAND_LOGO_BLOCKER)
+      : proposal.diagnostics.blockers;
+  }
   const autoPrepareBlocked = autoPreparePreview
     ? autoPreparePreview.proposals.some((proposal) => (
-        proposal.mode === "proposed" && proposal.diagnostics.blockers.length > 0
+        proposal.mode === "proposed"
+        && effectiveProposalBlockers(proposal.profileType).length > 0
       ))
     : false;
 
@@ -744,6 +806,17 @@ export function FreshSiteOnboardingFlow(input: {
                         <p className="mt-2 text-xs text-zinc-500 break-all">{proposal.profileId}</p>
                         {proposal.mode === "proposed" ? (
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {(() => {
+                              const blockers = effectiveProposalBlockers(proposal.profileType);
+                              return blockers.length > 0 ? (
+                                <div className="sm:col-span-2 border border-amber-700 bg-amber-950/30 p-2 text-xs text-amber-200">
+                                  <p className="font-semibold">Blockers</p>
+                                  <ul className="mt-1 list-disc pl-4">
+                                    {blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                                  </ul>
+                                </div>
+                              ) : null;
+                            })()}
                             <label className="text-xs text-zinc-300 sm:col-span-2">Profile Name
                               <input value={edit?.profileName ?? proposal.profileName} onChange={(event) => setAutoPrepareEdits((current) => ({ ...current, [proposal.profileType]: { profileName: event.target.value, description: current[proposal.profileType]?.description ?? proposal.description, instructionBody: current[proposal.profileType]?.instructionBody ?? proposal.instructionBody, selectedLogoAssetId: current[proposal.profileType]?.selectedLogoAssetId ?? "", logoApprovalConfirmed: current[proposal.profileType]?.logoApprovalConfirmed ?? false, references: current[proposal.profileType]?.references ?? {} } }))} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" />
                             </label>
@@ -845,14 +918,6 @@ export function FreshSiteOnboardingFlow(input: {
                                 />
                               </label>
                             ))}
-                            {proposal.diagnostics.blockers.length > 0 ? (
-                              <div className="sm:col-span-2 border border-amber-700 bg-amber-950/30 p-2 text-xs text-amber-200">
-                                <p className="font-semibold">Blockers</p>
-                                <ul className="mt-1 list-disc pl-4">
-                                  {proposal.diagnostics.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
-                                </ul>
-                              </div>
-                            ) : null}
                             {proposal.diagnostics.warnings.length > 0 ? (
                               <div className="sm:col-span-2 border border-zinc-700 bg-zinc-900/70 p-2 text-xs text-zinc-300">
                                 <p className="font-semibold">Warnings</p>

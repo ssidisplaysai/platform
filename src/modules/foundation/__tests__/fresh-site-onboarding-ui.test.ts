@@ -103,6 +103,9 @@ describe("fresh-site onboarding UI contract", () => {
     expect(source).toContain("Auto-Prepare Profiles (Owner Approved)");
     expect(source).toContain("Preview Auto-Prepare");
     expect(source).toContain("Approve & Apply Auto-Prepared Profiles");
+    expect(source).toContain("Select Approved Logo");
+    expect(source).toContain("I approve this selected asset for official brand-logo use.");
+    expect(source).toContain("effectiveProposalBlockers");
     expect(source).toContain("OnboardingProfileCreator");
     expect(source).toContain("Workflow remains pending until an isolated workflow reference is verified.");
   });
