@@ -5,16 +5,28 @@ import { NextRequest } from "next/server";
 
 describe("site intelligence API boundary", () => {
   const oldDir = process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+  const oldPrimaryWebhookUrl = process.env.GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL;
+  const oldPrimaryWebhookSecret = process.env.GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET;
+  const oldLegacyWebhookUrl = process.env.GLW_N8N_RESEARCH_WEBHOOK_URL;
+  const oldLegacyWebhookSecret = process.env.GLW_N8N_RESEARCH_WEBHOOK_SECRET;
   let dir: string;
 
   beforeEach(() => {
     jest.resetModules();
     dir = fs.mkdtempSync(path.join(os.tmpdir(), "site-intelligence-api-"));
     process.env.GCP_FOUNDATION_PERSISTENCE_DIR = dir;
+    delete process.env.GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL;
+    delete process.env.GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET;
+    delete process.env.GLW_N8N_RESEARCH_WEBHOOK_URL;
+    delete process.env.GLW_N8N_RESEARCH_WEBHOOK_SECRET;
   });
 
   afterEach(() => {
     process.env.GCP_FOUNDATION_PERSISTENCE_DIR = oldDir;
+    process.env.GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL = oldPrimaryWebhookUrl;
+    process.env.GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET = oldPrimaryWebhookSecret;
+    process.env.GLW_N8N_RESEARCH_WEBHOOK_URL = oldLegacyWebhookUrl;
+    process.env.GLW_N8N_RESEARCH_WEBHOOK_SECRET = oldLegacyWebhookSecret;
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
@@ -41,7 +53,7 @@ describe("site intelligence API boundary", () => {
     expect(fs.existsSync(path.join(dir, "site-intelligence-repository.json"))).toBe(false);
   });
 
-  test("explicit START fails closed without a configured dedicated provider", async () => {
+  test("explicit START fails closed without a configured site-intelligence provider", async () => {
     const route = await import("@/app/api/sites/[siteId]/intelligence/route");
     const response = await route.POST(request("POST", "led-display-warehouse", { action: "START", expectedRevision: 0, publicBrandIdentity: "Test Brand", providerReference: "provider-test" }), context);
     expect(response.status).toBe(503);

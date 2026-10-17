@@ -4,7 +4,10 @@ import {
   SITE_INTELLIGENCE_PROVIDER_CONTRACT_VERSION,
   SITE_INTELLIGENCE_PROVIDER_ID,
 } from "../site-intelligence-provider-contract";
-import { createSiteIntelligenceN8nProvider } from "../site-intelligence-n8n-provider";
+import {
+  createSiteIntelligenceN8nProvider,
+  getSiteIntelligenceProviderStatus,
+} from "../site-intelligence-n8n-provider";
 
 const publicDns = { resolveHost: async () => [{ address: "93.184.216.34", family: 4 }] };
 
@@ -251,5 +254,63 @@ describe("site intelligence n8n contract boundary", () => {
   test("rejects streamed response bytes over the hard limit", async () => {
     const provider = createSiteIntelligenceN8nProvider({ environment, fetchImpl: (async () => new Response("x".repeat(1_000_001), { status: 200 })) as typeof fetch });
     await expect(provider.execute(executionInput())).rejects.toThrow("RESEARCH_PROVIDER_RESPONSE_TOO_LARGE");
+  });
+
+  test("resolves the legacy shared webhook environment when primary keys are absent", async () => {
+    const legacyEnvironment = {
+      GLW_N8N_RESEARCH_WEBHOOK_URL: "https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1",
+      GLW_N8N_RESEARCH_WEBHOOK_SECRET: "legacy-secret",
+    } as NodeJS.ProcessEnv;
+    expect(getSiteIntelligenceProviderStatus(legacyEnvironment)).toMatchObject({
+      configured: true,
+      configurationSource: "legacy-shared-research-webhook",
+    });
+    const provider = createSiteIntelligenceN8nProvider({
+      environment: legacyEnvironment,
+      fetchImpl: (async () => new Response(JSON.stringify(validResponse()), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch,
+      contractDependencies: publicDns,
+    });
+    await expect(provider.execute(executionInput())).resolves.toMatchObject({
+      executionId: "execution-1",
+    });
+  });
+
+  test("prefers dedicated site-intelligence keys when both key sets exist", () => {
+    const bothConfigured = {
+      GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL: "https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1",
+      GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET: "primary-secret",
+      GLW_N8N_RESEARCH_WEBHOOK_URL: "https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1",
+      GLW_N8N_RESEARCH_WEBHOOK_SECRET: "legacy-secret",
+    } as NodeJS.ProcessEnv;
+    expect(getSiteIntelligenceProviderStatus(bothConfigured)).toMatchObject({
+      configured: true,
+      configurationSource: "genesis-site-intelligence-webhook",
+    });
+  });
+
+  test("uses a complete legacy pair when primary keys are partially configured", () => {
+    const partialPrimary = {
+      GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL: "https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1",
+      GLW_N8N_RESEARCH_WEBHOOK_URL: "https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1",
+      GLW_N8N_RESEARCH_WEBHOOK_SECRET: "legacy-secret",
+    } as NodeJS.ProcessEnv;
+    expect(getSiteIntelligenceProviderStatus(partialPrimary)).toMatchObject({
+      configured: true,
+      configurationSource: "legacy-shared-research-webhook",
+    });
+  });
+
+  test("provider status never exposes credential material", () => {
+    const status = getSiteIntelligenceProviderStatus({
+      GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL: "https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1",
+      GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET: "secret",
+    } as NodeJS.ProcessEnv) as Record<string, unknown>;
+    expect(Object.keys(status).sort()).toEqual([
+      "configurationSource",
+      "configured",
+      "endpointAuthority",
+      "providerId",
+    ]);
+    expect(JSON.stringify(status)).not.toContain("secret");
   });
 });
