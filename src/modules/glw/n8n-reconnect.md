@@ -32,6 +32,7 @@ Guard behavior:
 - Rejects LEDW recovery workflow reuse for PageEngines dispatch.
 - Rejects WordPress/canonical/domain targets outside `staging.pageengines.com`.
 - Supports a bounded `generate_review_only` action that preserves create-only dispatch authority and does not require WordPress mutation authorization preflight.
+- Supports an optional one-shot live-dispatch gate (`GENESIS_PAGEENGINES_ONE_SHOT_LIVE_*`) that can consume exactly one durable PageEngines review-only authorization while the global non-mutating guard remains enabled.
 
 ## Callback contract behavior
 

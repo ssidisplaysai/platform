@@ -5,11 +5,12 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   authorizeRequest,
   hasOrganizationScope,
+  resolveRequestPrincipal,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { bindGeneratedContextualMediaWordPress, saveSuccessfulGeneratedContextualMedia } from "@/modules/foundation/generated-contextual-media-repository";
-import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
+import { getIntegrationProfileById, listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { loadProjectorEnclosureSeoAuthority, type ProjectorEnclosureKeywordOwner, type ProjectorEnclosureSeoSelection } from "@/modules/foundation/projectorenclosure-seo-authority";
 import { getProductById, listProducts } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -77,6 +78,7 @@ import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-tit
 import { renderOutdoorSphereRichWordPress } from "@/modules/glw/outdoor-sphere-rich-wordpress-render";
 import { resolveOutdoorSphereGovernedCtaUrl } from "@/modules/glw/outdoor-sphere-governed-cta-url";
 import { assertPageenginesMutationAuthorityBinding } from "@/modules/glw/pageengines-dispatch-authority";
+import { authorizeAndConsumePageenginesOneShotLiveExecution } from "@/modules/glw/pageengines-one-shot-live-execution";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -1973,6 +1975,63 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (reviewOnlyGeneration && process.env.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ENABLED === "true") {
+      const principal = resolveRequestPrincipal(request);
+      if (!principal) {
+        return NextResponse.json({
+          error: "Exact authenticated principal and session are required for one-shot live execution.",
+          code: "PAGEENGINES_ONE_SHOT_PRINCIPAL_REQUIRED",
+        }, { status: 403 });
+      }
+
+      const workflowProfileReference = preview.siteRecord.integrations.workflowReference?.trim() ?? "";
+      const workflowProfile = workflowProfileReference ? getIntegrationProfileById(workflowProfileReference) : null;
+      const workflowId = workflowProfile?.references.workflowReference?.trim() ?? "";
+      const authorization = authorizeAndConsumePageenginesOneShotLiveExecution({
+        request: preview.request,
+        action,
+        workflowId,
+        principal,
+      });
+      if (!authorization.ok) {
+        return NextResponse.json({
+          error: authorization.error,
+          code: authorization.code,
+          publicationPerformed: false,
+          generationJobCreated: false,
+        }, { status: authorization.status });
+      }
+      const oneShotService = createGlwDraftExecutionService({
+        repository: glwPageExecutionRepository,
+        dispatcher: createGlwN8nMcpDispatcher({
+          environment: {
+            ...process.env,
+            GLW_N8N_NON_MUTATING_TEST: "false",
+          },
+        }),
+        executionTransport: "N8N_MCP",
+      });
+      const liveJob = await oneShotService.execute(preview.request);
+      const existingChecks = liveJob.qaChecks && typeof liveJob.qaChecks === "object" && !Array.isArray(liveJob.qaChecks)
+        ? liveJob.qaChecks as Readonly<Record<string, unknown>>
+        : {};
+      const job = await glwPageExecutionRepository.update(liveJob.jobId, {
+        qaChecks: {
+          ...existingChecks,
+          pageenginesOneShotLiveExecution: {
+            grantId: authorization.grantId,
+            requestFingerprint: authorization.requestFingerprint,
+            authorizedAt: new Date().toISOString(),
+          },
+        },
+      });
+      return NextResponse.json({
+        ok: true,
+        job,
+        publicationPerformed: false,
+      });
+    }
+
     const job = await service.execute(preview.request);
     return NextResponse.json({
       ok: true,
