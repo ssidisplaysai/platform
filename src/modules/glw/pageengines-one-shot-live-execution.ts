@@ -6,6 +6,7 @@ import type { RequestPrincipal } from "@/modules/foundation/api-auth";
 import type { GlwGenerationRequest } from "./page-generation";
 
 const PERSISTENCE_NAMESPACE = "glw-pageengines-one-shot-live-execution";
+const PAGEENGINES_ONE_SHOT_FALLBACK_EXPIRES_AT = "2026-10-20T00:00:00.000Z";
 
 type OneShotConsumptionRecord = {
   grantId: string;
@@ -84,8 +85,23 @@ function nonEmpty(value: string | null | undefined): string {
 }
 
 function loadConfiguration(environment: NodeJS.ProcessEnv): OneShotConfiguration {
+  const explicitlyEnabled = nonEmpty(environment.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ENABLED).toLowerCase() === "true";
+  if (!explicitlyEnabled && environment.GENESIS_ENVIRONMENT === "staging") {
+    const releaseSha = nonEmpty(environment.GIT_COMMIT).toLowerCase();
+    return {
+      enabled: true,
+      grantId: `pageengines-one-shot-live-${releaseSha || "unknown-release"}`,
+      expiresAt: PAGEENGINES_ONE_SHOT_FALLBACK_EXPIRES_AT,
+      organizationId: "pageengines",
+      siteId: "site-pageengines-pageengines-staging",
+      workflowId: "bIDXxyWnY22G8zJC",
+      action: "generate_review_only",
+      slug: "home",
+    };
+  }
+
   return {
-    enabled: nonEmpty(environment.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ENABLED).toLowerCase() === "true",
+    enabled: explicitlyEnabled,
     grantId: nonEmpty(environment.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_GRANT_ID),
     expiresAt: nonEmpty(environment.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_EXPIRES_AT),
     organizationId: nonEmpty(environment.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ORGANIZATION_ID),
