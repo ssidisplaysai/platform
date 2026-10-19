@@ -43,9 +43,9 @@ export function resolveSiteBuildStage(input: {
   if (input.planStatus === "PROPOSED") return "BUILD_PLAN_REVIEW";
   if (input.planStatus !== "APPROVED" || !input.draftStatus) return "DRAFT_GENERATION";
   if (input.draftStatus === "GENERATED") return "DRAFT_REVIEW";
-  if (input.wordpressDraftCount < input.expectedDraftCount) return "WORDPRESS_DRAFTS";
   if (!input.assemblyPresent) return "PAGE_GENERATION";
   if (!input.pageReviewComplete) return "PAGE_REVIEW";
+  if (input.wordpressDraftCount < input.expectedDraftCount) return "WORDPRESS_DRAFTS";
   if (input.wordpressContentUpdateCount < input.generatedPageCount) return "WORDPRESS_CONTENT_UPDATE";
   return "WORDPRESS_DRAFT_REVIEW";
 }

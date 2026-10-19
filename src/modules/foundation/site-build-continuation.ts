@@ -20,7 +20,6 @@ import type { SiteBuildPlanProposal } from "./site-build-plan";
 import {
   approveBuildDrafts,
   approveBuildPlan,
-  createBuildWordPressDrafts,
   generateBuildDrafts,
   generateBuildPlan,
   generateFullSiteAssembly,
@@ -581,7 +580,16 @@ export async function continueSiteBuild(site: SiteConfiguration): Promise<Contin
       continue;
     }
 
-    if (workspace.stage === "BUILD_PLAN" || workspace.stage === "BUILD_PLAN_STALE" || workspace.stage === "BUILD_PLAN_REVIEW") {
+    if (workspace.stage === "BUILD_PLAN_REVIEW") {
+      return stop({
+        stopReason: "BUILD_PLAN_REVIEW_REQUIRED",
+        stage: workspace.stage,
+        detail: "Build plan is proposed and requires explicit owner approval or revision instructions.",
+        ownerReviewRequired: true,
+      });
+    }
+
+    if (workspace.stage === "BUILD_PLAN" || workspace.stage === "BUILD_PLAN_STALE") {
       const baseline =
         workspace.plans
           .filter((item) => item.status === "APPROVED")
@@ -643,8 +651,12 @@ export async function continueSiteBuild(site: SiteConfiguration): Promise<Contin
     }
 
     if (workspace.stage === "WORDPRESS_DRAFTS") {
-      await createBuildWordPressDrafts(site);
-      continue;
+      return stop({
+        stopReason: "REVIEW_OUTPUT_READY",
+        stage: workspace.stage,
+        detail: "WordPress draft creation is an explicit owner-authorized external delivery step.",
+        ownerReviewRequired: true,
+      });
     }
 
     if (workspace.stage === "PAGE_GENERATION") {
