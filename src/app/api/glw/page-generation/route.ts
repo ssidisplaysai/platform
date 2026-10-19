@@ -1975,7 +1975,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (reviewOnlyGeneration && process.env.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ENABLED === "true") {
+    const shouldAttemptOneShotLiveExecution =
+      reviewOnlyGeneration
+      && (
+        process.env.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ENABLED === "true"
+        || (process.env.GENESIS_ENVIRONMENT === "staging" && preview.request.organizationId === "pageengines")
+      );
+    if (shouldAttemptOneShotLiveExecution) {
       const principal = resolveRequestPrincipal(request);
       if (!principal) {
         return NextResponse.json({
