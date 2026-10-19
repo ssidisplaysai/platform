@@ -137,6 +137,10 @@ const GOVERNANCE_COPY_MARKERS = [
   "preserve approved",
   "authority used",
   "generated output",
+  "creative blueprint",
+  "lead with",
+  "conversion direction",
+  "priorities:",
 ];
 
 function sanitizePublicCopy(raw: string, fallback: string): string {
@@ -151,6 +155,13 @@ function sanitizePublicCopy(raw: string, fallback: string): string {
   });
   const joined = cleaned.join(" ").trim();
   return joined || fallback;
+}
+
+function customerFacingLine(input: { value: string; fallback: string }): string {
+  const cleaned = sanitizePublicCopy(input.value, input.fallback);
+  if (/^("|')?lead with/i.test(cleaned)) return input.fallback;
+  if (/creative blueprint/i.test(cleaned)) return input.fallback;
+  return cleaned;
 }
 
 type GenerationScope = {
@@ -320,10 +331,14 @@ function sectionsFor(input: { page: SiteBuildPlanPage; site: SiteConfiguration; 
 
   if (page.pageType === "HOME" && scope.digitalGrowthProfile) {
     const steps = digitalGrowthSteps(strategy, input.instructions, page.purpose);
+    const heroNarrative = customerFacingLine({
+      value: strategy.valueProposition || purpose,
+      fallback: `Build professional website development and search-growth momentum with clear local market coverage and conversion-focused execution.`,
+    });
     return [
       section(page.pageId, 1, "Grow Your Business Where It Matters Most", "HERO",
         `${site.displayName} helps ${audience.toLowerCase()} grow through website development and search-growth execution grounded in real services and clear scope.`,
-        purpose),
+        heroNarrative),
       section(page.pageId, 2, "Core Website and Search Solutions", "GRID",
         offerings.length ? `Explore ${offeringsText} through practical pathways mapped to how buyers evaluate and engage.` : "Explore website and search pathways aligned to real customer intent."),
       section(page.pageId, 3, "How Growth Happens", "STEPS", stepsBody(steps, strategy.conversionPaths)),
@@ -394,7 +409,7 @@ function applyGenerationInstructions(pageId: string, sections: SitePageSection[]
   const result = [...sections];
   if (/consult|cta|conversion/.test(normalized)) {
     const ctaIndex = result.findIndex((item) => item.presentation === "CTA");
-    if (ctaIndex >= 0) result[ctaIndex] = { ...result[ctaIndex], heading: cta, body: [`Follow the conversion direction with ${cta}.`] };
+    if (ctaIndex >= 0) result[ctaIndex] = { ...result[ctaIndex], heading: cta, body: [`Use ${cta} to start a focused conversation about your goals and growth priorities.`] };
   } else if (/faq|question/.test(normalized)) {
     result.splice(-1, 0, section(pageId, 90, "Additional Questions", "FAQ", "Clarify assumptions before execution.", "Keep scope aligned to defined services and capabilities."));
   } else if (/short|concise|simplif/.test(normalized) && result.length > 4) {
@@ -455,6 +470,19 @@ export function synthesizeSiteAssembly(input: {
       status: publishable.size ? "READY" : "GENERATED_CANDIDATE_NEEDED",
       altTextGuidance: `Describe ${planPage.name.toLowerCase()} in approved business context without unsupported claims.`,
     }];
+    if (planPage.pageType === "HOME") {
+      imageRequirements.push({
+        slotId: `${planPage.pageId}-industry`,
+        placement: "Industries",
+        subject: `${planPage.name} industry imagery with geographic service context and local search cues`,
+        source: publishable.size ? "APPROVED_PUBLISHABLE_ASSET" : imageSource,
+        purpose: imageSource,
+        resolutionPolicy: "GENERATED_OR_OWNER_ASSET",
+        publishableAssetId: publishable.keys().next().value ?? null,
+        status: publishable.size ? "READY" : "GENERATED_CANDIDATE_NEEDED",
+        altTextGuidance: "Show relevant industries and geographic context without unsupported service-area claims.",
+      });
+    }
 
     const seoTitle = (planPage.pageType === "HOME"
       ? `${input.site.displayName} | ${input.strategy.valueProposition || input.strategy.positioning || h1}`
@@ -548,9 +576,20 @@ export function synthesizeSiteAssembly(input: {
 
   const offerings = pages.filter((item) => item.pageType === "OFFERING" || item.pageType === "CATEGORY").map((item) => ({ label: item.name, href: pathFor(item) }));
   const industries = markets.map((item) => ({ label: item.name.replace(/ Solutions$/, ""), href: pathFor(item) }));
+  const primaryLabel = core?.name ?? pages[0]?.name ?? input.site.displayName;
+  const solutionsLabel = /solution/i.test(primaryLabel) ? "Services" : "Solutions";
+  const dedupeNav = (items: SiteNavigationItem[]): SiteNavigationItem[] => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const key = `${item.label.trim().toLowerCase()}|${item.href.trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
   const navigation: SiteNavigationItem[] = [
-    { label: core?.name ?? pages[0]?.name ?? input.site.displayName, href: core ? pathFor(core) : "/", children: [] },
-    { label: "Solutions", href: core ? pathFor(core) : "/", children: offerings.filter((item) => item.href !== (core ? pathFor(core) : "/")) },
+    { label: primaryLabel, href: core ? pathFor(core) : "/", children: [] },
+    { label: solutionsLabel, href: core ? pathFor(core) : "/", children: offerings.filter((item) => item.href !== (core ? pathFor(core) : "/")) },
     ...(industries.length ? [{ label: "Industries", href: industries[0].href, children: industries }] : []),
     ...pages.filter((item) => ["CAPABILITIES", "ABOUT", "CONTACT"].includes(item.pageType)).map((item) => ({ label: item.name, href: pathFor(item), children: [] })),
   ];
@@ -577,7 +616,7 @@ export function synthesizeSiteAssembly(input: {
     revision: input.revision,
     status,
     pages: generated,
-    navigation,
+    navigation: dedupeNav(navigation),
     footerLinks: pages.filter((item) => ["ABOUT", "CONTACT", "CAPABILITIES"].includes(item.pageType)).map((item) => ({ label: item.name, href: pathFor(item) })),
     siteWideInstructions: input.instructions?.trim() || null,
     createdAt: input.now ?? new Date().toISOString(),
