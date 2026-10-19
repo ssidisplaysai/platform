@@ -29,6 +29,7 @@ import {
 } from "@/modules/glw/campaign-recovered-target-adoption";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "@/modules/glw/page-execution";
 import { getGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
 import { claimGlwCampaignActivationGrant, consumeGlwCampaignActivationGrant } from "@/modules/glw/campaign-activation-authorization";
@@ -376,7 +377,7 @@ export async function POST(
   let targets = initializedTargets;
 
   if (isCityCampaign) {
-    const localExecutions = await glwPageExecutionRepository.list();
+    const localExecutions = filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list());
     const recovered = planRecoveredCityCampaignTargetAdoption({
       organizationId: campaign.organizationId,
       siteId: campaign.siteId,

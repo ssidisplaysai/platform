@@ -11,6 +11,9 @@ function recruitedCreatorIds(): readonly string[] {
 }
 
 function statusForError(message: string): number {
+  if (message === "WOOCOMMERCE_ORDER_VERIFICATION_UNAVAILABLE") {
+    return 503;
+  }
   if (
     message === "INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE" ||
     message === "MISSING_WOOCOMMERCE_WEBHOOK_SIGNATURE"
@@ -21,6 +24,7 @@ function statusForError(message: string): number {
     message.startsWith("MISSING_WOOCOMMERCE_") ||
     message.startsWith("UNSUPPORTED_WOOCOMMERCE_") ||
     message.startsWith("INVALID_WOOCOMMERCE_") ||
+    message.startsWith("WOOCOMMERCE_ORDER_VERIFICATION_") ||
     message === "WOOCOMMERCE_EVENT_HANDLER_NOT_IMPLEMENTED"
   ) {
     return 400;
@@ -40,7 +44,7 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
 
   try {
-    const result = processWooCommerceWebhookHttp({
+    const result = await processWooCommerceWebhookHttp({
       rawBody,
       headers: {
         "x-wc-webhook-signature": request.headers.get("x-wc-webhook-signature") ?? undefined,

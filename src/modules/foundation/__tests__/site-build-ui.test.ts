@@ -13,6 +13,12 @@ describe("bounded Site Build owner workspace", () => {
   test("shows explicit stale-plan continuation controls and diagnostics", () => {
     for (const text of ["REGENERATE BUILD PLAN", "STALE SNAPSHOT", "Generation readiness status", "Build plan snapshot match"]) expect(source).toContain(text);
   });
+  test("does not auto-continue while build plan is awaiting owner review", () => {
+    const autoStages = source.match(/AUTO_CONTINUATION_STAGES = new Set<SiteBuildStage>\(\[([^\]]+)\]\)/);
+    expect(autoStages).toBeTruthy();
+    expect(autoStages?.[1]).not.toContain('"BUILD_PLAN_REVIEW"');
+    expect(autoStages?.[1]).not.toContain('"WORDPRESS_DRAFTS"');
+  });
   test("shows requested changes and a four-way revision diff before full plan review", () => {
     for (const text of ["Requested changes", "Changes from Revision", "Added", "Removed", "Changed", "Unchanged"]) expect(source).toContain(text);
     expect(source.indexOf("Changes from Revision")).toBeLessThan(source.indexOf("plan.pages.map"));

@@ -7,6 +7,7 @@ export const STONER_GYM_REFERENCE = Object.freeze({
   organizationId: "stoner",
   verticalId: "stoner-gym",
   foundingCollaboratorPartnerId: "daniel",
+  foundingCollaboratorCanonicalPartnerId: "daniel-coffeen",
   attributionPolicy: Object.freeze({
     id: "stoner-gym-attribution-30d-v1",
     version: 1,
@@ -75,7 +76,10 @@ export function createStonerGymRuleResolver(input: {
           creatorPartnerId: attribution.selectedPartnerId,
         }).creator;
       }
-      if (attribution.selectedPartnerId === STONER_GYM_REFERENCE.foundingCollaboratorPartnerId) {
+      if (
+        attribution.selectedPartnerId === STONER_GYM_REFERENCE.foundingCollaboratorPartnerId
+        || attribution.selectedPartnerId === STONER_GYM_REFERENCE.foundingCollaboratorCanonicalPartnerId
+      ) {
         return stonerGymEconomicRules().danielDirect;
       }
       return stonerGymEconomicRules().organic;

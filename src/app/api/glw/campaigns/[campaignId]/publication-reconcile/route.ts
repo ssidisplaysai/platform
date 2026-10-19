@@ -18,6 +18,7 @@ import {
   glwPageExecutionRepository,
   reconcileGlwPageExecutionPublished,
 } from "@/modules/glw/page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "@/modules/glw/page-execution";
 import {
   classifyGlwPublicationRead,
   type WordPressPublicationPage,
@@ -83,7 +84,7 @@ export async function POST(
   });
 
   const targets = listGlwCampaignTargets(campaignId);
-  const executions = await glwPageExecutionRepository.list();
+  const executions = filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list());
   const requestedStates = new Set((body.stateCodes ?? []).map((code) => code.trim().toUpperCase()).filter(Boolean));
   const selected = targets.filter((target) => requestedStates.size === 0 || requestedStates.has(target.stateCode));
   const candidateExecutions = selected

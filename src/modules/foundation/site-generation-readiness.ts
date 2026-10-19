@@ -69,17 +69,53 @@ export function evaluateGenerationReadiness(input: {
   const { site, intelligence } = input;
   const opportunities = intelligence ? selectDistinctCapabilityOpportunities(intelligence.opportunities) : [];
   const distinctCapabilities = opportunities;
-  const marketReady = opportunities.length > 0 && opportunities.every((item) => item.ownerDecision !== "PENDING");
-  const capabilityReady = distinctCapabilities.length > 0 && distinctCapabilities.every(isCapabilityReviewComplete);
   const strategy = intelligence?.strategyRevisions.at(-1) ?? null;
-  const creative = intelligence?.creativeRevisions.at(-1) ?? null;
+  const creative = intelligence?.creativeRevisions
+    .filter((revision) => revision.status === "APPROVED")
+    .at(-1) ?? null;
   const strategyReady = intelligence?.strategyState === "STRATEGY_APPROVED" && strategy?.status === "APPROVED";
+  const requiredOpportunityIds = strategyReady ? strategy?.synthesisContext?.approvedOpportunityIds ?? [] : [];
+  const opportunitiesById = new Map(opportunities.map((item) => [item.opportunityId, item]));
+  const hasScopedMarketRequirements = requiredOpportunityIds.length > 0;
+  const requiredOpportunities = hasScopedMarketRequirements
+    ? requiredOpportunityIds
+      .map((opportunityId) => opportunitiesById.get(opportunityId))
+      .filter((opportunity): opportunity is NonNullable<typeof opportunity> => Boolean(opportunity))
+    : opportunities;
+  const missingRequiredOpportunityIds = hasScopedMarketRequirements
+    ? requiredOpportunityIds.filter((opportunityId) => !opportunitiesById.has(opportunityId))
+    : [];
+  const pendingRequiredDecisions = requiredOpportunities
+    .filter((item) => item.ownerDecision === "PENDING")
+    .map((item) => item.opportunityId);
+  const requiredOpportunitiesApproved = requiredOpportunities.every((item) => item.ownerDecision === "APPROVED");
+  const marketReady = hasScopedMarketRequirements
+    ? missingRequiredOpportunityIds.length === 0
+      && requiredOpportunities.length > 0
+      && pendingRequiredDecisions.length === 0
+      && requiredOpportunitiesApproved
+    : opportunities.length > 0 && opportunities.every((item) => item.ownerDecision !== "PENDING");
+  const pendingOutsideRequiredScope = hasScopedMarketRequirements
+    ? opportunities
+      .filter((item) => !requiredOpportunityIds.includes(item.opportunityId) && item.ownerDecision === "PENDING")
+      .length
+    : 0;
+  const marketReadyDetail = marketReady
+    ? hasScopedMarketRequirements
+      ? `${requiredOpportunities.length} required market decisions are approved; ${pendingOutsideRequiredScope} pending opportunities remain outside the approved strategy scope.`
+      : `${opportunities.length} market decisions are complete.`
+    : hasScopedMarketRequirements
+      ? missingRequiredOpportunityIds.length > 0
+        ? "Approved strategy references missing required market opportunities; reconcile strategy context before generation."
+        : "Complete required market opportunity decisions referenced by the approved strategy."
+      : "Complete every required market opportunity decision.";
+  const capabilityReady = distinctCapabilities.length > 0 && distinctCapabilities.every(isCapabilityReviewComplete);
   const creativeLineageCurrent = Boolean(strategy && creative && creative.strategyRevision === strategy.revision);
-  const creativeReady = intelligence?.creativeState === "CREATIVE_APPROVED" && creative?.status === "APPROVED" && creativeLineageCurrent;
+  const creativeReady = strategyReady && creativeLineageCurrent;
   const approvedCandidates = input.candidates.filter((item) => item.decision === "APPROVED" || item.decision === "QUALIFIED");
   const decidedCandidates = input.candidates.filter((item) => item.decision !== "PENDING");
   const generationEligible = approvedCandidates.filter((item) => item.protectedClaimBlockers.length === 0 || item.authorityBasis === "OWNER_ATTESTED_AND_EVIDENCE");
-  const productReady = input.candidates.length > 0 && decidedCandidates.length === input.candidates.length && approvedCandidates.length > 0;
+  const productReady = input.candidates.length > 0 && approvedCandidates.length > 0;
   const protectedClaimsBounded = generationEligible.length === approvedCandidates.length;
   const eligibleAuthoritySources = input.sources.filter((item) => item.approvalState === "OWNER_APPROVED" && item.authority !== "REFERENCE_ONLY");
   const approvedFactualSources = eligibleAuthoritySources.filter((item) => item.authority === "EVIDENCE_SOURCE" && item.retrievalState === "AVAILABLE" && Boolean(item.contentFingerprint || item.sha256));
@@ -87,7 +123,7 @@ export function evaluateGenerationReadiness(input: {
   const publishableAssets = input.sources.filter((item) => item.authority !== "REFERENCE_ONLY" && item.publishable === true);
   const sourcesSufficient = productReady && protectedClaimsBounded;
   const sourcesInsufficientDetail = !productReady && protectedClaimsBounded
-    ? "Complete Product / Service Authority decisions before Sources of Truth can be sufficient."
+    ? "Resolve at least one approved, generation-eligible offering authority before Sources of Truth can be sufficient."
     : "Resolve evidence required by approved protected claims before generation.";
   const connectionReady = Boolean(site.domain && site.canonicalUrl && site.integrations.wordpressApiBaseUrl && site.integrations.wordpressCredentialReference && site.onboarding?.wordpressConnectionVerifiedAt && (site.onboarding.status === "connected" || site.onboarding.status === "certified"));
   const draftTargetReady = Boolean(site.integrations.wordpressApiBaseUrl && site.integrations.wordpressCredentialReference && site.defaultPublicationStatus === "draft");
@@ -96,11 +132,11 @@ export function evaluateGenerationReadiness(input: {
   const checks: GenerationReadinessCheck[] = [
     { key: "site_connection", group: "FOUNDATION", label: "Site connection", passed: connectionReady, detail: connectionReady ? "The canonical site and previously verified WordPress connection are available." : "Complete the domain, WordPress endpoint, credential reference, and connection verification.", actionHref: scoped(site, `/sites/${site.siteId}/onboarding`) },
     { key: "site_intelligence", group: "FOUNDATION", label: "Site intelligence", passed: intelligence?.intelligenceState === "INTELLIGENCE_APPROVED", detail: intelligence?.intelligenceState === "INTELLIGENCE_APPROVED" ? "Site Intelligence is approved." : "Site Intelligence requires explicit approval.", actionHref: scoped(site, `/sites/${site.siteId}/intelligence`) },
-    { key: "market_authority", group: "FOUNDATION", label: "Market authority", passed: marketReady, detail: marketReady ? `${opportunities.length} market decisions are complete.` : "Complete every required market opportunity decision.", actionHref: `${scoped(site, `/sites/${site.siteId}/intelligence`)}#market-review` },
+    { key: "market_authority", group: "FOUNDATION", label: "Market authority", passed: marketReady, detail: marketReadyDetail, actionHref: `${scoped(site, `/sites/${site.siteId}/intelligence`)}#market-review` },
     { key: "capability_authority", group: "FOUNDATION", label: "Capability authority", passed: capabilityReady, detail: capabilityReady ? `${distinctCapabilities.length} distinct capability reviews are complete.` : "Complete capability review, including legacy review-required records.", actionHref: `${scoped(site, `/sites/${site.siteId}/intelligence`)}#capability-review` },
     { key: "strategy", group: "DIRECTION", label: "Strategy approved", passed: strategyReady, detail: strategyReady ? `Strategy revision ${strategy.revision} is approved.` : "Approve the current effective strategy revision.", actionHref: `${scoped(site, `/sites/${site.siteId}/intelligence`)}#strategy-review` },
-    { key: "creative_direction", group: "DIRECTION", label: "Creative Direction approved", passed: creativeReady, detail: creativeReady ? `Creative Direction revision ${creative.revision} is approved.` : creative?.status === "APPROVED" && strategy ? `Creative Direction revision ${creative.revision} is bound to strategy revision ${creative.strategyRevision}; create and approve a Creative Direction revision for strategy revision ${strategy.revision}.` : "Approve the current effective Creative Direction revision.", actionHref: `${scoped(site, `/sites/${site.siteId}/intelligence`)}#creative-direction` },
-    { key: "product_service_authority", group: "CONTENT_AUTHORITY", label: "Product / Service Authority", passed: productReady, detail: productReady ? `${decidedCandidates.length} of ${input.candidates.length} decisions are complete; ${approvedCandidates.length} are approved for generation.` : "Finish owner decisions and approve at least one offering.", actionHref: scoped(site, "/products/new?source=manual") },
+    { key: "creative_direction", group: "DIRECTION", label: "Creative Direction approved", passed: creativeReady, detail: creativeReady ? `Creative Direction revision ${creative.revision} is approved.` : creative && strategy ? `Creative Direction revision ${creative.revision} is bound to strategy revision ${creative.strategyRevision}; create and approve a Creative Direction revision for strategy revision ${strategy.revision}.` : "Approve the current effective Creative Direction revision.", actionHref: `${scoped(site, `/sites/${site.siteId}/intelligence`)}#creative-direction` },
+    { key: "product_service_authority", group: "CONTENT_AUTHORITY", label: "Product / Service Authority", passed: productReady, detail: productReady ? `${approvedCandidates.length} approved offering authorities are available (${generationEligible.length} generation-eligible).` : "Approve or reuse at least one offering authority before generation.", actionHref: scoped(site, "/products/new?source=manual") },
     { key: "sources_of_truth", group: "CONTENT_AUTHORITY", label: "Sources of Truth sufficient", passed: sourcesSufficient, detail: sourcesSufficient ? "Owner-attested authority and bounded approved sources are sufficient; shared sources need not be duplicated." : sourcesInsufficientDetail, actionHref: scoped(site, "/products/new?source=manual") },
     { key: "generation_policy", group: "BUILD_SAFETY", label: "Draft generation bounded", passed: protectedClaimsBounded, detail: protectedClaimsBounded ? "Generation is limited to approved authority; discovery and reference-only material remain non-factual." : "One or more approved protected claims require evidence or exclusion.", actionHref: scoped(site, "/products/new?source=manual") },
     { key: "site_activation", group: "BUILD_SAFETY", label: "Site activation not required", passed: true, detail: site.enabled ? "The site is enabled, but Generation Readiness still permits draft output only." : "The site remains disabled; activation is not required for bounded draft generation.", actionHref: null },

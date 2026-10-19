@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "revision": 0,
+  "updatedAt": "2026-10-12T00:00:00.000Z",
+  "data": {
+    "participants": [],
+    "trackingIdentities": [],
+    "ruleVersions": [],
+    "ledgerEntries": [],
+    "sourceEventReceipts": [],
+    "processedCommerceLines": [],
+    "payoutEntitlements": [],
+    "commerceAdjustments": []
+  }
+}

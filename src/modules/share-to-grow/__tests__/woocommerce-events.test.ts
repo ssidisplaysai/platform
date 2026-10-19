@@ -6,12 +6,13 @@ import { money } from "../money";
 import {
   resetShareToGrowRepositoryForTests,
   listSourceEventReceipts,
+  recordSourceEventReceipt,
 } from "../share-to-grow-repository";
 
 describe("WooCommerce event ingestion", () => {
-  beforeEach(() => resetShareToGrowRepositoryForTests());
+  beforeEach(async () => await (resetShareToGrowRepositoryForTests()));
 
-  test("verifies HMAC and makes webhook replay idempotent", () => {
+  test("verifies HMAC and makes webhook replay idempotent", async () => {
     const rawBody = JSON.stringify({ id: 78142, status: "processing" });
     const secret = "test-secret";
     const signature = createHmac("sha256", secret).update(rawBody).digest("base64");
@@ -23,31 +24,34 @@ describe("WooCommerce event ingestion", () => {
       receivedAt: "2026-10-06T12:00:00Z",
     };
 
-    expect(acceptWooCommerceWebhook(envelope, secret).replay).toBe(false);
-    expect(acceptWooCommerceWebhook(envelope, secret).replay).toBe(true);
-    expect(listSourceEventReceipts()).toHaveLength(1);
+    const accepted = await acceptWooCommerceWebhook(envelope, secret);
+    expect(accepted.replay).toBe(false);
+    await recordSourceEventReceipt(accepted.receipt, accepted.persistenceRevision);
+    expect((await acceptWooCommerceWebhook(envelope, secret)).replay).toBe(true);
+    expect(await listSourceEventReceipts()).toHaveLength(1);
   });
 
-  test("rejects invalid signature and event-id payload collision", () => {
+  test("rejects invalid signature and event-id payload collision", async () => {
     const secret = "test-secret";
     const body = "{}";
     const signature = createHmac("sha256", secret).update(body).digest("base64");
-    acceptWooCommerceWebhook({
+    const accepted = await acceptWooCommerceWebhook({
       sourceEventId: "woo-event-2", eventType: "order.updated",
       rawBody: body, signature, receivedAt: "2026-10-06T12:00:00Z",
     }, secret);
+    await recordSourceEventReceipt(accepted.receipt, accepted.persistenceRevision);
 
     const otherBody = '{"changed":true}';
     const otherSignature = createHmac("sha256", secret).update(otherBody).digest("base64");
-    expect(() => acceptWooCommerceWebhook({
+    await expect(acceptWooCommerceWebhook({
       sourceEventId: "woo-event-2", eventType: "order.updated",
       rawBody: otherBody, signature: otherSignature, receivedAt: "2026-10-06T12:01:00Z",
-    }, secret)).toThrow("SOURCE_EVENT_ID_COLLISION");
+    }, secret)).rejects.toThrow("SOURCE_EVENT_ID_COLLISION");
 
-    expect(() => acceptWooCommerceWebhook({
+    await expect(acceptWooCommerceWebhook({
       sourceEventId: "bad", eventType: "order.created",
       rawBody: body, signature: "bad", receivedAt: "2026-10-06T12:00:00Z",
-    }, secret)).toThrow("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
+    }, secret)).rejects.toThrow("INVALID_WOOCOMMERCE_WEBHOOK_SIGNATURE");
   });
 
   test("posts partial refund proportionally without rewriting original earnings", () => {

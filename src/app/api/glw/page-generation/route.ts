@@ -5,11 +5,12 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   authorizeRequest,
   hasOrganizationScope,
+  resolveRequestPrincipal,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { bindGeneratedContextualMediaWordPress, saveSuccessfulGeneratedContextualMedia } from "@/modules/foundation/generated-contextual-media-repository";
-import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
+import { getIntegrationProfileById, listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { loadProjectorEnclosureSeoAuthority, type ProjectorEnclosureKeywordOwner, type ProjectorEnclosureSeoSelection } from "@/modules/foundation/projectorenclosure-seo-authority";
 import { getProductById, listProducts } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -47,8 +48,10 @@ import {
 } from "@/modules/glw/n8n-mcp-adapter";
 import {
   createGlwDraftExecutionService,
+  filterOutSyntheticCallbackSeeds,
   GlwDraftOnlyExecutionError,
   isGlwExecutionQuarantined,
+  isGlwSyntheticCallbackSeed,
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -74,6 +77,8 @@ import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-c
 import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-title-suppression";
 import { renderOutdoorSphereRichWordPress } from "@/modules/glw/outdoor-sphere-rich-wordpress-render";
 import { resolveOutdoorSphereGovernedCtaUrl } from "@/modules/glw/outdoor-sphere-governed-cta-url";
+import { assertPageenginesMutationAuthorityBinding } from "@/modules/glw/pageengines-dispatch-authority";
+import { authorizeAndConsumePageenginesOneShotLiveExecution } from "@/modules/glw/pageengines-one-shot-live-execution";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -428,7 +433,7 @@ async function finalizeContentReadyExecution(input: {
     products: listProducts(),
   });
   const keywordOwners: ProjectorEnclosureKeywordOwner[] = input.request.projectorEnclosureSeoAuthority
-    ? (await glwPageExecutionRepository.list())
+    ? filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list())
         .filter((record) => record.siteId === input.request.siteId && record.wordpressUrl && record.focusKeyphrase)
         .map((record) => {
           const authorityEvidence = record.qaChecks?.seoAuthority;
@@ -1369,6 +1374,16 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
 }
 
 async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  try {
+    assertPageenginesMutationAuthorityBinding({ request, siteRecord });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "PageEngines authority binding is required before generation.",
+      code: "PAGEENGINES_AUTHORITY_BINDING_REQUIRED",
+      status: 409,
+    } as const;
+  }
+
   const apiBaseUrl = siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
   const credentialReference = siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
   const credential = resolveWordPressCredentialReference(credentialReference);
@@ -1402,7 +1417,7 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
   const targetPreflight = await readGlwTargetPreflight({
     request,
     wordpressReadAuthority,
-    localExecutions: await glwPageExecutionRepository.list(),
+    localExecutions: filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list()),
   });
 
   const mutationAvailability = resolveGlwTargetMutationAvailability(
@@ -1425,6 +1440,28 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
   }
 
   return { targetPreflight, mutationAvailability } as const;
+}
+
+function verifyReviewOnlyGenerationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  try {
+    assertPageenginesMutationAuthorityBinding({ request, siteRecord });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "PageEngines authority binding is required before review-only generation.",
+      code: "PAGEENGINES_AUTHORITY_BINDING_REQUIRED",
+      status: 409,
+    } as const;
+  }
+
+  if (!request.plannedOperation.startsWith("CREATE_") || request.wordpressObjectId) {
+    return {
+      error: "Review-only generation requires create-only authority with no WordPress object override.",
+      code: "REVIEW_ONLY_WORDPRESS_AUTHORITY_REJECTED",
+      status: 409,
+    } as const;
+  }
+
+  return { reviewOnly: true as const };
 }
 
 function matchesExactContinuationTarget(input: {
@@ -1501,6 +1538,15 @@ function quarantineErrorResponse(): NextResponse {
   }, { status: 409 });
 }
 
+function syntheticJobMutationBlockedResponse(): NextResponse {
+  return NextResponse.json({
+    error: "Synthetic callback test jobs are excluded from normal generation and publication mutations.",
+    code: "SYNTHETIC_TEST_JOB_EXCLUDED",
+    generationJobCreated: false,
+    publicationPerformed: false,
+  }, { status: 409 });
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -1547,10 +1593,12 @@ export async function POST(request: NextRequest) {
 
     const duplicateJob = await glwPageExecutionRepository.getById(jobId);
     if (!duplicateJob) return NextResponse.json({ error: "Duplicate GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(duplicateJob)) return syntheticJobMutationBlockedResponse();
     if (duplicateJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const canonicalJob = await glwPageExecutionRepository.getById(supersededByJobId);
     if (!canonicalJob) return NextResponse.json({ error: "Superseding GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(canonicalJob)) return syntheticJobMutationBlockedResponse();
     if (canonicalJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     if (!matchesExactContinuationTarget({ job: duplicateJob, request: preview.request })) {
@@ -1660,6 +1708,7 @@ export async function POST(request: NextRequest) {
         const recoveryJobId = body.jobId?.trim() ?? "";
         const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
         if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
+        if (isGlwSyntheticCallbackSeed(recoveryJob)) return syntheticJobMutationBlockedResponse();
         const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
         if (action === "recover_failed_dispatch") {
           validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
@@ -1689,6 +1738,7 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId?.trim() ?? "";
     if (!jobId) return NextResponse.json({ error: "Exact failed job is required for recovery." }, { status: 400 });
     const currentJob = await glwPageExecutionRepository.getById(jobId);
+    if (currentJob && isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (currentJob && isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
     }
@@ -1700,6 +1750,7 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId?.trim() ?? "";
     const currentJob = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
     if (!currentJob) return NextResponse.json({ error: "Exact recovered job is required for finalization." }, { status: 400 });
+    if (isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
     }
@@ -1723,6 +1774,7 @@ export async function POST(request: NextRequest) {
 
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
@@ -1875,6 +1927,7 @@ export async function POST(request: NextRequest) {
 
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (isGlwSyntheticCallbackSeed(currentJob)) return syntheticJobMutationBlockedResponse();
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (isGlwExecutionQuarantined(currentJob)) {
       return quarantineErrorResponse();
@@ -1908,16 +1961,83 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (action !== "generate") {
+  const reviewOnlyGeneration = action === "generate_review_only";
+
+  if (action !== "generate" && !reviewOnlyGeneration) {
     return NextResponse.json({ error: "Unsupported generation action." }, { status: 400 });
   }
 
-  const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
+  const authority = reviewOnlyGeneration
+    ? verifyReviewOnlyGenerationAuthority(preview.request, preview.siteRecord)
+    : await verifyMutationAuthority(preview.request, preview.siteRecord);
   if ("error" in authority) {
     return NextResponse.json(authority, { status: authority.status });
   }
 
   try {
+    const shouldAttemptOneShotLiveExecution =
+      reviewOnlyGeneration
+      && (
+        process.env.GENESIS_PAGEENGINES_ONE_SHOT_LIVE_ENABLED === "true"
+        || (process.env.GENESIS_ENVIRONMENT === "staging" && preview.request.organizationId === "pageengines")
+      );
+    if (shouldAttemptOneShotLiveExecution) {
+      const principal = resolveRequestPrincipal(request);
+      if (!principal) {
+        return NextResponse.json({
+          error: "Exact authenticated principal and session are required for one-shot live execution.",
+          code: "PAGEENGINES_ONE_SHOT_PRINCIPAL_REQUIRED",
+        }, { status: 403 });
+      }
+
+      const workflowProfileReference = preview.siteRecord.integrations.workflowReference?.trim() ?? "";
+      const workflowProfile = workflowProfileReference ? getIntegrationProfileById(workflowProfileReference) : null;
+      const workflowId = workflowProfile?.references.workflowReference?.trim() ?? "";
+      const authorization = authorizeAndConsumePageenginesOneShotLiveExecution({
+        request: preview.request,
+        action,
+        workflowId,
+        principal,
+      });
+      if (!authorization.ok) {
+        return NextResponse.json({
+          error: authorization.error,
+          code: authorization.code,
+          publicationPerformed: false,
+          generationJobCreated: false,
+        }, { status: authorization.status });
+      }
+      const oneShotService = createGlwDraftExecutionService({
+        repository: glwPageExecutionRepository,
+        dispatcher: createGlwN8nMcpDispatcher({
+          environment: {
+            ...process.env,
+            GLW_N8N_NON_MUTATING_TEST: "false",
+          },
+        }),
+        executionTransport: "N8N_MCP",
+      });
+      const liveJob = await oneShotService.execute(preview.request);
+      const existingChecks = liveJob.qaChecks && typeof liveJob.qaChecks === "object" && !Array.isArray(liveJob.qaChecks)
+        ? liveJob.qaChecks as Readonly<Record<string, unknown>>
+        : {};
+      const job = await glwPageExecutionRepository.update(liveJob.jobId, {
+        qaChecks: {
+          ...existingChecks,
+          pageenginesOneShotLiveExecution: {
+            grantId: authorization.grantId,
+            requestFingerprint: authorization.requestFingerprint,
+            authorizedAt: new Date().toISOString(),
+          },
+        },
+      });
+      return NextResponse.json({
+        ok: true,
+        job,
+        publicationPerformed: false,
+      });
+    }
+
     const job = await service.execute(preview.request);
     return NextResponse.json({
       ok: true,
@@ -1963,6 +2083,9 @@ export async function GET(request: NextRequest) {
 
   const currentJob = await glwPageExecutionRepository.getById(jobId);
   if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+  if (isGlwSyntheticCallbackSeed(currentJob)) {
+    return NextResponse.json({ error: "Synthetic callback test jobs are excluded from this endpoint." }, { status: 404 });
+  }
   if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (isGlwExecutionQuarantined(currentJob)) {
     return NextResponse.json({ job: currentJob, quarantineActive: true, mutationPerformed: false });

@@ -31,7 +31,7 @@ import {
   updateCreativeInputMetadata,
   validateOpportunityCapability,
 } from "@/modules/foundation/site-intelligence-repository";
-import { synthesizeInitialSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
+import { synthesizeInitialSiteStrategy, synthesizeRevisedSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
 import { synthesizeCreativeDirection } from "@/modules/foundation/site-creative-direction-synthesizer";
 import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "@/modules/foundation/site-capability-transition";
 import { continueSiteBuild, ensurePersistedProjectedCreativeCandidate, projectCreativeReviewHandoff } from "@/modules/foundation/site-build-continuation";
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest, context: Context) {
         const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
         if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
         const finalized = { ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) };
-        const revised = synthesizeInitialSiteStrategy(finalized, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        const revised = synthesizeRevisedSiteStrategy(finalized, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile }, { revisionInstructions });
         workspace = addStrategyProposal({ ...common, expectedRevision: current.revision, proposal: { ...revised, reason: `${revised.reason} Owner revision instructions: ${revisionInstructions}` }, reason: `Owner requested a revised Genesis Site Strategy proposal: ${revisionInstructions}` });
         break;
       }

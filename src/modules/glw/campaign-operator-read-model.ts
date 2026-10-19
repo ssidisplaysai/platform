@@ -9,6 +9,7 @@ import type { GlwReferenceImageCandidate } from "./campaign-reference-image-cand
 import { listGlwCampaigns } from "./campaign-repository";
 import { listGlwCampaignTargets } from "./campaign-target-repository";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "./page-execution";
 import { listGlwCampaignActivationGrants } from "./campaign-activation-authorization";
 import { resolveGlwCampaignActivationReleaseCapability } from "./campaign-release-capability";
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
@@ -293,7 +294,7 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
   const campaign = listGlwCampaigns().find((entry) => entry.campaignId === campaignId) ?? null;
   if (!campaign) return null;
   const targets = listGlwCampaignTargets(campaignId);
-  const allJobs = await glwPageExecutionRepository.list();
+  const allJobs = filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list());
   const targetJobIds = new Set(targets.map((target) => target.jobId).filter((jobId): jobId is string => Boolean(jobId)));
   const jobs = allJobs.filter((job) => targetJobIds.has(job.jobId));
   const jobMap = new Map(jobs.map((job) => [job.jobId, job]));

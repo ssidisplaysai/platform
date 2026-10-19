@@ -58,7 +58,7 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     BUILD_PLAN_REVIEW: { action: "APPROVE_BUILD_PLAN", label: "APPROVE BUILD PLAN", detail: "Approve the proposed site structure before any page drafts are generated." },
     DRAFT_GENERATION: { action: "GENERATE_SITE_DRAFTS", label: "GENERATE SITE DRAFTS", detail: "Generate local review drafts from the approved plan. WordPress is not contacted." },
     DRAFT_REVIEW: { action: "APPROVE_SITE_DRAFTS", label: "APPROVE SITE DRAFTS", detail: "Approve the local drafts before any WordPress draft is created." },
-    WORDPRESS_DRAFTS: { action: "CREATE_WORDPRESS_DRAFTS", label: "CREATE WORDPRESS DRAFTS", detail: "Create draft-only WordPress pages after authoritative collision checks. Publication remains disabled." },
+    WORDPRESS_DRAFTS: { action: "CREATE_WORDPRESS_DRAFTS", label: "CREATE WORDPRESS DRAFTS", detail: "Create draft-only WordPress pages for external CMS delivery after internal Genesis page review. Publication remains disabled." },
     PAGE_GENERATION: { action: "GENERATE_FULL_SITE", label: "GENERATE FULL PAGE CONTENT", detail: "Generate production-quality page proposals, SEO, links, navigation, and image requirements locally. WordPress is not updated." },
     PAGE_REVIEW: { action: "REVIEW_FULL_SITE", label: "REVIEW GENERATED SITE", detail: "Review each generated page, request bounded changes, or approve pages that pass quality checks." },
     WORDPRESS_CONTENT_UPDATE: { action: "UPDATE_WORDPRESS_DRAFT_CONTENT", label: "UPDATE WORDPRESS DRAFT CONTENT", detail: `Update the existing ${records.wordpressDrafts.length} WordPress draft pages with the owner-approved content, SEO, links, and approved images. Nothing will be published.` },
@@ -157,7 +157,7 @@ export function approveBuildDrafts(site: SiteConfiguration, actor: string) { con
 
 export function generateFullSiteAssembly(site: SiteConfiguration, actor: string, instructions = "") {
   const context = planningContext(site); const { workspace } = context;
-  if (!workspace.currentPlan || workspace.currentPlan.status !== "APPROVED" || !workspace.draftSet || workspace.wordpressDrafts.length !== workspace.draftSet.drafts.length) throw new Error("COMPLETED_WORDPRESS_DRAFT_STAGE_REQUIRED");
+  if (!workspace.currentPlan || workspace.currentPlan.status !== "APPROVED" || workspace.draftSet?.status !== "APPROVED") throw new Error("APPROVED_SITE_DRAFTS_REQUIRED");
   if (workspace.currentAssembly?.status === "READY_FOR_OWNER_REVIEW" && workspace.currentAssembly.policyVersion === SITE_PAGE_GENERATION_POLICY_VERSION && !instructions.trim()) return workspace.currentAssembly;
   return saveSiteAssemblyProposal(synthesizeSiteAssembly({ site, buildSessionId: workspace.session.buildSessionId, plan: workspace.currentPlan, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: workspace.generation.authority.candidates, sources: workspace.generation.authority.sources, revision: (workspace.currentAssembly?.revision ?? 0) + 1, actor, instructions }));
 }

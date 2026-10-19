@@ -35,4 +35,19 @@ The durable workspace records a provider reference but does not embed provider c
 
 Creative uploads accept JPEG, PNG, WebP, GIF, and PDF files. Files are limited to 25 MB each, 10 files and 50 MB per batch. Genesis validates MIME and file signatures, stores bytes by SHA-256 under the foundation persistence root, and records organization/site provenance. Upload does not call WordPress.
 
-Automatic execution requires the dedicated n8n endpoint `https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1` through `GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL` and `GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET`. Campaign research credentials and workflow identities are not reused. The provider must echo exact organization/site/execution identity and return evidence-linked opportunities. Execution is idempotent for the initial run, limited to two attempts, bounded to 60–300 seconds, and becomes recoverable after exhaustion.
+Automatic execution requires the approved Site Intelligence n8n endpoint `https://ssiai.app.n8n.cloud/webhook/genesis-site-intelligence-v1`. Runtime resolution prefers `GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL` + `GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET`, then falls back to the legacy shared pair `GLW_N8N_RESEARCH_WEBHOOK_URL` + `GLW_N8N_RESEARCH_WEBHOOK_SECRET` only when the primary pair is incomplete. Mixed key-pair resolution is not allowed. Campaign research credentials and workflow identities are not reused. The provider must echo exact organization/site/execution identity and return evidence-linked opportunities. Execution is idempotent for the initial run, limited to two attempts, bounded to 60–300 seconds, and becomes recoverable after exhaustion.
+
+## Onboarding Auto-Prepare Profiles
+
+Fresh-site onboarding supports an owner-approved **Auto-Prepare Profiles** action for Brand, SEO, Prompt, and Image authority:
+
+- Preview is required before persistence.
+- The owner can review and edit proposed profile values, including inspectable instruction bodies that persist into profile notes.
+- Owner-supplied creative references are treated as inspiration by default and are **not** auto-promoted to `logoReference`.
+- Brand proposals include a **Select Approved Logo** control that lists eligible in-scope uploaded image assets.
+- Logo assignment requires explicit owner confirmation in the apply request; ordinary LIKE/reference classification alone is not sufficient.
+- Missing approved logo authority blocks apply until the owner provides an approved logo reference.
+- Proposal diagnostics explicitly flag blockers, warnings, unresolved symbolic references, and unverified provider declarations.
+- Records are scoped to the current organization and site; existing matching records are reused.
+- Workflow profile binding remains pending until an isolated verified workflow reference exists.
+- Manual advanced profile controls remain available.

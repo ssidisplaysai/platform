@@ -6,6 +6,7 @@ import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpres
 import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 import { listGlwCampaigns } from "./campaign-repository";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "./page-execution";
 import { fingerprintGlwAuthority } from "./reference-claim-authority";
 import { resolveGlwReferenceGenerationAuthority } from "./reference-generation-authority";
 import type { GlwReferenceOwnerContext, GlwReferenceOwnerOperationType } from "./reference-owner-authority";
@@ -51,7 +52,7 @@ export async function resolveGlwReferenceOwnerLiveContext(input: {
     wordpress.authorityHealthState,
   ].join(":");
   const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
-  const records = await glwPageExecutionRepository.list();
+  const records = filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list());
   const durableOperation = projectGlwDurableReferenceOperation({
     campaign,
     campaigns: listGlwCampaigns(),

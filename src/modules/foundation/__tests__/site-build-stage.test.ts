@@ -15,6 +15,14 @@ describe("Site Build stage transition", () => {
     expect(resolveSiteBuildStage({ ...completeReview, pageReviewComplete: false })).toBe("PAGE_REVIEW");
   });
 
+  test("allows native page generation before WordPress drafts are created", () => {
+    expect(resolveSiteBuildStage({ ...completeReview, wordpressDraftCount: 0, assemblyPresent: false })).toBe("PAGE_GENERATION");
+  });
+
+  test("requires WordPress draft creation only after internal page review is complete", () => {
+    expect(resolveSiteBuildStage({ ...completeReview, wordpressDraftCount: 0, assemblyPresent: true, pageReviewComplete: true })).toBe("WORDPRESS_DRAFTS");
+  });
+
   test("advances completed review to explicit WordPress content update", () => {
     expect(resolveSiteBuildStage(completeReview)).toBe("WORDPRESS_CONTENT_UPDATE");
     expect(resolveSiteBuildStage({ ...completeReview, wordpressContentUpdateCount: 2 })).toBe("WORDPRESS_DRAFT_REVIEW");

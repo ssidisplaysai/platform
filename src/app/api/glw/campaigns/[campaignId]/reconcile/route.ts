@@ -18,6 +18,7 @@ import {
   reconcileGlwContentReadyTargetDraft,
 } from "@/modules/glw/campaign-target-repository";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { filterOutSyntheticCallbackSeeds } from "@/modules/glw/page-execution";
 import {
   resolveGlwCampaignJobReconciliationDecision,
 } from "@/modules/glw/campaign-target-reconciliation";
@@ -1352,7 +1353,7 @@ export async function POST(
           const targetPreflight = await readGlwTargetPreflight({
             request: preflightRequest,
             wordpressReadAuthority,
-            localExecutions: await glwPageExecutionRepository.list(),
+            localExecutions: filterOutSyntheticCallbackSeeds(await glwPageExecutionRepository.list()),
           });
           const mutationAvailability = resolveGlwTargetMutationAvailability(targetPreflight, preflightRequest.pageType);
           const authoritativeWordPressObjectId = text(mutationAvailability.wordpressObjectId);

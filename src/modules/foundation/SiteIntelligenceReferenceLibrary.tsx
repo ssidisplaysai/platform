@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import type { CreativeInput, SiteAssetClassification, SiteIntelligenceWorkspace } from "./site-intelligence";
+import { siteIntelligenceRequestHeaders } from "./site-intelligence-request-headers";
 
 const classifications: Array<{ value: SiteAssetClassification; label: string }> = [
   { value: "OWNER_SUPPLIED_REFERENCE", label: "Owner supplied reference" },
@@ -99,7 +100,16 @@ function UploadForm(props: Props) {
     setUploading(true); setMessage(null);
     try {
       const form = new FormData(); files.forEach((file) => form.append("files", file)); form.set("classification", classification); form.set("sentiment", sentiment); form.set("notes", notes); form.set("expectedRevision", String(props.workspace?.revision ?? 0));
-      const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence/assets`, { method: "POST", headers: { "x-gcp-roles": "ops_manager", "x-gcp-organization-id": props.organizationId, "x-gcp-site-id": props.siteId }, body: form });
+      const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence/assets`, {
+        method: "POST",
+        headers: siteIntelligenceRequestHeaders({
+          organizationId: props.organizationId,
+          siteId: props.siteId,
+          mutation: true,
+          jsonContentType: false,
+        }),
+        body: form,
+      });
       const payload = await response.json() as { workspace?: SiteIntelligenceWorkspace; assets?: unknown[]; error?: string };
       if (!response.ok || !payload.workspace) throw new Error(payload.error ?? "Upload failed.");
       props.onWorkspace(payload.workspace); setFiles([]); setNotes(""); setInputKey((value) => value + 1); setMessage(`${payload.assets?.length ?? 0} file(s) added.`);
@@ -158,7 +168,14 @@ function AssetPreview({ assetId, fileName, organizationId, siteId }: { assetId: 
   const [source, setSource] = useState<string | null>(null);
   useEffect(() => {
     let active = true; let objectUrl: string | null = null;
-    fetch(`/api/sites/${encodeURIComponent(siteId)}/intelligence/assets/${encodeURIComponent(assetId)}`, { headers: { "x-gcp-roles": "ops_manager", "x-gcp-organization-id": organizationId, "x-gcp-site-id": siteId }, cache: "no-store" }).then((response) => { if (!response.ok) throw new Error("Preview unavailable"); return response.blob(); }).then((blob) => { if (active) { objectUrl = URL.createObjectURL(blob); setSource(objectUrl); } }).catch(() => undefined);
+    fetch(`/api/sites/${encodeURIComponent(siteId)}/intelligence/assets/${encodeURIComponent(assetId)}`, {
+      headers: siteIntelligenceRequestHeaders({
+        organizationId,
+        siteId,
+        jsonContentType: false,
+      }),
+      cache: "no-store",
+    }).then((response) => { if (!response.ok) throw new Error("Preview unavailable"); return response.blob(); }).then((blob) => { if (active) { objectUrl = URL.createObjectURL(blob); setSource(objectUrl); } }).catch(() => undefined);
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [assetId, organizationId, siteId]);
   return source ? <Image src={source} alt={fileName} width={640} height={360} unoptimized className="aspect-video w-full object-cover" /> : <div className="flex aspect-video items-center justify-center bg-zinc-900 text-xs text-zinc-500">Loading preview...</div>;

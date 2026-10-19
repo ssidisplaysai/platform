@@ -13,6 +13,7 @@ import {
   GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID,
   GLW_N8N_ENGINE_PRODUCT_NAME,
   GLW_N8N_ENGINE_SITE_ID,
+  GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION,
   GlwExecutionResultError,
   GlwDraftOnlyExecutionError,
   GlwUnknownExecutionError,
@@ -38,6 +39,51 @@ const request = buildLocalGlwGenerationPreview({
   sites: [site],
   products: [product],
 }).request!;
+
+async function createSyntheticFailedDispatchRecord(repository: ReturnType<typeof createInMemoryGlwPageExecutionRepository>) {
+  return repository.create({
+    jobId: "synthetic-job-001",
+    correlationId: "synthetic-job-001",
+    executionTransport: "N8N_WEBHOOK",
+    organizationId: request.organizationId,
+    siteId: request.siteId,
+    productId: request.productId,
+    productTopic: request.productTopic,
+    state: request.stateName,
+    city: request.cityName,
+    slug: request.canonicalPath,
+    title: request.title,
+    seoTitle: request.seoTitle,
+    metaDescription: request.metaDescription,
+    publicationIntent: "draft",
+    status: "FAILED",
+    externalExecutionId: null,
+    wordpressObjectId: null,
+    wordpressUrl: null,
+    wordpressStatus: null,
+    generatedDraft: null,
+    errorCode: "DISPATCH_FAILED",
+    errorMessage: "Synthetic dispatch failure",
+    requestedPublicationMode: "draft",
+    disposition: GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION,
+    qaStatus: null,
+    qaChecks: {
+      syntheticCallbackSeed: {
+        ownerApprovalId: "OWNER_APPROVAL-GLW-PHASE4D-TEST-RECOVERY",
+        stagingOnly: true,
+        nonCustomer: true,
+      },
+    },
+    qaFailureReasons: null,
+    focusKeyphrase: null,
+    wordCount: null,
+    featuredImagePresent: null,
+    createdAt: "2031-01-01T00:00:00.000Z",
+    dispatchedAt: null,
+    updatedAt: "2031-01-01T00:00:00.000Z",
+    completedAt: "2031-01-01T00:00:00.000Z",
+  });
+}
 
 function serviceWith(response: Awaited<ReturnType<GlwN8nDraftDispatcher["dispatch"]>>) {
   const repository = createInMemoryGlwPageExecutionRepository();
@@ -164,6 +210,92 @@ describe("GLW one-draft execution recovery", () => {
     await failing.execute(request);
     await expect(failing.recoverFailedDispatch("same-job", { ...request, siteId: "wrong-site" })).rejects.toThrow("exact persisted job identity");
     expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("blocks failed-dispatch recovery for synthetic callback seed jobs", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    await createSyntheticFailedDispatchRecord(repository);
+    const service = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          return { kind: "accepted", executionId: "blocked-synthetic-execution", status: "accepted" };
+        },
+      },
+    });
+
+    await expect(service.recoverFailedDispatch("synthetic-job-001", request))
+      .rejects
+      .toThrow("Synthetic callback test jobs are excluded");
+  });
+
+  test("blocks terminal retry for synthetic callback seed jobs", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    await repository.create({
+      jobId: "synthetic-job-retry-001",
+      correlationId: "synthetic-job-retry-001",
+      executionTransport: "N8N_WEBHOOK",
+      organizationId: request.organizationId,
+      siteId: request.siteId,
+      productId: request.productId,
+      productTopic: request.productTopic,
+      state: request.stateName,
+      city: request.cityName,
+      slug: request.canonicalPath,
+      title: request.title,
+      seoTitle: request.seoTitle,
+      metaDescription: request.metaDescription,
+      publicationIntent: "draft",
+      status: "FAILED",
+      externalExecutionId: "synthetic-execution-failed-001",
+      wordpressObjectId: null,
+      wordpressUrl: null,
+      wordpressStatus: null,
+      generatedDraft: null,
+      errorCode: "FAILED_QA",
+      errorMessage: "Synthetic failed execution",
+      requestedPublicationMode: "draft",
+      disposition: GLW_SYNTHETIC_CALLBACK_SEED_DISPOSITION,
+      qaStatus: null,
+      qaChecks: {
+        syntheticCallbackSeed: {
+          ownerApprovalId: "OWNER_APPROVAL-GLW-PHASE4D-TEST-RETRY",
+          stagingOnly: true,
+          nonCustomer: true,
+        },
+      },
+      qaFailureReasons: null,
+      focusKeyphrase: null,
+      wordCount: null,
+      featuredImagePresent: null,
+      createdAt: "2031-01-01T00:00:00.000Z",
+      dispatchedAt: "2031-01-01T00:00:00.000Z",
+      updatedAt: "2031-01-01T00:00:00.000Z",
+      completedAt: "2031-01-01T00:00:00.000Z",
+    });
+    const service = createGlwDraftExecutionService({
+      repository,
+      dispatcher: {
+        async dispatch() {
+          return { kind: "accepted", executionId: "new-execution", status: "accepted" };
+        },
+      },
+    });
+
+    await expect(service.retryFailedExecution({
+      jobId: "synthetic-job-retry-001",
+      request,
+      expectedFailedExecutionId: "synthetic-execution-failed-001",
+      retryRequestId: "retry-1",
+      reader: {
+        async findExecutionIds() { return []; },
+        async readExecution(executionId) {
+          return { executionId, state: "ERROR", errorMessage: "failed", runData: null };
+        },
+      },
+    }))
+      .rejects
+      .toThrow("Synthetic callback test jobs are excluded");
   });
 
   test("concurrent same-job recovery permits one dispatch only", async () => {

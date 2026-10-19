@@ -12,18 +12,52 @@ import {
 
 const HOST = "ssiai.app.n8n.cloud";
 const PATH = "/webhook/genesis-site-intelligence-v1";
+const PRIMARY_CONFIGURATION_KEYS = {
+  url: "GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL",
+  secret: "GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET",
+} as const;
+const LEGACY_SHARED_CONFIGURATION_KEYS = {
+  url: "GLW_N8N_RESEARCH_WEBHOOK_URL",
+  secret: "GLW_N8N_RESEARCH_WEBHOOK_SECRET",
+} as const;
+
+type ProviderConfigurationSource =
+  | "genesis-site-intelligence-webhook"
+  | "legacy-shared-research-webhook";
 
 function configuration(environment: NodeJS.ProcessEnv = process.env) {
-  const value = environment.GENESIS_SITE_INTELLIGENCE_WEBHOOK_URL?.trim() ?? "";
-  const secret = environment.GENESIS_SITE_INTELLIGENCE_WEBHOOK_SECRET?.trim() ?? "";
-  if (!value || !secret) return null;
-  const url = new URL(value);
+  const candidates: ReadonlyArray<{
+    source: ProviderConfigurationSource;
+    url: string;
+    secret: string;
+  }> = [
+    {
+      source: "genesis-site-intelligence-webhook",
+      url: environment[PRIMARY_CONFIGURATION_KEYS.url]?.trim() ?? "",
+      secret: environment[PRIMARY_CONFIGURATION_KEYS.secret]?.trim() ?? "",
+    },
+    {
+      source: "legacy-shared-research-webhook",
+      url: environment[LEGACY_SHARED_CONFIGURATION_KEYS.url]?.trim() ?? "",
+      secret: environment[LEGACY_SHARED_CONFIGURATION_KEYS.secret]?.trim() ?? "",
+    },
+  ];
+
+  const candidate = candidates.find((item) => item.url && item.secret);
+  if (!candidate) return null;
+  const url = new URL(candidate.url);
   if (url.protocol !== "https:" || url.hostname !== HOST || url.pathname !== PATH || url.username || url.password || url.search || url.hash) throw new Error("SITE_INTELLIGENCE_PROVIDER_ENDPOINT_INVALID");
-  return { url: url.toString(), secret };
+  return { url: url.toString(), secret: candidate.secret, source: candidate.source };
 }
 
 export function getSiteIntelligenceProviderStatus(environment: NodeJS.ProcessEnv = process.env) {
-  return { configured: Boolean(configuration(environment)), providerId: SITE_INTELLIGENCE_PROVIDER_ID, endpointAuthority: `${HOST}${PATH}` };
+  const resolved = configuration(environment);
+  return {
+    configured: Boolean(resolved),
+    providerId: SITE_INTELLIGENCE_PROVIDER_ID,
+    endpointAuthority: `${HOST}${PATH}`,
+    configurationSource: resolved?.source ?? null,
+  };
 }
 
 async function boundedJson(response: Response): Promise<unknown> {

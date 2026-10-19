@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { operatorMutationHeaders } from "./operator-session-client";
 import {
   buildOnboardingProfileInput,
   createOnboardingProfileId,
@@ -21,6 +22,16 @@ type OnboardingProfileCreatorProps = {
   existingCount: number;
   onCreated(profile: IntegrationProfileConfiguration): void;
 };
+
+export function onboardingProfileCreateHeaders(
+  organizationId: string,
+): HeadersInit {
+  return operatorMutationHeaders({
+    "Content-Type": "application/json",
+    "x-gcp-roles": "ops_manager",
+    "x-gcp-organization-id": organizationId,
+  });
+}
 
 export function OnboardingProfileCreator(input: OnboardingProfileCreatorProps) {
   const [open, setOpen] = useState(false);
@@ -70,11 +81,7 @@ export function OnboardingProfileCreator(input: OnboardingProfileCreatorProps) {
       });
       const response = await fetch("/api/profiles", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-gcp-roles": "ops_manager",
-          "x-gcp-organization-id": input.organizationId,
-        },
+        headers: onboardingProfileCreateHeaders(input.organizationId),
         body: JSON.stringify(profile),
       });
       const payload = (await response.json()) as {

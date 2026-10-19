@@ -5,6 +5,7 @@ const mockGetSiteBuildRecords = jest.fn();
 const mockSaveBuildPlanProposal = jest.fn((proposal) => proposal);
 const mockGetSiteIntelligenceWorkspace = jest.fn();
 const mockSynthesizeSiteBuildPlan = jest.fn();
+const mockSynthesizeSiteAssembly = jest.fn();
 const mockSummarizeSitePageReview = jest.fn(() => ({ complete: false, generatedPageCount: 0 }));
 
 jest.mock("../site-generation-readiness-service", () => ({
@@ -23,7 +24,7 @@ jest.mock("../site-generation-readiness-repository", () => ({
   recordSiteBuildWordPressContentUpdate: jest.fn(),
   recordSiteBuildWordPressDraft: jest.fn(),
   replaceSiteAssemblyPageRevision: jest.fn(),
-  saveSiteAssemblyProposal: jest.fn(),
+  saveSiteAssemblyProposal: jest.fn((proposal) => proposal),
 }));
 
 jest.mock("../site-intelligence-repository", () => ({
@@ -32,6 +33,11 @@ jest.mock("../site-intelligence-repository", () => ({
 
 jest.mock("../site-build-plan", () => ({
   synthesizeSiteBuildPlan: (...args: unknown[]) => mockSynthesizeSiteBuildPlan(...args),
+}));
+
+jest.mock("../site-page-generation", () => ({
+  SITE_PAGE_GENERATION_POLICY_VERSION: "fresh-site-page-generation-v2",
+  synthesizeSiteAssembly: (...args: unknown[]) => mockSynthesizeSiteAssembly(...args),
 }));
 
 jest.mock("../site-page-image-candidate-repository", () => ({
@@ -67,7 +73,7 @@ jest.mock("../site-page-image-review", () => ({
 jest.mock("../site-repository", () => ({ updateSite: jest.fn() }));
 jest.mock("../site-build-stage", () => jest.requireActual("../site-build-stage"));
 
-import { generateBuildPlan, getSiteBuildWorkspace } from "../site-build-service";
+import { generateBuildPlan, generateFullSiteAssembly, getSiteBuildWorkspace } from "../site-build-service";
 import type { SiteConfiguration } from "../types";
 
 const site: SiteConfiguration = {
@@ -184,5 +190,60 @@ describe("site build stale plan continuation", () => {
     });
 
     expect(() => generateBuildPlan(site, "owner")).toThrow("CURRENT_BUILD_AUTHORITY_REQUIRED");
+  });
+
+  test("does not persist a build plan when compatibility validation fails", () => {
+    mockSynthesizeSiteBuildPlan.mockImplementation(() => {
+      throw new Error("BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED:{\"unsupported\":[]}");
+    });
+
+    expect(() => generateBuildPlan(site, "owner")).toThrow(/BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED/);
+    expect(mockSaveBuildPlanProposal).not.toHaveBeenCalled();
+  });
+
+  test("routes approved native drafts with no WordPress drafts to internal page generation", () => {
+    mockGetSiteBuildRecords.mockReturnValue({
+      plans: [{ revision: 2, status: "APPROVED", authoritySnapshot: currentSnapshot }],
+      changeRequests: [],
+      currentPlan: { revision: 2, status: "APPROVED", authoritySnapshot: currentSnapshot },
+      draftSet: {
+        draftSetId: "drafts-1",
+        status: "APPROVED",
+        authoritySnapshot: currentSnapshot,
+        drafts: [{ draftId: "d1" }, { draftId: "d2" }],
+      },
+      wordpressDrafts: [],
+      assemblies: [],
+      currentAssembly: null,
+      wordpressContentUpdates: [],
+    });
+
+    const workspace = getSiteBuildWorkspace(site);
+    expect(workspace.stage).toBe("PAGE_GENERATION");
+    expect(workspace.next).toMatchObject({ action: "GENERATE_FULL_SITE" });
+  });
+
+  test("generates internal site assembly without requiring WordPress drafts", () => {
+    mockGetSiteBuildRecords.mockReturnValue({
+      plans: [{ revision: 2, status: "APPROVED", authoritySnapshot: currentSnapshot }],
+      changeRequests: [],
+      currentPlan: { revision: 2, status: "APPROVED", authoritySnapshot: currentSnapshot },
+      draftSet: {
+        draftSetId: "drafts-1",
+        status: "APPROVED",
+        authoritySnapshot: currentSnapshot,
+        drafts: [{ draftId: "d1" }, { draftId: "d2" }],
+      },
+      wordpressDrafts: [],
+      assemblies: [],
+      currentAssembly: null,
+      wordpressContentUpdates: [],
+    });
+
+    const proposal = { assemblyId: "assembly-1", status: "READY_FOR_OWNER_REVIEW", policyVersion: "fresh-site-page-generation-v2" };
+    mockSynthesizeSiteAssembly.mockReturnValue(proposal);
+
+    const result = generateFullSiteAssembly(site, "owner");
+    expect(result).toBe(proposal);
   });
 });

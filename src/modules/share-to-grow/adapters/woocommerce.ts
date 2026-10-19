@@ -11,10 +11,12 @@ export interface WooCommerceGenesisAttribution {
 
 export interface WooCommerceMoneyTotal {
   readonly grossMerchandiseMinor: bigint;
+  readonly customerShippingRevenueMinor?: bigint;
   readonly discountMinor: bigint;
   readonly refundMinor: bigint;
   readonly cogsMinor: bigint;
   readonly inboundFreightDutyMinor: bigint;
+  readonly outboundShippingLabelMinor?: bigint;
   readonly fulfillmentPackagingMinor: bigint;
   readonly paymentProcessingMinor: bigint;
 }
@@ -47,11 +49,13 @@ export function normalizeWooCommerceOrder(
     productId: line.productId,
     quantity: line.quantity,
     grossMerchandiseMinor: line.grossMerchandiseMinor,
+    customerShippingRevenueMinor: line.customerShippingRevenueMinor ?? 0n,
     discountMinor: line.discountMinor,
     refundMinor: line.refundMinor,
     costs: [
       { kind: "cogs", amountMinor: line.cogsMinor },
       { kind: "inbound_freight_duty", amountMinor: line.inboundFreightDutyMinor },
+      { kind: "outbound_shipping_label", amountMinor: line.outboundShippingLabelMinor ?? 0n },
       { kind: "fulfillment_packaging", amountMinor: line.fulfillmentPackagingMinor },
       { kind: "payment_processing", amountMinor: line.paymentProcessingMinor },
     ],
