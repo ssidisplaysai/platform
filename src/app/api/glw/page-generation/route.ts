@@ -1440,6 +1440,28 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
   return { targetPreflight, mutationAvailability } as const;
 }
 
+function verifyReviewOnlyGenerationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  try {
+    assertPageenginesMutationAuthorityBinding({ request, siteRecord });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "PageEngines authority binding is required before review-only generation.",
+      code: "PAGEENGINES_AUTHORITY_BINDING_REQUIRED",
+      status: 409,
+    } as const;
+  }
+
+  if (!request.plannedOperation.startsWith("CREATE_") || request.wordpressObjectId) {
+    return {
+      error: "Review-only generation requires create-only authority with no WordPress object override.",
+      code: "REVIEW_ONLY_WORDPRESS_AUTHORITY_REJECTED",
+      status: 409,
+    } as const;
+  }
+
+  return { reviewOnly: true as const };
+}
+
 function matchesExactContinuationTarget(input: {
   job: GlwPageExecutionRecord;
   request: GlwGenerationRequest;
@@ -1937,11 +1959,15 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (action !== "generate") {
+  const reviewOnlyGeneration = action === "generate_review_only";
+
+  if (action !== "generate" && !reviewOnlyGeneration) {
     return NextResponse.json({ error: "Unsupported generation action." }, { status: 400 });
   }
 
-  const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
+  const authority = reviewOnlyGeneration
+    ? verifyReviewOnlyGenerationAuthority(preview.request, preview.siteRecord)
+    : await verifyMutationAuthority(preview.request, preview.siteRecord);
   if ("error" in authority) {
     return NextResponse.json(authority, { status: authority.status });
   }

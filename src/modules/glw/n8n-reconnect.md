@@ -31,6 +31,7 @@ Guard behavior:
 - Rejects non-draft publication intent and update operations for first homepage initialization.
 - Rejects LEDW recovery workflow reuse for PageEngines dispatch.
 - Rejects WordPress/canonical/domain targets outside `staging.pageengines.com`.
+- Supports a bounded `generate_review_only` action that preserves create-only dispatch authority and does not require WordPress mutation authorization preflight.
 
 ## Callback contract behavior
 
