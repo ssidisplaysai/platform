@@ -72,6 +72,7 @@ describe("site page generation visual quality guards", () => {
     const home = assembly.pages.find((item) => item.pageRole === "HOME");
     expect(home).toBeTruthy();
     expect(home?.sections[0]?.body.join(" ")).not.toMatch(/creative blueprint|lead with|approved authority|conversion direction/i);
+    expect(home?.sections.flatMap((section) => section.body).join(" ")).not.toMatch(/never imply/i);
     expect(home?.sections.find((section) => section.presentation === "CTA")?.body.join(" ")).toContain("start a focused conversation");
     expect(home?.imageRequirements.some((item) => item.slotId.endsWith("-industry") && item.status === "GENERATED_CANDIDATE_NEEDED")).toBe(true);
     expect(assembly.navigation.filter((item) => item.label === "Solutions")).toHaveLength(1);

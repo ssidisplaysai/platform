@@ -164,6 +164,18 @@ function customerFacingLine(input: { value: string; fallback: string }): string 
   return cleaned;
 }
 
+function customerFacingGeography(value: string): string {
+  const sanitized = sanitizePublicCopy(value, "");
+  if (!sanitized) return "Geographic focus remains bounded to confirmed service areas.";
+  const firstSentence = sanitized.split(/(?<=[.!?])\s+/)[0]?.trim() ?? sanitized;
+  const scrubbed = firstSentence
+    .replace(/\bnever imply\b/gi, "")
+    .replace(/\benforcing\b/gi, "aligned to")
+    .replace(/\bconfirmed service geography\b/gi, "approved service areas")
+    .trim();
+  return scrubbed.length > 0 ? `Geographic focus: ${scrubbed}` : "Geographic focus remains bounded to confirmed service areas.";
+}
+
 type GenerationScope = {
   scopeTokens: Set<string>;
   ctaPhrases: string[];
@@ -327,7 +339,7 @@ function sectionsFor(input: { page: SiteBuildPlanPage; site: SiteConfiguration; 
     : `${page.name} page aligned to current strategy and customer intent.`;
   const purpose = sanitizePublicCopy(page.purpose.trim(), defaultPurpose);
   const audience = strategy.primaryAudience || page.primaryAudience;
-  const geography = strategy.geographicStrategy ? `Geographic focus: ${strategy.geographicStrategy}` : "Geographic focus remains bounded to confirmed service areas.";
+  const geography = strategy.geographicStrategy ? customerFacingGeography(strategy.geographicStrategy) : "Geographic focus remains bounded to confirmed service areas.";
 
   if (page.pageType === "HOME" && scope.digitalGrowthProfile) {
     const steps = digitalGrowthSteps(strategy, input.instructions, page.purpose);
